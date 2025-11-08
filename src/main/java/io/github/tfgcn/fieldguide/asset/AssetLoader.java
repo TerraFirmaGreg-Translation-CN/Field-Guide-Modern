@@ -49,7 +49,6 @@ public class AssetLoader {
 
                 for (Path jar : jarList) {
                     try {
-                        log.info("Found mod: {}", jar.getFileName());
                         sources.add(new JarAssetSource(jar));
                     } catch (IOException e) {
                         log.error("Error loading JAR: {}", jar, e);
@@ -161,6 +160,20 @@ public class AssetLoader {
 
     public BufferedImage loadTexture(String path) {
         Asset asset = loadResource(path, "assets", ".png");
+        if (asset == null) {
+            log.error("Texture not found: {}", path);
+            return null;
+        }
+
+        try {
+            return ImageIO.read(asset.getInputStream());
+        } catch (IOException e) {
+            log.error("Error loading texture: {}", path, e);
+        }
+        return null;
+    }
+    public BufferedImage loadTexture(String path, String resourceType) {
+        Asset asset = loadResource(path, resourceType, "assets", ".png");
         if (asset == null) {
             log.error("Texture not found: {}", path);
             return null;

@@ -70,6 +70,7 @@ public class FsAssetSource extends AssetSource {
         Collection<File> files = FileUtils.listFiles(fullPath.toFile(), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         for (File file : files) {
             String relativePath = file.toPath().subpath(rootPath.getNameCount(), file.toPath().getNameCount()).toString();
+            relativePath = relativePath.replace("\\", "/");
             assets.add(new Asset(relativePath, Files.newInputStream(file.toPath()), this));
         }
 

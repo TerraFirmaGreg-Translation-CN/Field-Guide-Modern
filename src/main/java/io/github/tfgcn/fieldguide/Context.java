@@ -1,17 +1,21 @@
 package io.github.tfgcn.fieldguide;
 
-import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import io.github.tfgcn.fieldguide.asset.Asset;
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
 import io.github.tfgcn.fieldguide.book.BookCategory;
 import io.github.tfgcn.fieldguide.book.BookEntry;
 import io.github.tfgcn.fieldguide.item.ItemImageResult;
+import io.github.tfgcn.fieldguide.mc.BlockModel;
+import io.github.tfgcn.fieldguide.render.BlockTextureRenderer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static io.github.tfgcn.fieldguide.render.BlockTextureRenderer.adjustBrightness;
 
 @Slf4j
 @Data
@@ -417,7 +422,11 @@ public class Context {
     private BufferedImage resizeImage(BufferedImage original, int targetWidth, int targetHeight) {
         BufferedImage resized = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = resized.createGraphics();
+
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+
         g2d.drawImage(original, 0, 0, targetWidth, targetHeight, null);
         g2d.dispose();
         return resized;
@@ -514,7 +523,7 @@ public class Context {
 
         try {
             // Create image for each item.
-            List<BufferedImage> images = items.stream().map(itemId -> createItemImage(this, itemId)).toList();
+            List<BufferedImage> images = items.stream().map(this::createItemImage).toList();
 
 
         } catch (Exception e) {
@@ -536,27 +545,593 @@ public class Context {
         return List.of();
     }
 
-    BufferedImage createItemImage(Context context, String itemId) {
-        loadItemModel(itemId);
+    BufferedImage createItemImage(String itemId) {
+        BlockModel model = loadItemModel(itemId);
+        if (model.getParent() == null) {
+            log.warn("Item model no parent : {}", itemId);
+            return null;
+        }
         // TODO
 
+        if (model.getLoader() != null) {
+            String loader = model.getLoader();
+            if ("tfc:contained_fluid".equals(loader)) {
+                // Assume it's empty, and use a single layer item
+                String layer = model.getTextures().get("base");
+                return assetLoader.loadTexture(layer, "textures");
+            } else {
+                log.error("Unknown loader: {} @ {}, model: {}", loader, itemId, model);
+            }
+        }
+
+        String parent = model.getParent();
+        /**
+         *     if parent in (
+         *         'minecraft:item/generated',
+         *         'minecraft:item/handheld',
+         *         'minecraft:item/handheld_rod',
+         *         'tfc:item/handheld_flipped',
+         *     ):
+         *         # Simple single-layer item model
+         *         layer0 = model['textures']['layer0']
+         *         img = context.loader.load_texture(layer0)
+         *         return img
+         *     elif parent.startswith('tfc:block/') or parent.startswith('minecraft:block/'):
+         *         # Block model
+         *         block_model = context.loader.load_model(parent)
+         *         img = block_loader.create_block_model_image(context, item, block_model)
+         *         img = img.resize((64, 64), resample=Image.NEAREST)
+         *         return img
+         *     else:
+         *         util.error('Item Model : Unknown Parent \'%s\' : at \'%s\'' % (parent, item), True)
+         */
+        if ("minecraft:item/generated".equals(parent) ||
+                "minecraft:item/handheld".equals(parent) ||
+                "minecraft:item/handheld_rod".equals(parent) ||
+                "tfc:item/handheld_flipped".equals(parent) ||
+                "item/generated".equals(parent)
+        ) {
+            // single-layer item model
+            String layer0 = model.getTextures().get("layer0");
+            return assetLoader.loadTexture(layer0, "textures");
+        } else if (parent.startsWith("tfc:block/") || parent.startsWith("minecraft:block/")) {
+            // Block model
+            try {
+                Asset modelAsset = assetLoader.loadResource(parent, "models", "assets", ".json");
+                BlockModel blockModel = JsonUtils.readFile(modelAsset.getInputStream(), BlockModel.class);
+
+                BufferedImage img = createBlockModelImage(itemId, blockModel);
+                img = resizeImage(img, 64, 64);
+                return img;
+            } catch (Exception e) {
+                log.error("Failed load model {} @ {}, model: {}", parent, itemId, model, e);
+            }
+
+
+            // TODO
+        } else {
+            log.error("Unknown Parent {} @ {}, model: {}", parent, itemId, model);
+        }
         return null;
     }
 
-    private void loadItemModel(String itemId) {
+    private BlockModel loadItemModel(String itemId) {
         Asset asset = assetLoader.loadResource(itemId, "models/item", "assets", ".json");
 
         if (asset == null) {
-            log.warn("Item model not found: {}", itemId);
             throw new InternalError("Item model not found: " + itemId);
         }
         try {
-            JsonObject model = JsonUtils.readFile(asset.getInputStream(), JsonObject.class);
-            log.info("Item {}, path:{}, source:{}, model: {}", itemId, asset.getPath(), asset.getSource(), model);
+            return JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
         } catch (Exception e) {
             log.warn("Failed to load item model: {}", itemId, e);
             throw new InternalError("Failed to load item model: " + itemId);
         }
-        // TODO
+    }
+
+    /// ///////////// block_loder
+    ///
+
+    private static final Map<String, String> CACHE = new HashMap<>();
+
+    // 透视变换系数（与Python版本相同）
+    private static final double[] LEFT = calculatePerspectiveCoefficients(
+            new Point2D.Double(0, 0), new Point2D.Double(16, 0),
+            new Point2D.Double(16, 16), new Point2D.Double(0, 16),
+            new Point2D.Double(13, 57), new Point2D.Double(128, 114),
+            new Point2D.Double(128, 255), new Point2D.Double(13, 198)
+    );
+
+    private static final double[] RIGHT = calculatePerspectiveCoefficients(
+            new Point2D.Double(0, 0), new Point2D.Double(16, 0),
+            new Point2D.Double(16, 16), new Point2D.Double(0, 16),
+            new Point2D.Double(128, 114), new Point2D.Double(242, 58),
+            new Point2D.Double(242, 197), new Point2D.Double(128, 255)
+    );
+
+    private static final double[] TOP = calculatePerspectiveCoefficients(
+            new Point2D.Double(0, 0), new Point2D.Double(16, 0),
+            new Point2D.Double(16, 16), new Point2D.Double(0, 16),
+            new Point2D.Double(13, 57), new Point2D.Double(127, 0),
+            new Point2D.Double(242, 58), new Point2D.Double(128, 114)
+    );
+
+    private static final double[] TOP_SLAB = calculatePerspectiveCoefficients(
+            new Point2D.Double(0, 0), new Point2D.Double(16, 0),
+            new Point2D.Double(16, 16), new Point2D.Double(0, 16),
+            new Point2D.Double(13, 128), new Point2D.Double(127, 71),
+            new Point2D.Double(242, 129), new Point2D.Double(128, 185)
+    );
+
+    // 计算透视变换系数
+    public static double[] calculatePerspectiveCoefficients(Point2D.Double... points) {
+        if (points.length != 8) {
+            throw new IllegalArgumentException("需要8个点（4个源点，4个目标点）");
+        }
+
+        // 源点
+        Point2D.Double[] src = {points[0], points[1], points[2], points[3]};
+        // 目标点
+        Point2D.Double[] dst = {points[4], points[5], points[6], points[7]};
+
+        return findHomography(src, dst);
+    }
+
+    // 计算单应性矩阵（透视变换矩阵）
+    public static double[] findHomography(Point2D.Double[] src, Point2D.Double[] dst) {
+        // 构建矩阵A
+        double[][] A = new double[8][9];
+
+        for (int i = 0; i < 4; i++) {
+            double x = src[i].x, y = src[i].y;
+            double u = dst[i].x, v = dst[i].y;
+
+            A[2*i][0] = x;
+            A[2*i][1] = y;
+            A[2*i][2] = 1;
+            A[2*i][3] = 0;
+            A[2*i][4] = 0;
+            A[2*i][5] = 0;
+            A[2*i][6] = -u * x;
+            A[2*i][7] = -u * y;
+            A[2*i][8] = -u;
+
+            A[2*i+1][0] = 0;
+            A[2*i+1][1] = 0;
+            A[2*i+1][2] = 0;
+            A[2*i+1][3] = x;
+            A[2*i+1][4] = y;
+            A[2*i+1][5] = 1;
+            A[2*i+1][6] = -v * x;
+            A[2*i+1][7] = -v * y;
+            A[2*i+1][8] = -v;
+        }
+
+        // 使用SVD分解求解
+        return solveWithSVD(A);
+    }
+
+    // 使用SVD分解求解线性方程组
+    private static double[] solveWithSVD(double[][] A) {
+        int m = A.length;
+        int n = A[0].length;
+
+        // 转换为单维数组进行SVD
+        double[] a = new double[m * n];
+        for (int i = 0; i < m; i++) {
+            System.arraycopy(A[i], 0, a, i * n, n);
+        }
+
+        // 这里使用简化的SVD实现
+        // 在实际应用中，您可能需要使用更健壮的SVD实现
+        Jama.Matrix matA = new Jama.Matrix(A);
+        Jama.SingularValueDecomposition svd = matA.svd();
+
+        Jama.Matrix V = svd.getV();
+        double[] h = new double[9];
+        for (int i = 0; i < 9; i++) {
+            h[i] = V.get(i, 8);
+        }
+
+        // 归一化
+        double norm = h[8];
+        for (int i = 0; i < 9; i++) {
+            h[i] /= norm;
+        }
+
+        // 返回前8个系数（与PIL兼容）
+        double[] coefficients = new double[8];
+        System.arraycopy(h, 0, coefficients, 0, 8);
+        return coefficients;
+    }
+
+    private static final Point[] ROOT = {
+            new Point(0, 0), new Point(16, 0),
+            new Point(16, 16), new Point(0, 16)
+    };
+
+    public String getMultiBlockImage(Context context, Map<String, Object> data) throws Exception {
+        String key;
+        List<BufferedImage> images = new ArrayList<>();
+
+        if (data.containsKey("multiblocks")) {
+            List<Map<String, Object>> multiblocks = (List<Map<String, Object>>) data.get("multiblocks");
+            StringBuilder keyBuilder = new StringBuilder("multiblocks-");
+            for (Map<String, Object> block : multiblocks) {
+                Pair<String, List<BufferedImage>> result = getMultiBlockImages(block);
+                keyBuilder.append(result.getKey());
+                images.addAll(result.getValue());
+            }
+            key = keyBuilder.toString();
+        } else if (data.containsKey("multiblock")) {
+            Map<String, Object> multiblock = (Map<String, Object>) data.get("multiblock");
+            Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
+            key = result.getKey();
+            images = result.getValue();
+        } else {
+            throw new RuntimeException("Multiblock : Custom Multiblock '" + data.get("multiblock_id") + "'");
+        }
+
+        if (CACHE.containsKey(key)) {
+            return CACHE.get(key);
+        }
+
+        String path;
+        if (images.size() == 1) {
+            path = saveImage(context.nextId("block"), images.get(0));
+        } else {
+            // FIXME
+            // path = saveGif(context.nextId("block"), images);
+            path = null;
+        }
+
+        CACHE.put(key, path);
+        return path;
+    }
+
+    public Pair<String, List<BufferedImage>> getMultiBlockImages(Map<String, Object> data) throws Exception {
+        if (!data.containsKey("pattern")) {
+            throw new RuntimeException("Multiblock : No 'pattern' field");
+        }
+
+        List<List<String>> pattern = (List<List<String>>) data.get("pattern");
+        List<List<String>> validPattern1 = Arrays.asList(
+                Arrays.asList("X"),
+                Arrays.asList("0")
+        );
+        List<List<String>> validPattern2 = Arrays.asList(
+                Arrays.asList("X"),
+                Arrays.asList("Y"),
+                Arrays.asList("0")
+        );
+
+        if (!pattern.equals(validPattern1) && !pattern.equals(validPattern2)) {
+            throw new RuntimeException("Multiblock : Complex Pattern '" + pattern + "'");
+        }
+
+        String block = (String) ((Map<String, Object>) data.get("mapping")).get("X");
+        List<String> blocks;
+
+        if (block.startsWith("#")) {
+            // FIXME
+            // blocks = loadBlockTag(block.substring(1));
+            blocks = List.of();
+        } else {
+            blocks = Arrays.asList(block);
+        }
+
+        List<BufferedImage> blockImages = new ArrayList<>();
+        for (String b : blocks) {
+            blockImages.add(getBlockImage(b));
+        }
+
+        return new Pair<>(block, blockImages);
+    }
+
+    public BufferedImage getBlockImage(String blockState) throws Exception {
+        Pair<String, Map<String, String>> parsedState = parseBlockState(blockState);
+        String block = parsedState.getKey();
+        Map<String, String> state = parsedState.getValue();
+
+        Asset asset = assetLoader.loadResource(block, "blockstates", "assets", ".json");
+        // FIXME 使用BlockState 来反序列化，但需要处理好variants的变体，有时是list有时是object
+        Map<String, Object> stateData = JsonUtils.readFile(asset.getInputStream(), new TypeToken<Map<String, Object>>() {}.getType());
+
+        if (!stateData.containsKey("variants") || !(stateData.get("variants") instanceof Map)) {
+            throw new RuntimeException("BlockState : Must be a 'variants' block state: '" + blockState + "'");
+        }
+
+        Map<String, Object> variants = (Map<String, Object>) stateData.get("variants");
+        Map<String, Object> defaultModelData = null;
+        Map<String, Object> modelData = null;
+
+        for (Map.Entry<String, Object> entry : variants.entrySet()) {
+            String key = entry.getKey();
+            Map<String, Object> value = (Map<String, Object>) entry.getValue();
+
+            if (defaultModelData == null) {
+                defaultModelData = value;
+            }
+
+            Map<String, String> variantProperties = parseBlockProperties(key);
+            if (state.entrySet().containsAll(variantProperties.entrySet())) {
+                modelData = value;
+                break;
+            }
+        }
+
+        if (modelData == null) {
+            if (state.isEmpty() && !variants.isEmpty()) {
+                modelData = defaultModelData;
+            } else {
+                throw new RuntimeException("BlockState: No matching state found for '" + blockState + "' in " + variants);
+            }
+        }
+
+        if (!modelData.containsKey("model")) {
+            throw new RuntimeException("BlockState : No Model '" + block + "'");
+        }
+
+        String modelPath = (String) modelData.get("model");
+
+        // load model
+        Asset modelAsset = assetLoader.loadResource(modelPath, "models", "assets", ".json");
+        BlockModel model = JsonUtils.readFile(modelAsset.getInputStream(), BlockModel.class);
+
+        return createBlockModelImage(block, model);
+    }
+
+    public static Pair<String, Map<String, String>> parseBlockState(String blockState) {
+        if (blockState.contains("[")) {
+            String[] parts = blockState.substring(0, blockState.length() - 1).split("\\[");
+            String block = parts[0];
+            Map<String, String> properties = parseBlockProperties(parts[1]);
+            return new Pair<>(block, properties);
+        } else {
+            return new Pair<>(blockState, new HashMap<>());
+        }
+    }
+
+    public static Map<String, String> parseBlockProperties(String properties) {
+        Map<String, String> state = new HashMap<>();
+        if (properties.contains("=")) {
+            String[] pairs = properties.split(",");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=");
+                state.put(keyValue[0], keyValue[1]);
+            }
+        }
+        return state;
+    }
+
+    public BufferedImage createBlockModelImage(String block, BlockModel model) throws Exception {
+        if (model.getParent() == null) {
+            throw new RuntimeException("Block Model : No Parent : '" + block + "'");
+        }
+
+        String parent = model.getParent();
+        Map<String, String> textures = model.getTextures();
+
+        switch (parent) {
+            case "minecraft:block/cube_all":
+                BufferedImage textureAll = assetLoader.loadTexture(textures.get("all"), "textures");
+                return createBlockModelProjection(textureAll, textureAll, textureAll, false);
+
+            case "minecraft:block/cube_column":
+                BufferedImage side = assetLoader.loadTexture(textures.get("side"), "textures");
+                BufferedImage end = assetLoader.loadTexture(textures.get("end"), "textures");
+                return createBlockModelProjection(side, side, end, false);
+
+            case "minecraft:block/cube_column_horizontal":
+                BufferedImage sideH = assetLoader.loadTexture(textures.get("side"), "textures");
+                BufferedImage endH = assetLoader.loadTexture(textures.get("end"), "textures");
+                return createBlockModelProjection(endH, sideH, sideH, true);
+
+            case "minecraft:block/template_farmland":
+                BufferedImage dirt = assetLoader.loadTexture(textures.get("dirt"), "textures");
+                BufferedImage top = assetLoader.loadTexture(textures.get("top"), "textures");
+                return createBlockModelProjection(dirt, dirt, top, false);
+
+            case "tfc:block/ore":
+                BufferedImage oreAll = assetLoader.loadTexture(textures.get("all"), "textures");
+                BufferedImage overlay = assetLoader.loadTexture(textures.get("overlay"), "textures");
+                // 在Java中实现图像叠加
+                BufferedImage combined = new BufferedImage(oreAll.getWidth(), oreAll.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g = combined.createGraphics();
+                g.drawImage(oreAll, 0, 0, null);
+                g.drawImage(overlay, 0, 0, null);
+                g.dispose();
+                return createBlockModelProjection(combined, combined, combined, false);
+
+            case "minecraft:block/slab":
+                BufferedImage topSlab = assetLoader.loadTexture(textures.get("top"), "textures");
+                BufferedImage sideSlab = assetLoader.loadTexture(textures.get("side"), "textures");
+                return createSlabBlockModelProjection(sideSlab, sideSlab, topSlab);
+
+            case "minecraft:block/crop":
+                BufferedImage crop = assetLoader.loadTexture(textures.get("crop"), "textures");
+                return createCropModelProjection(crop);
+
+            default:
+                throw new RuntimeException("Block Model : Unknown Parent '" + parent + "' : at '" + block + "'");
+        }
+    }
+
+    public BufferedImage createBlockModelProjection(BufferedImage left, BufferedImage right, BufferedImage top, boolean rotate) {
+        if (rotate) {
+            right = rotateImage(right, 90);
+            top = rotateImage(top, 90);
+        }
+
+        BufferedImage result = BlockTextureRenderer.createBlockImage(left, right, top);
+        return result;
+    }
+
+    public static BufferedImage createSlabBlockModelProjection(BufferedImage left, BufferedImage right, BufferedImage top) {
+        // crop
+        left = cropRetainingPosition(left, 0, 8, 16, 16);
+        right = cropRetainingPosition(right, 0, 8, 16, 16);
+
+        // 合并图像
+        BufferedImage result = BlockTextureRenderer.createBlockImage(left, right, top);
+        return result;
+    }
+
+    public static BufferedImage createCropModelProjection(BufferedImage crop) {
+        BufferedImage left = adjustBrightness(crop, 0.85f);
+        BufferedImage right = adjustBrightness(crop, 0.6f);
+
+        BufferedImage rEnd = cropRetainingPosition(right, 0, 0, 5, 16);
+        BufferedImage lEnd = cropRetainingPosition(left, 13, 0, 16, 16);
+
+        // 透视变换
+        BufferedImage leftTransformed = perspectiveTransform(left, LEFT);
+        BufferedImage rightTransformed = perspectiveTransform(right, RIGHT);
+        BufferedImage rEndTransformed = perspectiveTransform(rEnd, RIGHT);
+        BufferedImage lEndTransformed = perspectiveTransform(lEnd, LEFT);
+
+        // 创建基础图像并粘贴各个部分
+        BufferedImage base = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = base.createGraphics();
+
+        g.drawImage(leftTransformed, 98 - 12, 14 - 56, null);
+        g.drawImage(rightTransformed, 100 - 128, 100 - 114, null);
+        g.drawImage(rightTransformed, 42 - 128, 72 - 114, null);
+        g.drawImage(leftTransformed, 42 - 12, 42 - 56, null);
+        g.drawImage(rEndTransformed, 100 - 128, 100 - 114, null);
+        g.drawImage(rEndTransformed, 42 - 128, 72 - 114, null);
+        g.drawImage(lEndTransformed, 98 - 12, 14 - 56, null);
+        g.drawImage(lEndTransformed, 42 - 12, 42 - 56, null);
+
+        g.dispose();
+        return base;
+    }
+
+    public static BufferedImage cropRetainingPosition(BufferedImage img, int u1, int v1, int u2, int v2) {
+        BufferedImage cropped = img.getSubimage(u1, v1, u2 - u1, v2 - v1);
+        BufferedImage result = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = result.createGraphics();
+        g.drawImage(cropped, u1, v1, null);
+        g.dispose();
+        return result;
+    }
+
+    public static BufferedImage rotateImage(BufferedImage image, double degrees) {
+        double radians = Math.toRadians(degrees);
+        double sin = Math.abs(Math.sin(radians));
+        double cos = Math.abs(Math.cos(radians));
+
+        int newWidth = (int) Math.round(image.getWidth() * cos + image.getHeight() * sin);
+        int newHeight = (int) Math.round(image.getWidth() * sin + image.getHeight() * cos);
+
+        BufferedImage result = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = result.createGraphics();
+
+        AffineTransform transform = new AffineTransform();
+        transform.translate(newWidth / 2, newHeight / 2);
+        transform.rotate(radians);
+        transform.translate(-image.getWidth() / 2, -image.getHeight() / 2);
+
+        g.setTransform(transform);
+        g.drawImage(image, 0, 0, null);
+        g.dispose();
+
+        return result;
+    }
+
+    public static BufferedImage perspectiveTransform(BufferedImage src, double[] coefficients) {
+        int width = 256;
+        int height = 256;
+        BufferedImage dst = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+        // 逆变换：从目标像素找源像素
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Point2D.Double srcPoint = applyPerspectiveTransform(x, y, coefficients, true);
+
+                if (srcPoint.x >= 0 && srcPoint.x < src.getWidth() &&
+                        srcPoint.y >= 0 && srcPoint.y < src.getHeight()) {
+                    int rgb = getBilinearInterpolation(src, srcPoint.x, srcPoint.y);
+                    dst.setRGB(x, y, rgb);
+                }
+            }
+        }
+
+        return dst;
+    }
+
+    // 应用透视变换
+    private static Point2D.Double applyPerspectiveTransform(double x, double y, double[] coeffs, boolean inverse) {
+        if (inverse) {
+            // 计算逆变换：从目标坐标找源坐标
+            double denominator = coeffs[6] * x + coeffs[7] * y + 1;
+            double srcX = (coeffs[0] * x + coeffs[1] * y + coeffs[2]) / denominator;
+            double srcY = (coeffs[3] * x + coeffs[4] * y + coeffs[5]) / denominator;
+            return new Point2D.Double(srcX, srcY);
+        } else {
+            // 正变换：从源坐标找目标坐标
+            double denominator = coeffs[6] * x + coeffs[7] * y + 1;
+            double dstX = (coeffs[0] * x + coeffs[1] * y + coeffs[2]) / denominator;
+            double dstY = (coeffs[3] * x + coeffs[4] * y + coeffs[5]) / denominator;
+            return new Point2D.Double(dstX, dstY);
+        }
+    }
+
+    // 双线性插值
+    private static int getBilinearInterpolation(BufferedImage img, double x, double y) {
+        int x1 = (int) Math.floor(x);
+        int y1 = (int) Math.floor(y);
+        int x2 = x1 + 1;
+        int y2 = y1 + 1;
+
+        if (x2 >= img.getWidth()) x2 = img.getWidth() - 1;
+        if (y2 >= img.getHeight()) y2 = img.getHeight() - 1;
+
+        double dx = x - x1;
+        double dy = y - y1;
+
+        int q11 = img.getRGB(x1, y1);
+        int q21 = img.getRGB(x2, y1);
+        int q12 = img.getRGB(x1, y2);
+        int q22 = img.getRGB(x2, y2);
+
+        return bilinearInterpolate(q11, q21, q12, q22, dx, dy);
+    }
+
+    private static int bilinearInterpolate(int q11, int q21, int q12, int q22, double dx, double dy) {
+        Color c11 = new Color(q11, true);
+        Color c21 = new Color(q21, true);
+        Color c12 = new Color(q12, true);
+        Color c22 = new Color(q22, true);
+
+        int r = (int) ((1 - dx) * (1 - dy) * c11.getRed() + dx * (1 - dy) * c21.getRed() +
+                (1 - dx) * dy * c12.getRed() + dx * dy * c22.getRed());
+        int g = (int) ((1 - dx) * (1 - dy) * c11.getGreen() + dx * (1 - dy) * c21.getGreen() +
+                (1 - dx) * dy * c12.getGreen() + dx * dy * c22.getGreen());
+        int b = (int) ((1 - dx) * (1 - dy) * c11.getBlue() + dx * (1 - dy) * c21.getBlue() +
+                (1 - dx) * dy * c12.getBlue() + dx * dy * c22.getBlue());
+        int a = (int) ((1 - dx) * (1 - dy) * c11.getAlpha() + dx * (1 - dy) * c21.getAlpha() +
+                (1 - dx) * dy * c12.getAlpha() + dx * dy * c22.getAlpha());
+
+        r = Math.min(255, Math.max(0, r));
+        g = Math.min(255, Math.max(0, g));
+        b = Math.min(255, Math.max(0, b));
+        a = Math.min(255, Math.max(0, a));
+
+        return new Color(r, g, b, a).getRGB();
+    }
+
+    // 辅助类 - Pair
+    public static class Pair<K, V> {
+        private K key;
+        private V value;
+
+        public Pair(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public K getKey() { return key; }
+        public V getValue() { return value; }
     }
 }

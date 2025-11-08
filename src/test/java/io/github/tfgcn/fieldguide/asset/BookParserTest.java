@@ -15,7 +15,10 @@ import java.nio.file.Paths;
 public class BookParserTest {
 
     public static void main(String[] args) {
-        String root = "/Users/yanmaoyuan/HMCL/.minecraft/versions/TerraFirmaGreg-Modern-0.11.7";
+        //String root = "/Users/yanmaoyuan/HMCL/.minecraft/versions/TerraFirmaGreg-Modern-0.11.7";
+        String root = "E:\\HMCL-3.6.12\\.minecraft\\versions\\TerraFirmaGreg-Modern-0.11.7";
+
+        root = root.replace("\\", "/");
 
         MCMeta.loadCache(Versions.MC_VERSION, Versions.FORGE_VERSION, Versions.LANGUAGES);
 
