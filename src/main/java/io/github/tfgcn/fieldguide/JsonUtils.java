@@ -39,6 +39,9 @@ public final class JsonUtils {
     public static <T> T fromJson(String json, Class<T> clazz) {
         return GSON.fromJson(json, clazz);
     }
+    public static <T> T fromJson(String json, Type clazz) {
+        return GSON.fromJson(json, clazz);
+    }
 
     public static <T> void writeFile(File file, T obj) throws IOException {
         try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {

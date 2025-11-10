@@ -9,7 +9,7 @@ public class ImageTemplates {
         "    <div class=\"knapping-recipe\">" +
         "        <img class=\"knapping-recipe-img\" src=\"../../_images/knapping.png\">" +
         "        <div class=\"knapping-recipe-overlay\">" +
-        "            <img class=\"knapping-recipe-img\" src=\"{}\" alt=\"{}\">" +
+        "            <img class=\"knapping-recipe-img\" src=\"%s\" alt=\"%s\">" +
         "        </div>" +
         "    </div>" +
         "</div>";

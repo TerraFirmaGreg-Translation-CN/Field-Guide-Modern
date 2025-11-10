@@ -1,14 +1,18 @@
 package io.github.tfgcn.fieldguide.asset;
 
+import com.google.gson.reflect.TypeToken;
+import io.github.tfgcn.fieldguide.JsonUtils;
 import io.github.tfgcn.fieldguide.MCMeta;
 import io.github.tfgcn.fieldguide.book.Book;
 import io.github.tfgcn.fieldguide.Versions;
+import io.github.tfgcn.fieldguide.InternalError;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -198,7 +202,7 @@ public class AssetLoader {
 
         StringBuilder sb = new StringBuilder();
         sb.append(resourceRoot).append("/").append(domain);
-        if (resourceType != null) {
+        if (resourceType != null && !resourceType.isEmpty()) {
             sb.append("/").append(resourceType);
         }
         sb.append("/").append(res);
@@ -222,5 +226,36 @@ public class AssetLoader {
         // assets/{namespace}/models/block/{res}.json
         // Item Model
         // assets/{namespace}/models/item/{res}.json
+    }
+
+    public Map<String, Object> loadRecipe(String recipeId) {
+        // 1.20.1 "recipes", 1.20.1+ "recipe"
+        Asset asset = loadResource(recipeId, "recipes", "data", ".json");
+        if (asset == null) {
+            log.error("Recipe not found: {}", recipeId);
+            throw new InternalError("Recipe not found: " + recipeId);
+        }
+
+        Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+        try {
+            return JsonUtils.readFile(asset.getInputStream(), mapType);
+        } catch (IOException e) {
+            log.error("Error loading recipe: {}", recipeId, e);
+            throw new InternalError("Error loading recipe: " + recipeId);
+        }
+    }
+
+    public BufferedImage loadExplicitTexture(String path) {
+        Asset asset = loadResource(path, "", "assets", ".png");
+        if (asset == null) {
+            log.error("Texture not found: {}", path);
+            throw new InternalError("Texture not found: " + path);
+        }
+        try {
+            return ImageIO.read(asset.getInputStream());
+        } catch (IOException e) {
+            log.error("Error loading texture: {}", path, e);
+            throw new InternalError("Error loading texture: " + path);
+        }
     }
 }

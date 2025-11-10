@@ -9,12 +9,16 @@ import io.github.tfgcn.fieldguide.book.page.PageSpotlightItem;
 import io.github.tfgcn.fieldguide.book.page.*;
 import io.github.tfgcn.fieldguide.book.page.tfc.*;
 import io.github.tfgcn.fieldguide.renderer.ImageTemplates;
+import io.github.tfgcn.fieldguide.renderer.KnappingRecipe;
 import io.github.tfgcn.fieldguide.renderer.TextFormatter;
+import io.github.tfgcn.fieldguide.renderer.KnappingRecipes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
+
+import static io.github.tfgcn.fieldguide.renderer.ImageTemplates.IMAGE_KNAPPING;
 
 @Slf4j
 public class BookParser {
@@ -286,11 +290,11 @@ public class BookParser {
                 break;
             }
             case PageSmelting pageSmelting: {// tfc:smelting
-                // FIXME parseSmeltingPage(context, buffer, data, search);
+                parseMiscRecipe(context, buffer, pageSmelting, search, pageType);
                 break;
             }
             case PageDrying pageDrying: {// tfc:drying
-                // FIXME parseDryingPage(context, buffer, data, search);
+                parseMiscRecipe(context, buffer, pageDrying, search, pageType);
                 break;
             }
             case PageBarrel pageBarrel: {// tfc:instant_barrel_recipe, tfc:sealed_barrel_recipe
@@ -304,7 +308,7 @@ public class BookParser {
                 break;
             }
             case PageRockKnapping pageRockKnapping: {// tfc:rock_knapping_recipe, tfc:clay_knapping_recipe, tfc:fire_clay_knapping_recipe, tfc:leather_knapping_recipe
-                // FIXME parseKnappingRecipe(context, buffer, page, search);
+                parseRockKnappingRecipe(context, buffer, pageRockKnapping, search);
                 break;
             }
             case PageKnapping pageKnapping: {// tfc:knapping
@@ -437,16 +441,36 @@ public class BookParser {
             context.setRecipesFailed(context.getRecipesFailed() + 1);
         }
     }
-    
+
+    private void parseRockKnappingRecipe(Context context, List<String> buffer,
+                                     PageRockKnapping page, Map<String, Object> search) {
+        try {
+            String recipeId;
+            if (page.getRecipe() != null && !page.getRecipe().isEmpty()) {
+                recipeId = page.getRecipe();
+            } else {
+                recipeId = page.getRecipes().get(0);
+            }
+            KnappingRecipe recipe = KnappingRecipes.formatKnappingRecipe(context, recipeId);
+            buffer.add(String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipeId));
+            context.setRecipesPassed(context.getRecipesPassed() + 1);
+        } catch (Exception e) {
+            log.error("Failed to load knapping page: {}", page, e);
+            context.formatRecipe(buffer, page.getRecipe());
+            context.setRecipesFailed(context.getRecipesFailed() + 1);
+        }
+
+        context.formatText(buffer, page.getText(), search);
+    }
+
     private void parseKnappingRecipe(Context context, List<String> buffer,
                                      PageKnapping page, Map<String, Object> search) {
         try {
-            // FIXME recipe_id, image = knapping_recipe.format_knapping_recipe(context, data)
-            // buffer.append(IMAGE_KNAPPING.format(src=image, text='Recipe: ' + recipe_id))
-            // TODO log.debug("Knapping recipe processing not implemented");
+            KnappingRecipe recipe = KnappingRecipes.formatKnappingRecipe(context, page.getRecipe());
+            buffer.add(String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipe.recipeId()));
             context.setRecipesPassed(context.getRecipesPassed() + 1);
-        } catch (InternalError e) {
-            e.warning(true);
+        } catch (Exception e) {
+            log.error("Failed to load knapping page: {}", page, e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);
         }

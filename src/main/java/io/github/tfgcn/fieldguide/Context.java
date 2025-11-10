@@ -6,6 +6,7 @@ import io.github.tfgcn.fieldguide.asset.Asset;
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
 import io.github.tfgcn.fieldguide.book.BookCategory;
 import io.github.tfgcn.fieldguide.book.BookEntry;
+import io.github.tfgcn.fieldguide.book.page.IPageDoubleRecipe;
 import io.github.tfgcn.fieldguide.book.page.IPageWithText;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.mc.BlockModel;
@@ -24,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
@@ -143,7 +145,8 @@ public class Context {
             File langFile = new File(ProjectUtil.pathJoin("assets/lang", lang + ".json"));
             if (langFile.exists()) {
                 String content = FileUtils.readFileToString(langFile, StandardCharsets.UTF_8);
-                Map<String, String> data = JsonUtils.fromJson(content, Map.class);
+                Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+                Map<String, String> data = JsonUtils.fromJson(content, mapType);
                 
                 for (Map.Entry<String, String> entry : data.entrySet()) {
                     this.langKeys.put("field_guide." + entry.getKey(), entry.getValue());
@@ -218,25 +221,6 @@ public class Context {
         }
     }
     
-    /**
-     * 格式化文本
-     */
-    public void formatText(List<String> buffer, Map<String, Object> data, String key, Map<String, Object> search) {
-        if (data.containsKey(key)) {
-            String text = (String) data.get(key);
-            TextFormatter.formatText(buffer, text, this.keybindings);
-            
-            if (search != null) {
-                Map<String, Object> searchData = new HashMap<>(search);
-                searchData.put("content", text);
-                this.searchTree.add(searchData);
-            }
-        }
-    }
-
-    /**
-     * 格式化文本
-     */
     public void formatText(List<String> buffer, String text, Map<String, Object> search) {
         if (text != null && !text.isEmpty()) {
             TextFormatter.formatText(buffer, text, this.keybindings);
@@ -253,22 +237,6 @@ public class Context {
         formatText(buffer, page.getText(), null);
     }
     
-    /**
-     * 格式化标题
-     */
-    public void formatTitle(List<String> buffer, Map<String, Object> data, String key, Map<String, Object> search) {
-        if (data.containsKey(key)) {
-            String title = (String) data.get(key);
-            String stripped = TextFormatter.stripVanillaFormatting(title);
-            buffer.add("<h5>" + stripped + "</h5>\n");
-
-            if (search != null) {
-                Map<String, Object> searchData = new HashMap<>(search);
-                searchData.put("content", stripped);
-                this.searchTree.add(searchData);
-            }
-        }
-    }
     public void formatTitle(List<String> buffer, String title, Map<String, Object> search) {
         if (title != null && !title.isEmpty()) {
             String stripped = TextFormatter.stripVanillaFormatting(title);
@@ -280,10 +248,6 @@ public class Context {
                 this.searchTree.add(searchData);
             }
         }
-    }
-
-    public void formatTitle(List<String> buffer, Map<String, Object> data) {
-        formatTitle(buffer, data, "title", null);
     }
 
     /**
@@ -355,7 +319,10 @@ public class Context {
             formatWithTooltip(buffer, text, translate(I18n.RECIPE_ONLY_IN_GAME));
         }
     }
-    
+
+    public void fromKnappingRecipe(List<String> buffer, IPageDoubleRecipe page, String recipeId) {
+
+    }
     /**
      * 翻译方法
      */
