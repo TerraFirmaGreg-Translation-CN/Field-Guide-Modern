@@ -46,7 +46,12 @@ public class HtmlRenderer {
     }
     
     public static String generateLanguageDropdown(List<String> languages, Context context) {
+        if (languages == null || languages.isEmpty()) {
+            return "";
+        }
+
         return languages.stream()
+                .filter(Objects::nonNull)
                 .map(lang -> String.format(
                         """
                         <a href="../%s/index.html" class="dropdown-item">%s</a>

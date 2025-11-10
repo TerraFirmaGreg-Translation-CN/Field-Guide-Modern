@@ -230,7 +230,22 @@ public class Context {
             }
         }
     }
-    
+
+    /**
+     * 格式化文本
+     */
+    public void formatText(List<String> buffer, String text, Map<String, Object> search) {
+        if (text != null && !text.isEmpty()) {
+            TextFormatter.formatText(buffer, text, this.keybindings);
+
+            if (search != null) {
+                Map<String, Object> searchData = new HashMap<>(search);
+                searchData.put("content", text);
+                this.searchTree.add(searchData);
+            }
+        }
+    }
+
     public void formatText(List<String> buffer, Map<String, Object> data) {
         formatText(buffer, data, "text", null);
     }
@@ -243,7 +258,7 @@ public class Context {
             String title = (String) data.get(key);
             String stripped = TextFormatter.stripVanillaFormatting(title);
             buffer.add("<h5>" + stripped + "</h5>\n");
-            
+
             if (search != null) {
                 Map<String, Object> searchData = new HashMap<>(search);
                 searchData.put("content", stripped);
@@ -251,11 +266,23 @@ public class Context {
             }
         }
     }
-    
+    public void formatTitle(List<String> buffer, String title, Map<String, Object> search) {
+        if (title != null && !title.isEmpty()) {
+            String stripped = TextFormatter.stripVanillaFormatting(title);
+            buffer.add("<h5>" + stripped + "</h5>\n");
+
+            if (search != null) {
+                Map<String, Object> searchData = new HashMap<>(search);
+                searchData.put("content", stripped);
+                this.searchTree.add(searchData);
+            }
+        }
+    }
+
     public void formatTitle(List<String> buffer, Map<String, Object> data) {
         formatTitle(buffer, data, "title", null);
     }
-    
+
     /**
      * 带图标的标题格式化
      */
@@ -348,8 +375,10 @@ public class Context {
                 return langKeys.get(key);
             }
         }
-        
-        throw new InternalError("Missing Translation Keys " + Arrays.toString(keys));
+
+        // FIXME 加载mod的语言文件
+        log.warn("Missing Translation Keys {}", Arrays.toString(keys));
+        return "{" + keys[0] + "}";
     }
     
     /**

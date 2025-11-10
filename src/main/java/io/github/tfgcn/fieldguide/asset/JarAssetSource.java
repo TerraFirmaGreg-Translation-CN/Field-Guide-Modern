@@ -70,7 +70,7 @@ public class JarAssetSource extends AssetSource {
                     relativePath = relativePath.substring(1);
                 }
 
-                if (!relativePath.isEmpty() && !relativePath.contains("/")) {
+                if (!entry.isDirectory()) {
                     assets.add(new Asset(entryName, jarFile.getInputStream(entry), this));
                 }
             }
