@@ -156,11 +156,10 @@ public class TextFormatter {
         } else if (key.startsWith("k:") && keybindings.containsKey(key.substring(2))) {
             buffer.add(keybindings.get(key.substring(2)));
         } else if (key.startsWith("t:")) {
-            // Discard tooltips
-            log.info("Discard tooltip, {}, {}", key, text);
+            String tooltips = key.substring(2);
+            // FIXME matchingTags("", "<span style=\"color:#888;font-style:italic;\">" + tooltips + "</span>");
         } else if (key.equals("/t")) {
-            // End Link, ends the current tooltip but maintains formatting ($() also ends tooltips)
-            log.info("Discard tooltip ends, {}, {}", key, text);
+            // FIXME flushStack();
         } else {
             log.warn("Unrecognized Formatting Code $({})", key);
         }

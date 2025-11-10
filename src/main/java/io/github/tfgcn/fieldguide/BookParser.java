@@ -112,7 +112,7 @@ public class BookParser {
         String entryId = relativePath.substring(0, relativePath.lastIndexOf('.'));
 
         if (context.hasEntry(entryId)) {
-            log.info("Entry {}@{} already exists, skipping", entryId, asset);
+            // FIXME remove later log.info("Entry {}@{} already exists, skipping", entryId, asset);
             return;
         }
 
