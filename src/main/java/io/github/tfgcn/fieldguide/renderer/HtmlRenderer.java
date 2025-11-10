@@ -98,13 +98,10 @@ public class HtmlRenderer {
         data.put("short_description", context.translate(I18n.HOME));
         data.put("preview_image", "splash.png");
         data.put("root", "..");// context.getRootDir()
-        data.put("tfc_version", Versions.TFC_VERSION);
 
         // text
         data.put("text_index", context.translate(I18n.INDEX));
         data.put("text_contents", context.translate(I18n.CONTENTS));
-        data.put("text_version", context.translate(I18n.VERSION));
-        data.put("text_api_docs", context.translate(I18n.API_DOCS));
         data.put("text_github", context.translate(I18n.GITHUB));
         data.put("text_discord", context.translate(I18n.DISCORD));
 
@@ -131,8 +128,6 @@ public class HtmlRenderer {
         data.put("preview_image", "splash.png");
         data.put("text_index", context.translate(I18n.INDEX));
         data.put("text_contents", context.translate(I18n.CONTENTS));
-        data.put("text_version", context.translate(I18n.VERSION));
-        data.put("text_api_docs", context.translate(I18n.API_DOCS));
         data.put("text_github", context.translate(I18n.GITHUB));
         data.put("text_discord", context.translate(I18n.DISCORD));
         data.put("current_lang_key", context.getLang());
@@ -140,7 +135,6 @@ public class HtmlRenderer {
         data.put("langs", generateCategoryLanguageLinks(Versions.LANGUAGES, context, categoryId));
         data.put("index", "../");
         data.put("root", "../../");// context.getRootDir()
-        data.put("tfc_version", Versions.TFC_VERSION);
         data.put("location", generateCategoryBreadcrumb("../", cat.getName()));
         data.put("contents", generateCategoryTableOfContents(context.getSortedCategories(), categoryId));
         data.put("page_content", generateCategoryPageContent(cat));
@@ -357,8 +351,6 @@ public class HtmlRenderer {
             data.put("preview_image", cleanImagePath(entry.getIcon()));
             data.put("text_index", context.translate(I18n.INDEX));
             data.put("text_contents", context.translate(I18n.CONTENTS));
-            data.put("text_version", context.translate(I18n.VERSION));
-            data.put("text_api_docs", context.translate(I18n.API_DOCS));
             data.put("text_github", context.translate(I18n.GITHUB));
             data.put("text_discord", context.translate(I18n.DISCORD));
             data.put("current_lang_key", context.getLang());
@@ -366,7 +358,6 @@ public class HtmlRenderer {
             data.put("langs", generateEntryLanguageLinks(Versions.LANGUAGES, context, categoryId, entry.getRelId()));
             data.put("index", "../");
             data.put("root", "../../");// context.getRootDir()
-            data.put("tfc_version", Versions.TFC_VERSION);
             data.put("location", generateEntryBreadcrumb("../", cat.getName(), entry.getName()));
             data.put("contents", generateEntryTableOfContents(context.getSortedCategories(), categoryId, entryId));
             data.put("page_content", generateEntryPageContent(entry));
