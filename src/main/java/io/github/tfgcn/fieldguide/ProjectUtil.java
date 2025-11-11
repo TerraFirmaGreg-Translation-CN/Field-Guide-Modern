@@ -1,14 +1,9 @@
 package io.github.tfgcn.fieldguide;
 
+import io.github.tfgcn.fieldguide.exception.InternalException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -16,6 +11,21 @@ import java.util.regex.Pattern;
 public class ProjectUtil {
     
     private static final Pattern SEARCH_STRIP_PATTERN = Pattern.compile("\\$\\([^)]*\\)");
+
+    /**
+     * 从多个键中获取第一个存在的值
+     */
+    public static Object anyOf(Object data, String... keys) {
+        if (data instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) data;
+            for (String key : keys) {
+                if (map.containsKey(key)) {
+                    return map.get(key);
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * 路径连接（跨平台）
@@ -40,7 +50,7 @@ public class ProjectUtil {
     
     public static void require(boolean condition, String reason, boolean quiet) {
         if (!condition) {
-            throw new InternalError(reason, quiet);
+            throw new InternalException(reason, quiet);
         }
     }
 }

@@ -4,8 +4,8 @@ import freemarker.template.*;
 import io.github.tfgcn.fieldguide.Context;
 import io.github.tfgcn.fieldguide.I18n;
 import io.github.tfgcn.fieldguide.Versions;
-import io.github.tfgcn.fieldguide.book.BookCategory;
-import io.github.tfgcn.fieldguide.book.BookEntry;
+import io.github.tfgcn.fieldguide.patchouli.BookCategory;
+import io.github.tfgcn.fieldguide.patchouli.BookEntry;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
@@ -134,7 +134,7 @@ public class HtmlRenderer {
         data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
         data.put("langs", generateCategoryLanguageLinks(Versions.LANGUAGES, context, categoryId));
         data.put("index", "../");
-        data.put("root", "../../");// context.getRootDir()
+        data.put("root", "../..");// context.getRootDir()
         data.put("location", generateCategoryBreadcrumb("../", cat.getName()));
         data.put("contents", generateCategoryTableOfContents(context.getSortedCategories(), categoryId));
         data.put("page_content", generateCategoryPageContent(cat));
@@ -357,7 +357,7 @@ public class HtmlRenderer {
             data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
             data.put("langs", generateEntryLanguageLinks(Versions.LANGUAGES, context, categoryId, entry.getRelId()));
             data.put("index", "../");
-            data.put("root", "../../");// context.getRootDir()
+            data.put("root", "../..");// context.getRootDir()
             data.put("location", generateEntryBreadcrumb("../", cat.getName(), entry.getName()));
             data.put("contents", generateEntryTableOfContents(context.getSortedCategories(), categoryId, entryId));
             data.put("page_content", generateEntryPageContent(entry));

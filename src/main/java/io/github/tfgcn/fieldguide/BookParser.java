@@ -1,22 +1,21 @@
 package io.github.tfgcn.fieldguide;
 
 import io.github.tfgcn.fieldguide.asset.Asset;
-import io.github.tfgcn.fieldguide.book.BookCategory;
-import io.github.tfgcn.fieldguide.book.BookEntry;
-import io.github.tfgcn.fieldguide.book.BookPage;
+import io.github.tfgcn.fieldguide.exception.InternalException;
+import io.github.tfgcn.fieldguide.patchouli.BookCategory;
+import io.github.tfgcn.fieldguide.patchouli.BookEntry;
+import io.github.tfgcn.fieldguide.patchouli.BookPage;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
-import io.github.tfgcn.fieldguide.book.page.PageSpotlightItem;
-import io.github.tfgcn.fieldguide.book.page.*;
-import io.github.tfgcn.fieldguide.book.page.tfc.*;
-import io.github.tfgcn.fieldguide.renderer.ImageTemplates;
-import io.github.tfgcn.fieldguide.renderer.KnappingRecipe;
-import io.github.tfgcn.fieldguide.renderer.TextFormatter;
-import io.github.tfgcn.fieldguide.renderer.KnappingRecipes;
+import io.github.tfgcn.fieldguide.patchouli.page.PageSpotlightItem;
+import io.github.tfgcn.fieldguide.patchouli.page.*;
+import io.github.tfgcn.fieldguide.patchouli.page.tfc.*;
+import io.github.tfgcn.fieldguide.renderer.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.github.tfgcn.fieldguide.renderer.ImageTemplates.IMAGE_KNAPPING;
 
@@ -24,6 +23,8 @@ import static io.github.tfgcn.fieldguide.renderer.ImageTemplates.IMAGE_KNAPPING;
 public class BookParser {
     
     public void processAllLanguages(Context context) {
+        // load en_us lang
+
         for (String lang : Versions.LANGUAGES) {
             log.info("Language: {}", lang);
             parseBook(context.withLang(lang));
@@ -175,8 +176,8 @@ public class BookParser {
                     }
                     try {
                         parsePage(context, entryId, entry.getBuffer(), page, search);
-                    } catch (InternalError e) {
-                        e.warning();
+                    } catch (InternalException e) {
+                        log.error("Failed to parse page: {}", page, e);
                     }
                 }
             }
@@ -213,8 +214,8 @@ public class BookParser {
                         try {
                             String convertedImage = context.convertImage(image);
                             processedImages.add(Map.entry(image, convertedImage));
-                        } catch (InternalError e) {
-                            e.prefix("Entry: '" + entryId + "'").warning();
+                        } catch (InternalException e) {
+                            log.error("Failed to convert entry image: {} @ {}", image, entryId, e);
                         }
                     }
                 }
@@ -265,8 +266,12 @@ public class BookParser {
                 buffer.add("<hr>");
                 break;
             }
-            case PageMultiblock pageMultiblock: {// patchouli:multiblock, tfc:multimultiblock
+            case PageMultiblock pageMultiblock: {// patchouli:multiblock
                 parseMultiblockPage(context, buffer, pageMultiblock, search);
+                break;
+            }
+            case PageMultiMultiblock pageMultiMultiblock: {// tfc:multimultiblock
+                parseMultiMultiblockPage(context, buffer, pageMultiMultiblock, search);
                 break;
             }
             case PageHeating PageHeating: {// tfc:heating
@@ -330,11 +335,10 @@ public class BookParser {
         // 处理主要配方
         if (page.getRecipe() != null) {
             try {
-                // FIXME crafting_recipe.format_crafting_recipe(context, buffer, data['recipe'])
-                log.debug("Crafting recipe processing not implemented");
+                CraftingRecipeFormatter.formatCraftingRecipe(context, buffer, page.getRecipe());
                 context.setRecipesPassed(context.getRecipesPassed() + 1);
-            } catch (InternalError e) {
-                e.prefix("Recipe: '" + page.getRecipe() + "'").warning(true);
+            } catch (Exception e) {
+                log.error("Recipe processing failed: {}", page.getRecipe(), e);
                 context.formatRecipe(buffer, page.getRecipe());
                 context.setRecipesFailed(context.getRecipesFailed() + 1);
             }
@@ -343,11 +347,10 @@ public class BookParser {
         // 处理第二个配方
         if (page.getRecipe2() != null) {
             try {
-                // FIXME crafting_recipe.format_crafting_recipe(context, buffer, data['recipe2'])
-                log.debug("Crafting recipe2 processing not implemented");
+                CraftingRecipeFormatter.formatCraftingRecipe(context, buffer, page.getRecipe2());
                 context.setRecipesPassed(context.getRecipesPassed() + 1);
-            } catch (InternalError e) {
-                e.prefix("Recipe: '" + page.getRecipe2() + "'").warning(true);
+            } catch (Exception e) {
+                log.error("Recipe2 processing failed: {}", page.getRecipe2(), e);
                 context.formatRecipe(buffer, page.getRecipe2());
                 context.setRecipesFailed(context.getRecipesFailed() + 1);
             }
@@ -357,50 +360,67 @@ public class BookParser {
     @SuppressWarnings("unchecked")
     private void parseSpotlightPage(Context context, List<String> buffer,
                                     PageSpotlight page, Map<String, Object> search) {
+        List<PageSpotlightItem> items = page.getItem();
+        if (items == null || items.isEmpty()) {
+            log.warn("Spotlight page did not have an item or tag key: {}", page);
+            return;
+        }
         try {
-            List<PageSpotlightItem> items = page.getItem();
-            if (items == null || items.isEmpty()) {
-                log.warn("Spotlight page did not have an item or tag key: {}", page);
-                throw new IllegalArgumentException("Spotlight page did not have an item or tag key: " + page);
-            }
             for (PageSpotlightItem item : items) {
                 if ("tag".equals(item.getType())) {
-                    // item_src, item_name = item_loader.get_item_image(context, '#' + page['item']['tag'], false)
-                    // context.format_title_with_icon(buffer, item_src, item_name, page)
-                    // FIXME log.debug("Spotlight tag processing not implemented");
+                    ItemImageResult itemResult = context.getItemImage("#" + item.getText(), false);
+                    context.formatTitleWithIcon(buffer, itemResult.getPath(), itemResult.getName(), page.getTitle());
                 } else {
-                    // item_src, item_name = item_loader.get_item_image(context, page['item'], false)
-                    // context.format_title_with_icon(buffer, item_src, item_name, page)
-                    // FIXME log.debug("Spotlight item processing not implemented");
+                    ItemImageResult itemResult = context.getItemImage(item.getText(), false);
+                    context.formatTitleWithIcon(buffer, itemResult.getPath(), itemResult.getName(), page.getTitle());
                 }
                 context.setItemsPassed(context.getItemsPassed() + 1);
             }
         } catch (Exception e) {
             // Fallback
-            // FIXME context.formatTitle(buffer, page);
-            // String itemStr = item_loader.decode_item(page['item'])
-            // 这里需要实现 item_loader.decode_item
-            log.debug("Item decoding not implemented for fallback");
+            context.formatTitle(buffer, page.getTitle(), search);
+
+            int count = 0;
+            StringBuilder sb = new StringBuilder();
+            for (PageSpotlightItem item : items) {
+                if (count > 0) {
+                    sb.append(", ");
+                }
+                sb.append("<code>");
+                if ("tag".equals(item.getType())) {
+                    sb.append('#').append(item.getText());
+                } else {
+                    sb.append(item.getText());
+                }
+                sb.append("</code>");
+                count++;
+            }
+            String itemHtml = String.format("%s: %s", context.translate(count > 1 ? I18n.ITEMS : I18n.ITEM), sb);
+            context.formatWithTooltip(buffer, itemHtml, context.translate(I18n.ITEM_ONLY_IN_GAME));
             context.setItemsFailed(context.getItemsFailed() + 1);
         }
-        
+
         context.formatText(buffer, page.getText(), search);
     }
-    
+
     private void parseMultiblockPage(Context context, List<String> buffer,
                                      PageMultiblock page, Map<String, Object> search) {
         context.formatTitle(buffer, page.getName(), search);
         
         try {
             // FIXME 修复加载多方块结构图片的功能
-            throw new InternalError("Multiblock image processing not implemented");
+            throw new InternalException("Multiblock image processing not implemented");
             // src = block_loader.get_multi_block_image(context, data)
             // buffer.append(IMAGE_SINGLE.format(src=src, text='Block Visualization'))
             // context.formatCenteredText(buffer, page.getText());
             // context.setBlocksPassed(context.getBlocksPassed() + 1);
-        } catch (InternalError e) {
-            e.warning();// TODO
-            
+        } catch (InternalException e) {
+            log.warn("Multiblock image processing failed");
+            Object multiblock = page.getMultiblock() != null ? page.getMultiblock() : page.getMultiblockId();
+            if (multiblock == null) {
+                log.warn("multiblock is null, page:{}", page);
+            }
+
             // Fallback
             if (page.getMultiblockId() != null) {
                 context.formatWithTooltip(buffer, 
@@ -413,19 +433,37 @@ public class BookParser {
             context.setBlocksFailed(context.getBlocksFailed() + 1);
         }
     }
-    
+
+    private void parseMultiMultiblockPage(Context context, List<String> buffer,
+                                     PageMultiMultiblock page, Map<String, Object> search) {
+        try {
+            // FIXME 修复加载多方块结构图片的功能
+            throw new InternalException("tfc:multimultiblock image processing not implemented");
+            // src = block_loader.get_multi_block_image(context, data)
+            // buffer.append(IMAGE_SINGLE.format(src=src, text='Block Visualization'))
+            // context.formatCenteredText(buffer, page.getText());
+            // context.setBlocksPassed(context.getBlocksPassed() + 1);
+        } catch (InternalException e) {
+            log.warn("tfc:multimultiblock image processing failed:");
+            // Fallback
+            context.formatWithTooltip(buffer, context.translate(I18n.MULTIBLOCK), context.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
+            context.formatText(buffer, page);
+            context.setBlocksFailed(context.getBlocksFailed() + 1);
+        }
+    }
+
     private void parseMiscRecipe(Context context, List<String> buffer,
                                  IPageDoubleRecipe page, Map<String, Object> search, String pageType) {
         try {
             // FIXME misc_recipe.format_misc_recipe(context, buffer, data['recipe'])
             log.debug("Misc recipe processing not implemented for: {}", pageType);
             context.setRecipesPassed(context.getRecipesPassed() + 1);
-        } catch (InternalError e) {
-            e.prefix("misc_recipe '" + pageType + "'").warning(true);
+        } catch (InternalException e) {
+            log.error("Misc recipe processing not implemented for: {}", pageType, e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);
         }
-        
+
         context.formatText(buffer, page.getText(), search);
     }
     
@@ -435,8 +473,8 @@ public class BookParser {
             // FIXME barrel_recipe.format_barrel_recipe(context, buffer, data['recipe'])
             log.debug("Barrel recipe processing not implemented for: {}", pageType);
             context.setRecipesPassed(context.getRecipesPassed() + 1);
-        } catch (InternalError e) {
-            e.prefix("barrel recipe '" + pageType + "'").warning(true);
+        } catch (InternalException e) {
+            log.error("Barrel recipe processing failed: {}", pageType, e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);
         }
@@ -445,7 +483,7 @@ public class BookParser {
     private void parseRockKnappingRecipe(Context context, List<String> buffer,
                                      PageRockKnapping page, Map<String, Object> search) {
         try {
-            String recipeId;
+            String recipeId = page.getRecipes().get(0);
             if (page.getRecipe() != null && !page.getRecipe().isEmpty()) {
                 recipeId = page.getRecipe();
             } else {
@@ -455,7 +493,7 @@ public class BookParser {
             buffer.add(String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipeId));
             context.setRecipesPassed(context.getRecipesPassed() + 1);
         } catch (Exception e) {
-            log.error("Failed to load knapping page: {}", page, e);
+            log.error("Failed to load knapping page: {}", page.getRecipes(), e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);
         }
@@ -482,8 +520,8 @@ public class BookParser {
         try {
             // table_formatter.format_table(context, buffer, data)
             // FIXME log.debug("Table formatting not implemented");
-        } catch (InternalError e) {
-            e.warning(true);
+        } catch (InternalException e) {
+            log.error("Table formatting failed", e);
         }
     }
 

@@ -1,22 +1,29 @@
 package io.github.tfgcn.fieldguide.asset;
 
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import io.github.tfgcn.fieldguide.JsonUtils;
 import io.github.tfgcn.fieldguide.MCMeta;
-import io.github.tfgcn.fieldguide.book.Book;
+import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;
+import io.github.tfgcn.fieldguide.mc.TagElement;
+import io.github.tfgcn.fieldguide.mc.Tags;
+import io.github.tfgcn.fieldguide.patchouli.Book;
 import io.github.tfgcn.fieldguide.Versions;
-import io.github.tfgcn.fieldguide.InternalError;
+import io.github.tfgcn.fieldguide.exception.InternalException;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -71,6 +78,15 @@ public class AssetLoader {
             log.info("Skipping client JAR loading because MCMeta is disabled");
             return;
         }
+        Path forgeJar = Paths.get(MCMeta.CACHE, MCMeta.getForgeJarName(Versions.MC_VERSION));
+        if (Files.exists(forgeJar)) {
+            try {
+                sources.add(new JarAssetSource(forgeJar));
+            } catch (IOException e) {
+                log.error("Error loading Forge JAR: {}", forgeJar, e);
+            }
+        }
+
         Path clientJar = Paths.get(MCMeta.CACHE, MCMeta.getClientJarName(Versions.MC_VERSION));
         if (Files.exists(clientJar)) {
             try {
@@ -86,6 +102,10 @@ public class AssetLoader {
             assets.addAll(source.listAssets(resourcePath));
         }
         return assets;
+    }
+
+    public Asset getAsset(AssetKey assetKey) {
+        return getAsset(assetKey.getResourcePath());
     }
 
     public Asset getAsset(String resourcePath) {
@@ -112,6 +132,28 @@ public class AssetLoader {
             }
         }
         return null;
+    }
+
+    public List<Asset> getAssets(AssetKey assetKey) {
+        return getAssets(assetKey.getResourcePath());
+    }
+
+    public List<Asset> getAssets(String resourcePath) {
+        List<Asset> assets = new ArrayList<>();
+        // 逆序加载，然后者有机会被覆盖
+        for (int i = sources.size() - 1; i >= 0; i--) {
+            AssetSource source = sources.get(i);
+            if (source.exists(resourcePath)) {
+                try {
+                    InputStream stream = source.getInputStream(resourcePath);
+                    resourceCache.put(resourcePath, source);
+                    assets.add( new Asset(resourcePath, stream, source) );
+                } catch (IOException e) {
+                    log.error("Error reading resource: {} from {}", resourcePath, source, e);
+                }
+            }
+        }
+        return assets;
     }
 
     public Map<String, List<Book>> findAllPatchouliBooks() {
@@ -162,6 +204,38 @@ public class AssetLoader {
         }
     }
 
+    public Map<String, String> loadLang(String namespace, String lang) {
+        Map<String, String> map = new HashMap<>();
+        AssetKey assetKey = new AssetKey(namespace + ":" + lang, "lang", "assets", ".json");
+        List<Asset> assets = getAssets(assetKey);
+        for (Asset asset : assets) {
+            try (JsonReader reader = new JsonReader(new InputStreamReader(asset.getInputStream(), StandardCharsets.UTF_8))) {
+                Map<String, String> data = new HashMap<>();
+
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    String key = reader.nextName();
+                    String value = reader.nextString();
+
+                    if (data.containsKey(key)) {
+                        log.warn("Duplicate lang key '{}' in {}: '{}' -> '{}'",
+                                key, asset.getPath(), data.get(key), value);
+                    }
+
+                    data.put(key, value);
+                }
+                reader.endObject();
+
+                map.putAll(data);
+                log.debug("Loaded {} entries from {}", data.size(), asset.getPath());
+
+            } catch (Exception e) {
+                log.error("Error loading lang: {}", assetKey, e);
+            }
+        }
+        return map;
+    }
+
     public BufferedImage loadTexture(String path) {
         Asset asset;
         if (path.endsWith(".png")) {
@@ -187,33 +261,12 @@ public class AssetLoader {
     }
 
     public Asset loadResource(String resourceLocation, String resourceType, String resourceRoot, String resourceSuffix) {
-        String domain;
-        String res;
+        AssetKey assetKey = new AssetKey(resourceLocation, resourceType, resourceRoot, resourceSuffix);
 
-        int index = resourceLocation.indexOf(':');
-        if (index <= 0) {
-            domain = "minecraft";// 默认为minecraft命名空间
-            res = resourceLocation;
-            log.info("Assuming resource resourceLocation: {}", resourceLocation);
-        } else {
-            domain = resourceLocation.substring(0, index);
-            res = resourceLocation.substring(index + 1);
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(resourceRoot).append("/").append(domain);
-        if (resourceType != null && !resourceType.isEmpty()) {
-            sb.append("/").append(resourceType);
-        }
-        sb.append("/").append(res);
-        if (!res.endsWith(resourceSuffix)) {
-            sb.append(resourceSuffix);
-        }
-
-        String resourcePath = sb.toString();
-        Asset asset = getAsset(resourcePath);
+        Asset asset = getAsset(assetKey.getResourcePath());
         if (asset == null) {
-            log.error("Resource not found: {}, in {}", resourceLocation, resourcePath);
+            log.error("Resource not found: {}, in {}", resourceLocation, assetKey);
+            throw new AssetNotFoundException("Resource not found: " + resourceLocation + " in " + assetKey.getResourcePath());
         }
         return asset;
     }
@@ -233,7 +286,7 @@ public class AssetLoader {
         Asset asset = loadResource(recipeId, "recipes", "data", ".json");
         if (asset == null) {
             log.error("Recipe not found: {}", recipeId);
-            throw new InternalError("Recipe not found: " + recipeId);
+            throw new InternalException("Recipe not found: " + recipeId);
         }
 
         Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
@@ -241,7 +294,7 @@ public class AssetLoader {
             return JsonUtils.readFile(asset.getInputStream(), mapType);
         } catch (IOException e) {
             log.error("Error loading recipe: {}", recipeId, e);
-            throw new InternalError("Error loading recipe: " + recipeId);
+            throw new InternalException("Error loading recipe: " + recipeId);
         }
     }
 
@@ -249,13 +302,114 @@ public class AssetLoader {
         Asset asset = loadResource(path, "", "assets", ".png");
         if (asset == null) {
             log.error("Texture not found: {}", path);
-            throw new InternalError("Texture not found: " + path);
+            throw new InternalException("Texture not found: " + path);
         }
         try {
             return ImageIO.read(asset.getInputStream());
         } catch (IOException e) {
             log.error("Error loading texture: {}", path, e);
-            throw new InternalError("Error loading texture: " + path);
+            throw new InternalException("Error loading texture: " + path);
         }
+    }
+
+    //////////// tags
+
+    /**
+     * 加载流体标签
+     */
+    public List<String> loadFluidTag(String identifier) {
+        return sortTagElements(identifier, this::loadFluidTagData);
+    }
+
+    /**
+     * 加载物品标签
+     */
+    public List<String> loadItemTag(String identifier) {
+        return sortTagElements(identifier, this::loadItemTagData);
+    }
+
+    /**
+     * 加载方块标签
+     */
+    public List<String> loadBlockTag(String identifier) {
+        return sortTagElements(identifier, this::loadBlockTagData);
+    }
+
+    /**
+     * 排序并去重标签元素
+     */
+    private List<String> sortTagElements(String identifier,
+                                         Function<String, List<Tags>> loadFunc) {
+        Set<String> tagSet = new LinkedHashSet<>(); // 保持插入顺序但去重
+        loadTagElementsRecursive(identifier, loadFunc, tagSet, new HashSet<>());
+        return new ArrayList<>(tagSet);
+    }
+
+    /**
+     * 递归加载标签元素
+     */
+    private void loadTagElementsRecursive(String identifier,
+                                          Function<String, List<Tags>> loadFunc,
+                                          Set<String> result,
+                                          Set<String> visited) {
+        // 防止循环引用
+        if (visited.contains(identifier)) {
+            return;
+        }
+        visited.add(identifier);
+
+        try {
+            List<Tags> tagsList = loadFunc.apply(identifier);
+
+            for (Tags json : tagsList) {
+                List<TagElement> values = json.getValues();
+                for (TagElement element : values) {
+                    String id = element.getId();
+                    if (id.startsWith("#")) {
+                        String nestedTag = id.substring(1);
+                        loadTagElementsRecursive(nestedTag, loadFunc, result, visited);
+                    } else {
+                        result.add(id);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to load tag: {}", identifier, e);
+        }
+    }
+
+    /// `data/<namespace>/tags/<数据包路径>` for datapack
+    /// `data/<namespace>/tags/blocks` for blocks
+    /// `data/<namespace>/tags/entity_types` for entity_types
+    /// `data/<namespace>/tags/fluids` for fluids
+    /// `data/<namespace>/tags/items` for items
+    public List<Tags> loadBlockTagData(String tag) {
+        AssetKey assetKey = new AssetKey(tag, "tags/blocks", "data", ".json");
+        return parseTagAsset(assetKey);
+    }
+
+    public List<Tags> loadItemTagData(String tag) {
+        AssetKey assetKey = new AssetKey(tag, "tags/items", "data", ".json");
+        return parseTagAsset(assetKey);
+    }
+
+    public List<Tags> loadFluidTagData(String tag)  {
+        AssetKey assetKey = new AssetKey(tag, "tags/fluids", "data", ".json");
+        return parseTagAsset(assetKey);
+    }
+
+    private List<Tags> parseTagAsset(AssetKey assetKey) {
+        List<Tags> tagsList = new ArrayList<>();
+        List<Asset> assets = getAssets(assetKey);
+        for (Asset asset : assets) {
+            try {
+                Tags tags = JsonUtils.readFile(asset.getInputStream(), Tags.class);
+                log.info("Load tag, path: {}, source: {}", asset.getPath(), asset.getSource());
+                tagsList.add(tags);
+            } catch (Exception e) {
+                log.error("Failed to parse tag asset: {}", asset.getPath(), e);
+            }
+        }
+        return tagsList;
     }
 }

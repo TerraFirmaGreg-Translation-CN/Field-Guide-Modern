@@ -3,8 +3,8 @@ package io.github.tfgcn.fieldguide;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.ToNumberPolicy;
-import io.github.tfgcn.fieldguide.book.BookPage;
-import io.github.tfgcn.fieldguide.book.adapter.LexiconPageAdapter;
+import io.github.tfgcn.fieldguide.patchouli.BookPage;
+import io.github.tfgcn.fieldguide.gsonadapter.LexiconPageAdapter;
 
 import java.io.*;
 import java.lang.reflect.Type;

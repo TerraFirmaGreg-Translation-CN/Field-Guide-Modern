@@ -4,10 +4,11 @@ import com.google.gson.reflect.TypeToken;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import io.github.tfgcn.fieldguide.asset.Asset;
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
-import io.github.tfgcn.fieldguide.book.BookCategory;
-import io.github.tfgcn.fieldguide.book.BookEntry;
-import io.github.tfgcn.fieldguide.book.page.IPageDoubleRecipe;
-import io.github.tfgcn.fieldguide.book.page.IPageWithText;
+import io.github.tfgcn.fieldguide.exception.InternalException;
+import io.github.tfgcn.fieldguide.patchouli.BookCategory;
+import io.github.tfgcn.fieldguide.patchouli.BookEntry;
+import io.github.tfgcn.fieldguide.patchouli.page.IPageDoubleRecipe;
+import io.github.tfgcn.fieldguide.patchouli.page.IPageWithText;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.mc.BlockModel;
 import io.github.tfgcn.fieldguide.renderer.TextFormatter;
@@ -38,7 +39,9 @@ import static io.github.tfgcn.fieldguide.renderer.TextureRenderer.adjustBrightne
 public class Context {
     // 静态缓存，所有 Context 实例共享
     private static final Map<String, String> IMAGE_CACHE = new HashMap<>();
-    
+
+    String[] NAMESPACES = {"tfc", "minecraft", "forge", "tfg", "beneath", "afc", "firmalife", "create", "gtceu", "createdeco", "rnr", "ae2", "waterflasks", "sns", "firmaciv", "alekiships", "greate", "sophisticatedbackpacks", "tfcagedalcohol", "tfcbetterbf", "tfcchannelcasting", "tfchotornot"};
+
     // 实例字段
     private final AssetLoader assetLoader;
     private final HtmlRenderer htmlRenderer;
@@ -58,8 +61,11 @@ public class Context {
     private Map<String, String> categoryOwners = new HashMap<>();
     private Map<String, String> addonCategories = new HashMap<>();
 
-    // 翻译和键绑定
+    // language
+    private Map<String, String> langFallbackKeys = new HashMap<>();// en_us
+    public Set<String> missingKeys = new TreeSet<>();// FIXME remove later
     private Map<String, String> langKeys = new HashMap<>();
+
     private Map<String, String> keybindings = new HashMap<>();
 
     // ID 计数器
@@ -76,7 +82,9 @@ public class Context {
     
     // 搜索树
     private List<Map<String, Object>> searchTree = new ArrayList<>();
-    
+
+    private Map<String, ItemImageResult> itemImageCache = new HashMap<>();
+
     public Context(AssetLoader assetLoader, String outputRootDir, String rootDir, boolean debugI18n) throws IOException {
         this.assetLoader = assetLoader;
         this.outputRootDir = outputRootDir;
@@ -85,6 +93,9 @@ public class Context {
         this.debugI18n = debugI18n;
 
         this.htmlRenderer = new HtmlRenderer("assets/templates", outputRootDir);
+
+        // init en_us lang
+        this.langFallbackKeys.putAll(loadLang("en_us"));
 
         // 初始化计数器
         lastUid.put("content", 0);
@@ -127,14 +138,31 @@ public class Context {
         return assetLoader.listAssets(resourcePath);
     }
 
+    private Map<String, String> loadLang(String lang) {
+        Map<String, String> langMap = new HashMap<>();
+        // load mod lang
+        for (String namespace : NAMESPACES) {
+            Map<String, String> map = assetLoader.loadLang(namespace, lang);
+            log.info("Loaded {} Lang: {}", namespace, map.size());
+            langMap.putAll(map);
+        }
+        return langMap;
+    }
+
     /**
      * 加载翻译文件
      */
     private void loadTranslations(String lang) {
-        // 先加载 en_us
+        langKeys.putAll(langFallbackKeys);
+
         loadLocalLang("en_us");
-        // 再加载当前语言
-        loadLocalLang(lang);
+
+        if (!"en_us".equals(lang)) {
+            Map<String, String> translations = loadLang(lang);
+            langKeys.putAll(translations);
+
+            loadLocalLang(lang);
+        }
     }
     
     /**
@@ -254,11 +282,11 @@ public class Context {
      * 带图标的标题格式化
      */
     public void formatTitleWithIcon(List<String> buffer, String iconSrc, String iconName, 
-                                   Map<String, Object> data, String key, String tag, 
+                                   String inTitle, String tag,
                                    String tooltip, Map<String, Object> search) {
         String title = iconName;
-        if (data.containsKey(key)) {
-            title = TextFormatter.stripVanillaFormatting((String) data.get(key));
+        if (inTitle != null && !inTitle.isEmpty()) {
+            title = TextFormatter.stripVanillaFormatting(inTitle);
             if (iconName == null || iconName.isEmpty()) {
                 iconName = title;
             }
@@ -285,8 +313,8 @@ public class Context {
         buffer.add(html);
     }
     
-    public void formatTitleWithIcon(List<String> buffer, String iconSrc, String iconName, Map<String, Object> data) {
-        formatTitleWithIcon(buffer, iconSrc, iconName, data, "title", "h5", null, null);
+    public void formatTitleWithIcon(List<String> buffer, String iconSrc, String iconName, String title) {
+        formatTitleWithIcon(buffer, iconSrc, iconName, title, "h5", null, null);
     }
     
     /**
@@ -323,9 +351,7 @@ public class Context {
     public void fromKnappingRecipe(List<String> buffer, IPageDoubleRecipe page, String recipeId) {
 
     }
-    /**
-     * 翻译方法
-     */
+
     public String translate(String... keys) {
         if (debugI18n) {
             return "{" + keys[0] + "}";
@@ -337,8 +363,10 @@ public class Context {
             }
         }
 
-        // FIXME 加载mod的语言文件
-        log.warn("Missing Translation Keys {}", Arrays.toString(keys));
+        if (!missingKeys.contains(keys[0])) {
+            missingKeys.add(keys[0]);// FIXME remove later
+            log.warn("Missing Translation Keys {}", Arrays.toString(keys));
+        }
         return "{" + keys[0] + "}";
     }
     
@@ -382,7 +410,7 @@ public class Context {
             IMAGE_CACHE.put(image, ref);
             return ref;
         } catch (Exception e) {
-            throw new InternalError("Failed to convert image: " + image + " - " + e.getMessage());
+            throw new InternalException("Failed to convert image: " + image + " - " + e.getMessage());
         }
     }
     
@@ -409,7 +437,7 @@ public class Context {
             IMAGE_CACHE.put(image, ref);
             return ref;
         } catch (Exception e) {
-            throw new InternalError("Failed to convert icon: " + image + " - " + e.getMessage());
+            throw new InternalException("Failed to convert icon: " + image + " - " + e.getMessage());
         }
     }
     
@@ -533,12 +561,19 @@ public class Context {
         }
 
         // TODO get from cache
+        if (itemImageCache.containsKey(item)) {
+            ItemImageResult result = itemImageCache.get(item);
+            if (result.getKey() != null) {
+                //Must re-translate the item each time, as the same image will be asked for in different localizations
+                result.setName(translate("item." + result.getKey(), "block." + result.getKey()));
+            }
+            return result;
+        }
 
         if (item.indexOf('{') > 0) {
             log.warn("Item with NBT: {}", item);
-            throw new InternalError("Item with NBT: " + item);
+            throw new InternalException("Item with NBT: " + item);
         }
-
 
         String name = null;
         String key = null;// translation key, if this needs to be re-translated
@@ -560,7 +595,18 @@ public class Context {
 
         try {
             // Create image for each item.
-            List<BufferedImage> images = items.stream().map(this::createItemImage).toList();
+            List<BufferedImage> images = new ArrayList<>();
+            for (String it : items) {
+                try {
+                    images.add(createItemImage(it));
+                } catch (Exception e) {
+                    log.warn("Failed to create item image for {}", it, e);
+                }
+            }
+
+            if (images.isEmpty()) {
+                throw new InternalException("Failed to create item image for: " + item);
+            }
 
             String path;
             if (images.size() == 1) {
@@ -588,28 +634,29 @@ public class Context {
             }
 
             ItemImageResult result = new ItemImageResult(path, name, key);
-            // TODO CACHE item -> (path, name, key)
+            itemImageCache.put(item, result);
             return result;
         } catch (Exception e) {
             log.warn("Failed to create item image: {}", item, e);
             if (placeholder) {
-                // # Fallback to using the placeholder image
-                return new ItemImageResult("_images/item_placeholder.png", name, null);
+                // Fallback to using the placeholder image
+                ItemImageResult fallback = new ItemImageResult("_images/item_placeholder.png", name, null);
+                itemImageCache.put(item, fallback);
             }
-            throw new InternalError("Failed to create item image: " + item);
+            throw new InternalException("Failed to create item image: " + item);
         }
     }
 
     public List<String> loadItemTag(String tag) {
-        // TODO
-        return List.of();
+        return assetLoader.loadItemTag(tag);
     }
 
     BufferedImage createItemImage(String itemId) {
         BlockModel model = loadItemModel(itemId);
         if (model.getParent() == null) {
-            log.warn("Item model no parent : {}", itemId);
-            return null;
+            log.warn("Item model no parent: {}, model: {}", itemId, model);
+            // TODO 支持无parent的模型
+            throw new InternalException("Item model no parent: " + itemId);
         }
         // TODO
 
@@ -625,6 +672,9 @@ public class Context {
         }
 
         String parent = model.getParent();
+        if (parent.indexOf(':') < 0) {
+            parent = "minecraft:" + parent;
+        }
         // FIXME 使用更通用的方式来判断模型是 item 还是 model
         // FIXME 甚至干脆修改渲染方法，实现真正的继承层次 3D 渲染。
         if ("minecraft:item/generated".equals(parent) ||
@@ -648,29 +698,25 @@ public class Context {
                 return img;
             } catch (Exception e) {
                 log.error("Failed load model {} @ {}, model: {}", parent, itemId, model, e);
-                throw new InternalError("Failed load model " + parent + " @ " + itemId);
+                throw new InternalException("Failed load model " + parent + " @ " + itemId);
             }
         } else {
             log.error("Unknown Parent {} @ {}, model: {}", parent, itemId, model);
-            throw new InternalError("Unknown Parent " + parent + " @ " + itemId);
+            throw new InternalException("Unknown Parent " + parent + " @ " + itemId);
         }
     }
 
     private BlockModel loadItemModel(String itemId) {
         Asset asset = assetLoader.loadResource(itemId, "models/item", "assets", ".json");
-
-        if (asset == null) {
-            throw new InternalError("Item model not found: " + itemId);
-        }
         try {
             return JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
         } catch (Exception e) {
             log.warn("Failed to load item model: {}", itemId, e);
-            throw new InternalError("Failed to load item model: " + itemId);
+            throw new InternalException("Failed to load item model: " + itemId);
         }
     }
 
-    /// ///////////// block_loder
+    /// ///////////// block_loader
     ///
 
     private static final Map<String, String> CACHE = new HashMap<>();
@@ -951,7 +997,6 @@ public class Context {
         String parent = model.getParent();
         if (parent.indexOf(':') < 0) {
             parent = "minecraft:" + parent;
-            log.info("add missing domain:{}", parent);
         }
         Map<String, String> textures = model.getTextures();
 

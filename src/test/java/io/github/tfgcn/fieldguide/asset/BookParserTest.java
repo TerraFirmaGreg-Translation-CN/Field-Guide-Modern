@@ -32,5 +32,10 @@ public class BookParserTest {
 
         BookParser bookParser = new BookParser();
         bookParser.processAllLanguages(context);
+
+        System.out.println("Missing keys: " + context.missingKeys.size());
+        for (String key : context.missingKeys) {
+            System.out.println(key);
+        }
     }
 }
