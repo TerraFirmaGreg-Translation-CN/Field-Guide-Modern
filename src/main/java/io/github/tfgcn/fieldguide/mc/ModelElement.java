@@ -1,5 +1,6 @@
 package io.github.tfgcn.fieldguide.mc;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 import java.util.Map;
@@ -10,5 +11,7 @@ public class ModelElement {
     private double[] to;
     private ElementRotation rotation;
     private Map<String, ElementFace> faces;
-    private Boolean shade;
+    private Boolean shade = true;
+    @SerializedName("light_emission")
+    private Integer lightEmission;// [0, 15]
 }

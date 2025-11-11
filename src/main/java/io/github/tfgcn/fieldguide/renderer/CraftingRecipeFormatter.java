@@ -3,6 +3,8 @@ package io.github.tfgcn.fieldguide.renderer;
 import io.github.tfgcn.fieldguide.Context;
 import io.github.tfgcn.fieldguide.ProjectUtil;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
+import io.github.tfgcn.fieldguide.asset.ItemStackResult;
+import io.github.tfgcn.fieldguide.exception.InternalException;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ public class CraftingRecipeFormatter {
      * 格式化合成配方
      */
     public static void formatCraftingRecipe(Context context, List<String> buffer, String identifier) {
-        Map<String, Object> recipe = context.getAssetLoader().loadRecipe(identifier);
+        Map<String, Object> recipe = context.getLoader().loadRecipe(identifier);
         formatCraftingRecipeFromData(context, buffer, identifier, recipe);
     }
     
@@ -30,38 +32,50 @@ public class CraftingRecipeFormatter {
                 recipe = parseShapedRecipe(context, data);
                 break;
                 
-            case "minecraft:crafting_shapeless":
+            case "minecraft:crafting_shapeless": {
                 recipe = parseShapelessRecipe(context, data);
                 break;
-                
+            }
+            case "waterflasks:heal_flask": {
+                Map<String, Object> innerRecipe = (Map<String, Object>) data.get("recipe");
+                String type = (String) innerRecipe.get("type");
+                if ("minecraft:crafting_shaped".equals(type)) {
+                    recipe = parseShapedRecipe(context, innerRecipe);
+                } else if ("minecraft:crafting_shapless".equals(type)) {
+                    recipe = parseShapelessRecipe(context, innerRecipe);
+                } else {
+                    throw new InternalException("Unsupported recipe: " + type + " of " + identifier);
+                }
+                break;
+            }
             case "tfc:damage_inputs_shaped_crafting":
             case "tfc:damage_inputs_shapeless_crafting":
             case "tfc:extra_products_shapeless_crafting":
-            case "tfc:no_remainder_shapeless_crafting":
+            case "tfc:no_remainder_shapeless_crafting": {
                 Map<String, Object> innerRecipe = (Map<String, Object>) data.get("recipe");
                 formatCraftingRecipeFromData(context, buffer, identifier, innerRecipe);
                 return;
-                
-            case "tfc:advanced_shaped_crafting":
+            }
+            case "tfc:advanced_shaped_crafting": {
                 data.put("type", "minecraft:crafting_shaped");
                 Object result = data.get("result");
                 Object stack = ProjectUtil.anyOf(result, "stack", "id");
                 ProjectUtil.require(stack != null,
-                    "Advanced shaped crafting with complex modifiers: '" + data.get("result") + "'");
+                        "Advanced shaped crafting with complex modifiers: '" + data.get("result") + "'");
                 data.put("result", stack); // 丢弃修饰符
                 formatCraftingRecipeFromData(context, buffer, identifier, data);
                 return;
-                
-            case "tfc:advanced_shapeless_crafting":
+            }
+            case "tfc:advanced_shapeless_crafting": {
                 data.put("type", "minecraft:crafting_shapeless");
                 Object result2 = data.get("result");
                 Object stack2 = ProjectUtil.anyOf(result2, "stack", "id");
                 ProjectUtil.require(stack2 != null,
-                    "Advanced shapeless crafting with complex modifiers: '" + data.get("result") + "'");
+                        "Advanced shapeless crafting with complex modifiers: '" + data.get("result") + "'");
                 data.put("result", stack2); // 丢弃修饰符
                 formatCraftingRecipeFromData(context, buffer, identifier, data);
                 return;
-                
+            }
             default:
                 throw new RuntimeException("Unknown crafting recipe type: " + recipeType + " for recipe " + identifier);
         }
@@ -283,21 +297,6 @@ class SizedIngredientResult {
 
     public SizedIngredientResult(ItemImageResult ingredient, int count) {
         this.ingredient = ingredient;
-        this.count = count;
-    }
-}
-
-/**
- * 物品堆结果类
- */
-class ItemStackResult {
-    public final String path;
-    public final String name;
-    public final int count;
-    
-    public ItemStackResult(String path, String name, int count) {
-        this.path = path;
-        this.name = name;
         this.count = count;
     }
 }

@@ -504,16 +504,16 @@ public class HtmlRenderer {
         );
     }
 
-    private static String titleWithOptionalIcon(String name, String icon, String iconName) {
-        if (icon != null && !icon.isEmpty()) {
+    private static String titleWithOptionalIcon(String text, String iconSrc, String iconName) {
+        if (iconSrc != null && !iconSrc.isEmpty()) {
             return String.format(
                     """
-                    <img src="%s" alt="%s" class="me-2" style="height: 1.5em;">%s
+                    <img class="icon-title me-3" src="%s" alt="%s" title="%s" ><span>%s</span>
                     """,
-                    icon, iconName != null ? iconName : name, name
+                    iconSrc, text, iconName != null ? iconName : text, text
             );
         } else {
-            return name;
+            return text;
         }
     }
 }

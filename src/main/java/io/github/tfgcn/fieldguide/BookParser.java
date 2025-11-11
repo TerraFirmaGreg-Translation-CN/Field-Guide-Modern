@@ -415,7 +415,7 @@ public class BookParser {
             // context.formatCenteredText(buffer, page.getText());
             // context.setBlocksPassed(context.getBlocksPassed() + 1);
         } catch (InternalException e) {
-            log.warn("Multiblock image processing failed");
+            // TODO 日志太多暂时移除 log.error("Multiblock image processing failed", e);
             Object multiblock = page.getMultiblock() != null ? page.getMultiblock() : page.getMultiblockId();
             if (multiblock == null) {
                 log.warn("multiblock is null, page:{}", page);
@@ -444,7 +444,7 @@ public class BookParser {
             // context.formatCenteredText(buffer, page.getText());
             // context.setBlocksPassed(context.getBlocksPassed() + 1);
         } catch (InternalException e) {
-            log.warn("tfc:multimultiblock image processing failed:");
+            // TODO 日志太多暂时移除 log.error("tfc:multimultiblock image processing failed", e);
             // Fallback
             context.formatWithTooltip(buffer, context.translate(I18n.MULTIBLOCK), context.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
             context.formatText(buffer, page);
@@ -455,10 +455,9 @@ public class BookParser {
     private void parseMiscRecipe(Context context, List<String> buffer,
                                  IPageDoubleRecipe page, Map<String, String> search, String pageType) {
         try {
-            // FIXME misc_recipe.format_misc_recipe(context, buffer, data['recipe'])
-            log.debug("Misc recipe processing not implemented for: {}", pageType);
+            MiscRecipeFormatter.formatMiscRecipe(context, buffer, page.getRecipe());
             context.setRecipesPassed(context.getRecipesPassed() + 1);
-        } catch (InternalException e) {
+        } catch (Exception e) {
             log.error("Misc recipe processing not implemented for: {}", pageType, e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);
@@ -470,10 +469,9 @@ public class BookParser {
     private void parseBarrelRecipe(Context context, List<String> buffer, 
                                  PageBarrel page, Map<String, String> search, String pageType) {
         try {
-            // FIXME barrel_recipe.format_barrel_recipe(context, buffer, data['recipe'])
-            log.debug("Barrel recipe processing not implemented for: {}", pageType);
+            BarrelRecipeFormatter.formatBarrelRecipe(context, buffer, page.getRecipe());
             context.setRecipesPassed(context.getRecipesPassed() + 1);
-        } catch (InternalException e) {
+        } catch (Exception e) {
             log.error("Barrel recipe processing failed: {}", pageType, e);
             context.formatRecipe(buffer, page.getRecipe());
             context.setRecipesFailed(context.getRecipesFailed() + 1);

@@ -43,7 +43,7 @@ public class Context {
     String[] NAMESPACES = {"tfc", "minecraft", "forge", "tfg", "beneath", "afc", "firmalife", "create", "gtceu", "createdeco", "rnr", "ae2", "waterflasks", "sns", "firmaciv", "alekiships", "greate", "sophisticatedbackpacks", "tfcagedalcohol", "tfcbetterbf", "tfcchannelcasting", "tfchotornot"};
 
     // 实例字段
-    private final AssetLoader assetLoader;
+    private final AssetLoader loader;
     private final HtmlRenderer htmlRenderer;
     private final String outputRootDir;// The output directory
     private final String rootDir;// The root directory to fetch static assets from
@@ -85,8 +85,8 @@ public class Context {
 
     private Map<String, ItemImageResult> itemImageCache = new HashMap<>();
 
-    public Context(AssetLoader assetLoader, String outputRootDir, String rootDir, boolean debugI18n) throws IOException {
-        this.assetLoader = assetLoader;
+    public Context(AssetLoader loader, String outputRootDir, String rootDir, boolean debugI18n) throws IOException {
+        this.loader = loader;
         this.outputRootDir = outputRootDir;
         this.outputDir = outputRootDir;
         this.rootDir = rootDir;
@@ -135,14 +135,14 @@ public class Context {
     }
 
     public List<Asset> listAssets(String resourcePath) throws IOException {
-        return assetLoader.listAssets(resourcePath);
+        return loader.listAssets(resourcePath);
     }
 
     private Map<String, String> loadLang(String lang) {
         Map<String, String> langMap = new HashMap<>();
         // load mod lang
         for (String namespace : NAMESPACES) {
-            Map<String, String> map = assetLoader.loadLang(namespace, lang);
+            Map<String, String> map = loader.loadLang(namespace, lang);
             log.info("Loaded {} Lang: {}", namespace, map.size());
             langMap.putAll(map);
         }
@@ -379,7 +379,7 @@ public class Context {
         }
 
         try {
-            Asset asset = assetLoader.loadResource(image, "assets", ".png");
+            Asset asset = loader.loadResource(image, "assets", ".png");
             BufferedImage img = ImageIO.read(asset.getInputStream());
 
             int width = img.getWidth();
@@ -423,7 +423,7 @@ public class Context {
         }
         
         try {
-            BufferedImage img = assetLoader.loadTexture(image);
+            BufferedImage img = loader.loadTexture(image);
 
             int width = img.getWidth();
             int height = img.getHeight();
@@ -605,7 +605,10 @@ public class Context {
             }
 
             if (images.isEmpty()) {
-                throw new InternalException("Failed to create item image for: " + item);
+                log.warn("Failed to create item image for: {}", item);
+                // Fallback to using the placeholder image
+                ItemImageResult fallback = new ItemImageResult("../../_images/placeholder_64.png", name, null);
+                itemImageCache.put(item, fallback);
             }
 
             String path;
@@ -642,17 +645,19 @@ public class Context {
                 // Fallback to using the placeholder image
                 ItemImageResult fallback = new ItemImageResult("../../_images/placeholder_64.png", name, null);
                 itemImageCache.put(item, fallback);
+                return fallback;
             }
             throw new InternalException("Failed to create item image: " + item);
         }
     }
 
     public List<String> loadItemTag(String tag) {
-        return assetLoader.loadItemTag(tag);
+        return loader.loadItemTag(tag);
     }
 
     BufferedImage createItemImage(String itemId) {
-        BlockModel model = loadItemModel(itemId);
+
+        BlockModel model = loader.loadItemModel(itemId);
         if (model.getParent() == null) {
             log.warn("Item model no parent: {}, model: {}", itemId, model);
             // TODO 支持无parent的模型
@@ -665,33 +670,45 @@ public class Context {
             if ("tfc:contained_fluid".equals(loader)) {
                 // Assume it's empty, and use a single layer item
                 String layer = model.getTextures().get("base");
-                return assetLoader.loadTexture(layer);
+                return this.loader.loadTexture(layer);
             } else {
                 log.error("Unknown loader: {} @ {}, model: {}", loader, itemId, model);
             }
         }
 
         String parent = model.getParent();
-        if (parent.indexOf(':') < 0) {
-            parent = "minecraft:" + parent;
-        }
+
         // FIXME 使用更通用的方式来判断模型是 item 还是 model
+        int index = parent.indexOf(':');
+        String namespace;
+        String resId;
+        if (index < 0) {
+            namespace = "minecraft";
+            resId = parent;
+            parent = "minecraft:" + parent;
+        } else {
+            namespace = parent.substring(0, index);
+            resId = parent.substring(index + 1);
+        }
+
+        int typeIndex = resId.indexOf('/');
+        String type;
+        if (typeIndex < 0) {
+            type = "unknown";
+        } else {
+            type = resId.substring(0, typeIndex);
+        }
+
         // FIXME 甚至干脆修改渲染方法，实现真正的继承层次 3D 渲染。
-        if ("minecraft:item/generated".equals(parent) ||
-                "minecraft:item/handheld".equals(parent) ||
-                "minecraft:item/handheld_rod".equals(parent) ||
-                "tfc:item/handheld_flipped".equals(parent) ||
-                "item/generated".equals(parent)
-        ) {
+        if ("item".equals(type)) {
             // single-layer item model
             String layer0 = model.getTextures().get("layer0");
-            return assetLoader.loadTexture(layer0);
-        } else if (parent.startsWith("tfc:block/") || parent.startsWith("minecraft:block/") || parent.startsWith("beneath:block/")) {
+            return loader.loadTexture(layer0);
+        } else if ("block".equals(type)) {
             // Block model
             // TODO remove the try-catch
             try {
-                Asset modelAsset = assetLoader.loadResource(parent, "models", "assets", ".json");
-                BlockModel blockModel = JsonUtils.readFile(modelAsset.getInputStream(), BlockModel.class);
+                BlockModel blockModel = loader.loadModel(parent);
 
                 BufferedImage img = createBlockModelImage(itemId, blockModel);
                 img = resizeImage(img, 64, 64);
@@ -703,16 +720,6 @@ public class Context {
         } else {
             log.error("Unknown Parent {} @ {}, model: {}", parent, itemId, model);
             throw new InternalException("Unknown Parent " + parent + " @ " + itemId);
-        }
-    }
-
-    private BlockModel loadItemModel(String itemId) {
-        Asset asset = assetLoader.loadResource(itemId, "models/item", "assets", ".json");
-        try {
-            return JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
-        } catch (Exception e) {
-            log.warn("Failed to load item model: {}", itemId, e);
-            throw new InternalException("Failed to load item model: " + itemId);
         }
     }
 
@@ -918,7 +925,7 @@ public class Context {
         String block = parsedState.getKey();
         Map<String, String> state = parsedState.getValue();
 
-        Asset asset = assetLoader.loadResource(block, "blockstates", "assets", ".json");
+        Asset asset = loader.loadResource(block, "blockstates", "assets", ".json");
         // FIXME 使用BlockState 来反序列化，但需要处理好variants的变体，有时是list有时是object
         Map<String, Object> stateData = JsonUtils.readFile(asset.getInputStream(), new TypeToken<Map<String, Object>>() {}.getType());
 
@@ -960,8 +967,7 @@ public class Context {
         String modelPath = (String) modelData.get("model");
 
         // load model
-        Asset modelAsset = assetLoader.loadResource(modelPath, "models", "assets", ".json");
-        BlockModel model = JsonUtils.readFile(modelAsset.getInputStream(), BlockModel.class);
+        BlockModel model = loader.loadModel(modelPath);
 
         return createBlockModelImage(block, model);
     }
@@ -1001,37 +1007,37 @@ public class Context {
         Map<String, String> textures = model.getTextures();
 
         switch (parent) {
-            case "minecraft:block/cube_all":
-                BufferedImage textureAll = assetLoader.loadTexture(textures.get("all"));
+            case "minecraft:block/cube_all": {
+                BufferedImage textureAll = loader.loadTexture(textures.get("all"));
                 return createBlockModelProjection(textureAll, textureAll, textureAll, false);
-
-            case "minecraft:block/cube_column":
-                BufferedImage side = assetLoader.loadTexture(textures.get("side"));
-                BufferedImage end = assetLoader.loadTexture(textures.get("end"));
+            }
+            case "minecraft:block/cube_column": {
+                BufferedImage side = loader.loadTexture(textures.get("side"));
+                BufferedImage end = loader.loadTexture(textures.get("end"));
                 return createBlockModelProjection(side, side, end, false);
-
-            case "minecraft:block/cube_column_horizontal":
-                BufferedImage sideH = assetLoader.loadTexture(textures.get("side"));
-                BufferedImage endH = assetLoader.loadTexture(textures.get("end"));
+            }
+            case "minecraft:block/cube_column_horizontal": {
+                BufferedImage sideH = loader.loadTexture(textures.get("side"));
+                BufferedImage endH = loader.loadTexture(textures.get("end"));
                 return createBlockModelProjection(endH, sideH, sideH, true);
-
-            case "minecraft:block/template_farmland":
-                BufferedImage dirt = assetLoader.loadTexture(textures.get("dirt"));
-                BufferedImage top = assetLoader.loadTexture(textures.get("top"));
+            }
+            case "minecraft:block/template_farmland": {
+                BufferedImage dirt = loader.loadTexture(textures.get("dirt"));
+                BufferedImage top = loader.loadTexture(textures.get("top"));
                 return createBlockModelProjection(dirt, dirt, top, false);
-
-            case "minecraft:block/slab":
-                BufferedImage topSlab = assetLoader.loadTexture(textures.get("top"));
-                BufferedImage sideSlab = assetLoader.loadTexture(textures.get("side"));
+            }
+            case "minecraft:block/slab": {
+                BufferedImage topSlab = loader.loadTexture(textures.get("top"));
+                BufferedImage sideSlab = loader.loadTexture(textures.get("side"));
                 return createSlabBlockModelProjection(sideSlab, sideSlab, topSlab);
-
-            case "minecraft:block/crop":
-                BufferedImage crop = assetLoader.loadTexture(textures.get("crop"));
+            }
+            case "minecraft:block/crop": {
+                BufferedImage crop = loader.loadTexture(textures.get("crop"));
                 return createCropModelProjection(crop);
-
-            case "tfc:block/ore":
-                BufferedImage oreAll = assetLoader.loadTexture(textures.get("all"));
-                BufferedImage overlay = assetLoader.loadTexture(textures.get("overlay"));
+            }
+            case "tfc:block/ore": {
+                BufferedImage oreAll = loader.loadTexture(textures.get("all"));
+                BufferedImage overlay = loader.loadTexture(textures.get("overlay"));
                 // 在Java中实现图像叠加
                 BufferedImage combined = new BufferedImage(oreAll.getWidth(), oreAll.getHeight(), BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = combined.createGraphics();
@@ -1039,9 +1045,9 @@ public class Context {
                 g.drawImage(overlay, 0, 0, null);
                 g.dispose();
                 return createBlockModelProjection(combined, combined, combined, false);
-
+            }
             default:
-                log.warn("Block Model: Unknown parent: {} @ {}, model: {}", parent, block);
+                log.warn("Block Model: Unknown parent: {} @ {}", parent, block);
                 throw new RuntimeException("Block Model : Unknown Parent '" + parent + "' : at '" + block + "'");
         }
     }
@@ -1052,8 +1058,7 @@ public class Context {
             top = rotateImage(top, 90);
         }
 
-        BufferedImage result = TextureRenderer.createBlockImage(left, right, top);
-        return result;
+        return TextureRenderer.createBlockImage(left, right, top);
     }
 
     public static BufferedImage createSlabBlockModelProjection(BufferedImage left, BufferedImage right, BufferedImage top) {
@@ -1062,8 +1067,7 @@ public class Context {
         right = cropRetainingPosition(right, 0, 8, 16, 16);
 
         // 合并图像
-        BufferedImage result = TextureRenderer.createBlockImage(left, right, top);
-        return result;
+        return TextureRenderer.createBlockImage(left, right, top);
     }
 
     public static BufferedImage createCropModelProjection(BufferedImage crop) {
@@ -1117,9 +1121,9 @@ public class Context {
         Graphics2D g = result.createGraphics();
 
         AffineTransform transform = new AffineTransform();
-        transform.translate(newWidth / 2, newHeight / 2);
+        transform.translate(newWidth / 2.0, newHeight / 2.0);
         transform.rotate(radians);
-        transform.translate(-image.getWidth() / 2, -image.getHeight() / 2);
+        transform.translate(-image.getWidth() / 2.0, -image.getHeight() / 2.0);
 
         g.setTransform(transform);
         g.drawImage(image, 0, 0, null);

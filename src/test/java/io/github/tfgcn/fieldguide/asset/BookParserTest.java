@@ -17,8 +17,8 @@ public class BookParserTest {
 
     public static void main(String[] args) throws IOException {
         // The TerraFirmaGreg modpack directory
-        String modpackPath = "/Users/yanmaoyuan/HMCL/.minecraft/versions/TerraFirmaGreg-Modern-0.11.7";
-        //String modpackPath = "E:\\HMCL-3.6.12\\.minecraft\\versions\\TerraFirmaGreg-Modern-0.11.7";
+        //String modpackPath = "/Users/yanmaoyuan/HMCL/.minecraft/versions/TerraFirmaGreg-Modern-0.11.7";
+        String modpackPath = "E:\\HMCL-3.6.12\\.minecraft\\versions\\TerraFirmaGreg-Modern-0.11.7";
 
         modpackPath = modpackPath.replace("\\", "/");
 

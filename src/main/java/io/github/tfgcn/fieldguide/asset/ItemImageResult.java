@@ -13,9 +13,4 @@ public class ItemImageResult {
         this.name = name;
         this.key = key;
     }
-
-    @Override
-    public String toString() {
-        return String.format("ItemImage[path=%s, name=%s, key=%s]", path, name, key);
-    }
 }

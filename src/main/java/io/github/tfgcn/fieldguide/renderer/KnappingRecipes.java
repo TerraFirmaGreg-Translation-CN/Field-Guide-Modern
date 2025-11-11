@@ -37,7 +37,7 @@ public class KnappingRecipes {
             return CACHE.get(recipeId);
         }
         
-        Map<String, Object> recipeData = context.getAssetLoader().loadRecipe(recipeId);
+        Map<String, Object> recipeData = context.getLoader().loadRecipe(recipeId);
         BufferedImage img = new BufferedImage(90, 90, BufferedImage.TYPE_INT_ARGB);
         
         // 1.18版本使用'type'字段表示敲击类型
@@ -61,10 +61,10 @@ public class KnappingRecipes {
         BufferedImage hi = null;
         
         if (typeData.low() != null) {
-            low = context.getAssetLoader().loadExplicitTexture(typeData.low());
+            low = context.getLoader().loadExplicitTexture(typeData.low());
         }
         if (typeData.hi() != null) {
-            hi = context.getAssetLoader().loadExplicitTexture(typeData.hi());
+            hi = context.getLoader().loadExplicitTexture(typeData.hi());
         }
         
         // 图案

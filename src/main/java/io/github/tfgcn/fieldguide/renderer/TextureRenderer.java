@@ -11,30 +11,30 @@ public class TextureRenderer {
     
     // 透视变换的目标坐标（优化后的坐标）
     private static final Point[] LEFT_FACE_POINTS = {
-        new Point(48, 184),   // 左下
-        new Point(136, 224),  // 右下  
-        new Point(136, 120),  // 右上
-        new Point(48, 80)     // 左上
+        new Point(16, 231),   // 左下
+        new Point(150, 298),  // 右下
+        new Point(150, 135),  // 右上
+        new Point(16, 68)     // 左上
     };
 
     private static final Point[] RIGHT_FACE_POINTS = {
-        new Point(136, 224),  // 左下
-        new Point(208, 184),  // 右下
-        new Point(208, 80),   // 右上
-        new Point(136, 120)   // 左上
+        new Point(150, 298),  // 左下
+        new Point(283, 231),  // 右下
+        new Point(283, 68),   // 右上
+        new Point(150, 135)   // 左上
     };
 
     private static final Point[] TOP_FACE_POINTS = {
-        new Point(48, 81),    // 左下
-        new Point(136, 121),  // 右下（连接点）
-        new Point(208, 81),   // 右上
-        new Point(120, 41)    // 左上
+        new Point(16, 68),    // 左下
+        new Point(150, 136),  // 右下（连接点）
+        new Point(284, 68),   // 右上
+        new Point(150, 0)    // 左上
     };
 
     public static BufferedImage createBlockImage(BufferedImage leftTexture, 
                                                BufferedImage rightTexture, 
                                                BufferedImage topTexture) {
-        BufferedImage result = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage result = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = result.createGraphics();
         
         // 设置高质量渲染
@@ -42,7 +42,7 @@ public class TextureRenderer {
         
         // 透明背景
         g2d.setComposite(AlphaComposite.Clear);
-        g2d.fillRect(0, 0, 256, 256);
+        g2d.fillRect(0, 0, 300, 300);
         g2d.setComposite(AlphaComposite.SrcOver);
         
         // 使用更高效的亮度调整

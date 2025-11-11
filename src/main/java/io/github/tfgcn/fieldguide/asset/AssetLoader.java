@@ -5,6 +5,7 @@ import com.google.gson.stream.JsonReader;
 import io.github.tfgcn.fieldguide.JsonUtils;
 import io.github.tfgcn.fieldguide.MCMeta;
 import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;
+import io.github.tfgcn.fieldguide.mc.BlockModel;
 import io.github.tfgcn.fieldguide.mc.TagElement;
 import io.github.tfgcn.fieldguide.mc.Tags;
 import io.github.tfgcn.fieldguide.patchouli.Book;
@@ -28,14 +29,19 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class AssetLoader {
+
+    private final Path instanceRoot;
     private final List<AssetSource> sources;
     private final Map<String, AssetSource> resourceCache;
-    private final Path instanceRoot;
+    private final Map<String, BlockModel> modelCache;
+    private final Map<String, List<Tags>> tagsCache;
 
     public AssetLoader(Path instanceRoot) {
         this.instanceRoot = instanceRoot;
         this.sources = new ArrayList<>();
         this.resourceCache = new HashMap<>();
+        this.modelCache = new TreeMap<>();
+        this.tagsCache = new TreeMap<>();
         initializeSources();
     }
 
@@ -271,7 +277,7 @@ public class AssetLoader {
         return asset;
     }
 
-    public void loadModel(String path) {
+    public void loadModelByType(String path) {
 
         // Block States
         // assets/{namespace}/blockstates/{res}.json
@@ -281,7 +287,52 @@ public class AssetLoader {
         // assets/{namespace}/models/item/{res}.json
     }
 
+    public BlockModel loadModel(String modelId) {
+        String path;
+        if (modelId.indexOf(':') < 0) {
+            path = "minecraft:" + modelId;
+        } else {
+            path = modelId;
+        }
+        if (modelCache.containsKey(path)) {
+            return modelCache.get(path);
+        }
+
+        Asset asset = loadResource(path, "models", "assets", ".json");
+        try {
+            BlockModel model = JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+
+            String parent = model.getParent();
+            if (parent != null && !parent.isEmpty()) {
+                log.info("model parent: {}", parent);
+                BlockModel parentModel = loadModel(parent);
+                model.setParentModel(parentModel);
+            } else {
+                log.info("no parent for: {}", path);
+            }
+
+            modelCache.put(path, model);
+            return model;
+        } catch (Exception e) {
+            throw new InternalException("");
+        }
+    }
+
+    public BlockModel loadItemModel(String itemId) {
+        Asset asset = loadResource(itemId, "models/item", "assets", ".json");
+        try {
+            return JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+        } catch (Exception e) {
+            log.warn("Failed to load item model: {}", itemId, e);
+            throw new InternalException("Failed to load item model: " + itemId);
+        }
+    }
+
+    Map<String, Map<String, Object>> recipeCache = new TreeMap<>();
     public Map<String, Object> loadRecipe(String recipeId) {
+        if (recipeCache.containsKey(recipeId)) {
+            return recipeCache.get(recipeId);
+        }
         Asset asset = loadResource(recipeId, "recipes", "data", ".json");
         if (asset == null) {
             log.error("Recipe not found: {}", recipeId);
@@ -290,7 +341,9 @@ public class AssetLoader {
 
         Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
         try {
-            return JsonUtils.readFile(asset.getInputStream(), mapType);
+            Map<String, Object> data = JsonUtils.readFile(asset.getInputStream(), mapType);
+            recipeCache.put(recipeId, data);
+            return data;
         } catch (IOException e) {
             log.error("Error loading recipe: {}", recipeId, e);
             throw new InternalException("Error loading recipe: " + recipeId);
@@ -398,6 +451,9 @@ public class AssetLoader {
     }
 
     private List<Tags> parseTagAsset(AssetKey assetKey) {
+        if (tagsCache.containsKey(assetKey.getId())) {
+            return tagsCache.get(assetKey.getId());
+        }
         List<Tags> tagsList = new ArrayList<>();
         List<Asset> assets = getAssets(assetKey);
         for (Asset asset : assets) {
@@ -409,6 +465,8 @@ public class AssetLoader {
                 log.error("Failed to parse tag asset: {}", asset.getPath(), e);
             }
         }
+
+        tagsCache.put(assetKey.getId(), tagsList);
         return tagsList;
     }
 }

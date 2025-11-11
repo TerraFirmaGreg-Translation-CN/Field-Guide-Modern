@@ -4,11 +4,11 @@ import lombok.Data;
 
 @Data
 public class ElementFace {
-    private String texture;
-    private double[] uv;
-    private Integer rotation;
+    private String texture;// #id
+    private double[] uv;// u1,v1,u2,v2
+    private Integer rotation = 0;// 0,90,180,270
+    private Integer tintIndex = -1;
     private String cullface;
-    private Integer tintIndex;
 
     public double[] getDefaultUV(String faceName, ModelElement element) {
         if (element.getFrom() == null || element.getTo() == null) {
