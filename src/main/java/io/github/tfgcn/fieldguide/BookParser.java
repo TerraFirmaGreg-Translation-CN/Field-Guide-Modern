@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.github.tfgcn.fieldguide.renderer.ImageTemplates.IMAGE_KNAPPING;
+import static io.github.tfgcn.fieldguide.renderer.ImageTemplates.IMAGE_SINGLE;
 
 @Slf4j
 public class BookParser {
@@ -222,7 +222,7 @@ public class BookParser {
 
                 if (processedImages.size() == 1) {
                     Map.Entry<String, String> imageEntry = processedImages.get(0);
-                    buffer.add(String.format(ImageTemplates.IMAGE_SINGLE,
+                    buffer.add(String.format(IMAGE_SINGLE,
                             imageEntry.getValue(), imageEntry.getKey()));
                 } else if (!processedImages.isEmpty()) {
                     String uid = context.nextId();
@@ -408,14 +408,12 @@ public class BookParser {
         context.formatTitle(buffer, page.getName(), search);
         
         try {
-            // FIXME 修复加载多方块结构图片的功能
-            throw new InternalException("Multiblock image processing not implemented");
-            // src = block_loader.get_multi_block_image(context, data)
-            // buffer.append(IMAGE_SINGLE.format(src=src, text='Block Visualization'))
-            // context.formatCenteredText(buffer, page.getText());
-            // context.setBlocksPassed(context.getBlocksPassed() + 1);
-        } catch (InternalException e) {
-            // TODO 日志太多暂时移除 log.error("Multiblock image processing failed", e);
+            String src = context.getMultiBlockImage(page);
+            buffer.add(String.format(IMAGE_SINGLE, src, "Block Visualization"));
+            context.formatCenteredText(buffer, page.getText());
+            context.setBlocksPassed(context.getBlocksPassed() + 1);
+        } catch (Exception e) {
+            log.error("Multiblock image processing failed", e);
             Object multiblock = page.getMultiblock() != null ? page.getMultiblock() : page.getMultiblockId();
             if (multiblock == null) {
                 log.warn("multiblock is null, page:{}", page);
@@ -429,7 +427,7 @@ public class BookParser {
             } else {
                 context.formatWithTooltip(buffer, context.translate(I18n.MULTIBLOCK), context.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
             }
-            context.formatText(buffer, page);
+            context.formatCenteredText(buffer, page.getText());
             context.setBlocksFailed(context.getBlocksFailed() + 1);
         }
     }
@@ -437,17 +435,15 @@ public class BookParser {
     private void parseMultiMultiblockPage(Context context, List<String> buffer,
                                      PageMultiMultiblock page, Map<String, String> search) {
         try {
-            // FIXME 修复加载多方块结构图片的功能
-            throw new InternalException("tfc:multimultiblock image processing not implemented");
-            // src = block_loader.get_multi_block_image(context, data)
-            // buffer.append(IMAGE_SINGLE.format(src=src, text='Block Visualization'))
-            // context.formatCenteredText(buffer, page.getText());
-            // context.setBlocksPassed(context.getBlocksPassed() + 1);
-        } catch (InternalException e) {
+            String src = context.getMultiBlockImage(page);
+            buffer.add(String.format(IMAGE_SINGLE, src, "Block Visualization"));
+            context.formatCenteredText(buffer, page.getText());
+            context.setBlocksPassed(context.getBlocksPassed() + 1);
+        } catch (Exception e) {
             // TODO 日志太多暂时移除 log.error("tfc:multimultiblock image processing failed", e);
             // Fallback
             context.formatWithTooltip(buffer, context.translate(I18n.MULTIBLOCK), context.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
-            context.formatText(buffer, page);
+            context.formatCenteredText(buffer, page.getText());
             context.setBlocksFailed(context.getBlocksFailed() + 1);
         }
     }

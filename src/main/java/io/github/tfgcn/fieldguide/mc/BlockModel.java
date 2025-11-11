@@ -2,6 +2,8 @@ package io.github.tfgcn.fieldguide.mc;
 
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,14 +15,83 @@ import java.util.Map;
 public class BlockModel {
 
     private String parent;
-    private Boolean ambientOcclusion = true;
+    private Boolean ambientOcclusion;
     private Map<String, String> textures;
     private List<ModelElement> elements;
     private Map<String, DisplayTransform> display;
-    private String guiLight = "side";// side, face
+    private String guiLight;// side, face
     private List<ModelOverride> overrides;
 
     private String loader;
 
     private transient BlockModel parentModel;
+
+    public void mergeWithParent() {
+        if (this.parentModel == null) {
+            return;
+        }
+
+        // ambientOcclusion
+        if (this.ambientOcclusion == null) {
+            this.ambientOcclusion = this.parentModel.ambientOcclusion;
+        }
+
+        // textures
+        if (this.textures == null) {
+            if (parentModel.textures != null) {
+                this.textures = new HashMap<>(this.parentModel.textures);
+            }
+        } else if (this.parentModel.textures != null) {
+            Map<String, String> mergedTextures = new HashMap<>(this.parentModel.textures);
+            mergedTextures.putAll(this.textures);
+            this.textures = mergedTextures;
+        }
+
+        // elements
+        if (this.elements == null) {
+            this.elements = this.parentModel.elements != null ? new ArrayList<>(this.parentModel.elements) : null;
+        }
+
+        // display
+        if (this.display == null) {
+            if (parentModel.display != null) {
+                this.display = new HashMap<>(this.parentModel.display);
+            }
+        } else if (this.parentModel.display != null) {
+            Map<String, DisplayTransform> mergedDisplay = new HashMap<>(this.parentModel.display);
+            mergedDisplay.putAll(this.display);
+            this.display = mergedDisplay;
+        }
+
+        // guiLight
+        if (this.guiLight == null) {
+            this.guiLight = this.parentModel.guiLight;
+        }
+
+        // overrides
+        if (this.overrides == null) {
+            if (this.parentModel.getOverrides() != null) {
+                this.overrides = new ArrayList<>(this.parentModel.overrides);
+            }
+        }
+
+        // loader
+        if (this.loader == null) {
+            this.loader = this.parentModel.loader;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "BlockModel{" +
+                "parent='" + parent + '\'' +
+                ", ambientOcclusion=" + ambientOcclusion +
+                ", textures=" + textures +
+                ", elements=" + elements +
+                ", display=" + display +
+                ", guiLight='" + guiLight + '\'' +
+                ", overrides=" + overrides +
+                ", loader='" + loader + '\'' +
+                '}';
+    }
 }

@@ -2,9 +2,14 @@ package io.github.tfgcn.fieldguide.asset;
 
 import io.github.tfgcn.fieldguide.Context;
 import io.github.tfgcn.fieldguide.I18n;
+import io.github.tfgcn.fieldguide.exception.InternalException;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -13,6 +18,7 @@ import java.util.List;
  *
  * @author yanmaoyuan
  */
+@Slf4j
 public class FluidLoader {
 
     private static final Map<String, FluidImageResult> CACHE = new HashMap<>();
@@ -183,7 +189,13 @@ public class FluidLoader {
         }
 
         // 加载基础流体图像并调整大小
-        BufferedImage base = loadBaseFluidImage();
+        BufferedImage base;
+        try {
+            base = ImageIO.read(new File("assets/textures/fluid.png"));
+        } catch (IOException e) {
+            log.error("Load fluid texture failed", e);
+            throw new InternalException("load fluid png failed");
+        }
         base = resizeImage(base, 64, 64);
 
         if (!FLUID_COLORS.containsKey(path)) {
@@ -222,17 +234,10 @@ public class FluidLoader {
                 result.setRGB(x, y, newColor.getRGB());
             }
         }
-
         return result;
     }
 
-    // 辅助方法
-    private static BufferedImage loadBaseFluidImage() {
-        // 这里需要实现加载基础流体图像的逻辑
-        // 返回一个 64x64 的默认流体图像
-        return new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
-    }
-
+    // FIXME 合并所有resizeImage函数
     private static BufferedImage resizeImage(BufferedImage original, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = resized.createGraphics();

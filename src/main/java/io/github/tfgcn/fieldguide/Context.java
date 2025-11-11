@@ -11,6 +11,10 @@ import io.github.tfgcn.fieldguide.patchouli.page.IPageDoubleRecipe;
 import io.github.tfgcn.fieldguide.patchouli.page.IPageWithText;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.mc.BlockModel;
+import io.github.tfgcn.fieldguide.patchouli.page.PageMultiblock;
+import io.github.tfgcn.fieldguide.patchouli.page.PageMultiblockData;
+import io.github.tfgcn.fieldguide.patchouli.page.tfc.PageMultiMultiblock;
+import io.github.tfgcn.fieldguide.patchouli.page.tfc.TFCMultiblockData;
 import io.github.tfgcn.fieldguide.renderer.TextFormatter;
 import io.github.tfgcn.fieldguide.renderer.TextureRenderer;
 import io.github.tfgcn.fieldguide.renderer.HtmlRenderer;
@@ -844,26 +848,22 @@ public class Context {
             new Point(16, 16), new Point(0, 16)
     };
 
-    public String getMultiBlockImage(Context context, Map<String, Object> data) throws Exception {
+    public String getMultiBlockImage(PageMultiMultiblock data) throws Exception {
         String key;
         List<BufferedImage> images = new ArrayList<>();
 
-        if (data.containsKey("multiblocks")) {
-            List<Map<String, Object>> multiblocks = (List<Map<String, Object>>) data.get("multiblocks");
+        if (!data.getMultiblocks().isEmpty()) {
+
+            List <TFCMultiblockData> multiblocks = data.getMultiblocks();
             StringBuilder keyBuilder = new StringBuilder("multiblocks-");
-            for (Map<String, Object> block : multiblocks) {
+            for (TFCMultiblockData block : multiblocks) {
                 Pair<String, List<BufferedImage>> result = getMultiBlockImages(block);
                 keyBuilder.append(result.getKey());
                 images.addAll(result.getValue());
             }
             key = keyBuilder.toString();
-        } else if (data.containsKey("multiblock")) {
-            Map<String, Object> multiblock = (Map<String, Object>) data.get("multiblock");
-            Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
-            key = result.getKey();
-            images = result.getValue();
         } else {
-            throw new RuntimeException("Multiblock : Custom Multiblock '" + data.get("multiblock_id") + "'");
+            throw new RuntimeException("Multiblock : Custom Multiblock");
         }
 
         if (CACHE.containsKey(key)) {
@@ -881,35 +881,55 @@ public class Context {
         return path;
     }
 
-    public Pair<String, List<BufferedImage>> getMultiBlockImages(Map<String, Object> data) throws Exception {
-        if (!data.containsKey("pattern")) {
+    public String getMultiBlockImage(PageMultiblock data) throws Exception {
+        String key;
+        List<BufferedImage> images;
+
+        if (data.getMultiblock() != null) {
+            PageMultiblockData multiblock = data.getMultiblock();
+            Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
+            key = result.getKey();
+            images = result.getValue();
+        } else {
+            throw new RuntimeException("Multiblock : Custom Multiblock '" + data.getMultiblockId() + "'");
+        }
+
+        if (CACHE.containsKey(key)) {
+            return CACHE.get(key);
+        }
+
+        String path;
+        if (images.size() == 1) {
+            path = saveImage(nextId("block"), images.get(0));
+        } else {
+            path = saveGif(nextId("block"), images);
+        }
+
+        CACHE.put(key, path);
+        return path;
+    }
+
+    // FIXME 重构实现真正的多方快结构
+    public Pair<String, List<BufferedImage>> getMultiBlockImages(PageMultiblockData data) throws Exception {
+        if (data.getPattern() == null) {
             throw new RuntimeException("Multiblock : No 'pattern' field");
         }
 
-        List<List<String>> pattern = (List<List<String>>) data.get("pattern");
-        List<List<String>> validPattern1 = Arrays.asList(
-                Arrays.asList("X"),
-                Arrays.asList("0")
-        );
-        List<List<String>> validPattern2 = Arrays.asList(
-                Arrays.asList("X"),
-                Arrays.asList("Y"),
-                Arrays.asList("0")
-        );
+        String[][] pattern = data.getPattern();
+        String[][] validPattern1 = {{"X"}, {"0"}};
+        String[][] validPattern2 = {{"X"}, {"Y"}, {"0"}};
 
-        if (!pattern.equals(validPattern1) && !pattern.equals(validPattern2)) {
-            throw new RuntimeException("Multiblock : Complex Pattern '" + pattern + "'");
+        if (!Arrays.deepEquals(pattern, validPattern1) && !Arrays.deepEquals(pattern, validPattern2)) {
+            throw new RuntimeException("Multiblock : Complex Pattern '" + Arrays.deepToString(pattern) + "'");
         }
 
-        String block = (String) ((Map<String, Object>) data.get("mapping")).get("X");
+        String block = data.getMapping().get("X");
         List<String> blocks;
 
         if (block.startsWith("#")) {
-            // FIXME
-            // blocks = loadBlockTag(block.substring(1));
-            blocks = List.of();
+            blocks = loader.loadBlockTag(block.substring(1));
         } else {
-            blocks = Arrays.asList(block);
+            blocks = List.of(block);
         }
 
         List<BufferedImage> blockImages = new ArrayList<>();
@@ -1047,7 +1067,7 @@ public class Context {
                 return createBlockModelProjection(combined, combined, combined, false);
             }
             default:
-                log.warn("Block Model: Unknown parent: {} @ {}", parent, block);
+                log.warn("Block Model: Unknown parent: {} @ {}, model: {}", parent, block, model);
                 throw new RuntimeException("Block Model : Unknown Parent '" + parent + "' : at '" + block + "'");
         }
     }

@@ -11,7 +11,7 @@ public class ModelElement {
     private double[] to;
     private ElementRotation rotation;
     private Map<String, ElementFace> faces;
-    private Boolean shade = true;
+    private Boolean shade;
     @SerializedName("light_emission")
     private Integer lightEmission;// [0, 15]
 }

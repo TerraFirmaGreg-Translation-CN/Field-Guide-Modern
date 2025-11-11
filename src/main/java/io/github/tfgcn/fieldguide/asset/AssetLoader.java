@@ -311,6 +311,8 @@ public class AssetLoader {
                 log.info("no parent for: {}", path);
             }
 
+            model.mergeWithParent();// important
+
             modelCache.put(path, model);
             return model;
         } catch (Exception e) {
