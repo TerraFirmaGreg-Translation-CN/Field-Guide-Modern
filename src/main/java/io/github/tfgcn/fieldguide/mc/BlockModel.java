@@ -2,10 +2,7 @@ package io.github.tfgcn.fieldguide.mc;
 
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @see <a href="https://zh.minecraft.wiki/w/%E6%A8%A1%E5%9E%8B">模型</a>
@@ -14,6 +11,7 @@ import java.util.Map;
 @Data
 public class BlockModel {
 
+    private String credit;
     private String parent;
     private Boolean ambientOcclusion;
     private Map<String, String> textures;
@@ -28,6 +26,7 @@ public class BlockModel {
 
     public void mergeWithParent() {
         if (this.parentModel == null) {
+            initRootModel();
             return;
         }
 
@@ -78,6 +77,16 @@ public class BlockModel {
         // loader
         if (this.loader == null) {
             this.loader = this.parentModel.loader;
+        }
+    }
+
+    private void initRootModel() {
+        if (ambientOcclusion == null) {
+            ambientOcclusion = true;
+        }
+
+        if (guiLight == null) {
+            guiLight = "side";
         }
     }
 

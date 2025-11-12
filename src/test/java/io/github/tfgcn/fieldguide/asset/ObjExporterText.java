@@ -29,7 +29,8 @@ public class ObjExporterText {
 
         BlockModel itemModel = assetLoader.loadItemModel("tfc:metal/anvil/bismuth_bronze");
 
-        BlockModel blockModel = assetLoader.loadModel("tfc:block/metal/anvil/bismuth_bronze");
+        //BlockModel blockModel = assetLoader.loadModel("tfc:block/metal/anvil/bismuth_bronze");
+        BlockModel blockModel = assetLoader.loadModel("tfc:block/barrel_side_sealed");
 
         OBJExporter exporter = new OBJExporter(assetLoader);
         exporter.exportToOBJ(blockModel, "output/1.obj");
