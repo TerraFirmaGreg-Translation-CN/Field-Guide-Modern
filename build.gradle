@@ -15,7 +15,7 @@ java {
 repositories {
     mavenCentral()
 
-    maven { url 'https://maven.blamejared.com' }
+    maven { url = 'https://maven.blamejared.com' }
 }
 
 dependencies {
@@ -47,10 +47,8 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-
 test {
     useJUnitPlatform()
-    failOnNoMatchingTests = false
 
     testLogging {
         events "passed", "skipped", "failed"

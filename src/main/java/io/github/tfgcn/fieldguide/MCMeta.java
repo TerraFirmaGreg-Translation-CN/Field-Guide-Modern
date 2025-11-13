@@ -8,8 +8,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 @Slf4j
 public class MCMeta {
@@ -34,50 +32,7 @@ public class MCMeta {
             return String.format("https://maven.neoforged.net/#/releases/net/neoforged/neoforge/%s/neoforge-%s-universal.jar", forgeVersion, forgeVersion);
         }
     }
-    
-    public static <T> T loadFromMC(String path, FileReader<T> reader, String mcVersion, List<String> languages) {
-        try {
-            path = path.replace("\\", "/");
-            for (String lang : languages) {
-                if (!lang.equals("en_us") && path.equals("assets/minecraft/lang/" + lang + ".json")) {
-                    Path langPath = Paths.get(CACHE, "lang_" + lang + ".json");
-                    try (FileInputStream fis = new FileInputStream(langPath.toFile())) {
-                        return reader.read(fis);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Reading '" + path + "' from '" + mcVersion + "' : " + e.getMessage());
-        }
-        return loadFromSource(getClientJarName(mcVersion), path, reader);
-    }
-    
-    public static <T> T loadFromForge(String path, FileReader<T> reader, String forgeVersion) {
-        return loadFromSource(getForgeJarName(forgeVersion), path, reader);
-    }
-    
-    public static <T> T loadFromSource(String source, String path, FileReader<T> reader) {
 
-        try {
-            path = path.replace("\\", "/");
-            Path clientJar = Paths.get(CACHE, source);
-            
-            try (ZipFile zip = new ZipFile(clientJar.toFile())) {
-                ZipEntry entry = zip.getEntry(path);
-                if (entry == null) {
-                    throw new FileNotFoundException("Entry not found: " + path);
-                }
-                
-                try (InputStream is = zip.getInputStream(entry)) {
-                    return reader.read(is);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Reading '" + path + "' from '" + source + "' : " + e.getMessage());
-            return null;
-        }
-    }
-    
     @SuppressWarnings("unchecked")
     public static void loadCache(String mcVersion, String forgeVersion, List<String> languages) {
         log.info("Loading Cache");
@@ -174,7 +129,7 @@ public class MCMeta {
     public static byte[] download(String urlString) throws IOException {
         log.debug("Downloading " + urlString);
         try {
-            URL url = new URL(urlString);
+            URL url = new URI(urlString).toURL();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             
@@ -189,7 +144,7 @@ public class MCMeta {
                 
                 return baos.toByteArray();
             }
-        } catch (IOException e) {
+        } catch (URISyntaxException | IOException e) {
             throw new IOException("Requested " + urlString, e);
         }
     }
@@ -211,11 +166,5 @@ public class MCMeta {
         } catch (Exception e) {
             throw new RuntimeException("Failed to write JSON", e);
         }
-    }
-    
-    // Functional interface to replace Python's reader callable
-    @FunctionalInterface
-    public interface FileReader<T> {
-        T read(InputStream inputStream) throws Exception;
     }
 }
