@@ -645,7 +645,7 @@ public class Context {
 
         BlockModel model = loader.loadItemModel(itemId);
         if (model.getParent() == null) {
-            log.warn("Item model no parent: {}, model: {}", itemId, model);
+            log.warn("Item model no parent: {}", itemId);
             // TODO 支持无parent的模型
             throw new InternalException("Item model no parent: " + itemId);
         }
@@ -658,7 +658,7 @@ public class Context {
                 String layer = model.getTextures().get("base");
                 return this.loader.loadTexture(layer);
             } else {
-                log.error("Unknown loader: {} @ {}, model: {}", loader, itemId, model);
+                log.error("Unknown loader: {} @ {}", loader, itemId);
             }
         }
 
@@ -701,7 +701,7 @@ public class Context {
                 return img;
             } catch (Exception e) {
                 // add e later
-                log.error("Failed load model {} @ {}, model: {}, message: {}", parent, itemId, model, e.getMessage());
+                log.error("Failed load model {} @ {}, message: {}", parent, itemId, e.getMessage());
                 throw new InternalException("Failed load model " + parent + " @ " + itemId);
             }
         } else {
