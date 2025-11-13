@@ -23,6 +23,7 @@ public class BlockModel {
     private String loader;
 
     private transient BlockModel parentModel;
+    private transient Set<String> inherits = new TreeSet<>();
 
     public void mergeWithParent() {
         if (this.parentModel == null) {
@@ -78,6 +79,8 @@ public class BlockModel {
         if (this.loader == null) {
             this.loader = this.parentModel.loader;
         }
+
+        this.inherits.addAll(parentModel.inherits);
     }
 
     private void initRootModel() {
@@ -88,6 +91,10 @@ public class BlockModel {
         if (guiLight == null) {
             guiLight = "side";
         }
+    }
+
+    public boolean instanceOf(String modelId) {
+        return inherits.contains(modelId);
     }
 
     @Override

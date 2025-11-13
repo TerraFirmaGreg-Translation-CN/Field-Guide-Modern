@@ -33,14 +33,16 @@ public class AssetLoader {
     private final Path instanceRoot;
     private final List<AssetSource> sources;
     private final Map<String, AssetSource> resourceCache;
-    private final Map<String, BlockModel> modelCache;
+    private final Map<String, BlockModel> blockModelCache;
+    private final Map<String, BlockModel> itemModelCache;
     private final Map<String, List<Tags>> tagsCache;
 
     public AssetLoader(Path instanceRoot) {
         this.instanceRoot = instanceRoot;
         this.sources = new ArrayList<>();
         this.resourceCache = new HashMap<>();
-        this.modelCache = new TreeMap<>();
+        this.blockModelCache = new TreeMap<>();
+        this.itemModelCache = new TreeMap<>();
         this.tagsCache = new TreeMap<>();
         initializeSources();
     }
@@ -328,19 +330,21 @@ public class AssetLoader {
     }
 
     public BlockModel loadModel(String modelId) {
-        String path;
+        String resourceLocation;
         if (modelId.indexOf(':') < 0) {
-            path = "minecraft:" + modelId;
+            resourceLocation = "minecraft:" + modelId;
         } else {
-            path = modelId;
+            resourceLocation = modelId;
         }
-        if (modelCache.containsKey(path)) {
-            return modelCache.get(path);
+        if (blockModelCache.containsKey(resourceLocation)) {
+            log.debug("Hitting block model cache: {}", resourceLocation);
+            return blockModelCache.get(resourceLocation);
         }
 
-        Asset asset = loadResource(path, "models", "assets", ".json");
+        Asset asset = loadResource(resourceLocation, "models", "assets", ".json");
         try {
             BlockModel model = JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+            model.getInherits().add(resourceLocation);
 
             String parent = model.getParent();
             if (parent != null && !parent.isEmpty()) {
@@ -350,7 +354,7 @@ public class AssetLoader {
 
             model.mergeWithParent();// important
 
-            modelCache.put(path, model);
+            blockModelCache.put(resourceLocation, model);
             return model;
         } catch (Exception e) {
             throw new InternalException("");
@@ -358,9 +362,22 @@ public class AssetLoader {
     }
 
     public BlockModel loadItemModel(String itemId) {
+        String resourceLocation;
+        if (itemId.indexOf(':') < 0) {
+            resourceLocation = "minecraft:" + itemId;
+        } else {
+            resourceLocation = itemId;
+        }
+        if (itemModelCache.containsKey(resourceLocation)) {
+            log.debug("Hitting item model cache: {}", resourceLocation);
+            return itemModelCache.get(resourceLocation);
+        }
+
         Asset asset = loadResource(itemId, "models/item", "assets", ".json");
         try {
-            return JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+            BlockModel itemModel = JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+            itemModelCache.put(resourceLocation, itemModel);
+            return itemModel;
         } catch (Exception e) {
             log.warn("Failed to load item model: {}", itemId, e);
             throw new InternalException("Failed to load item model: " + itemId);

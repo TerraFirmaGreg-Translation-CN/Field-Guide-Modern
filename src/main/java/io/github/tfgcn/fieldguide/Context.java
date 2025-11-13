@@ -1011,49 +1011,44 @@ public class Context {
         }
         Map<String, String> textures = model.getTextures();
 
-        switch (parent) {
-            case "minecraft:block/cube_all": {
-                BufferedImage textureAll = loader.loadTexture(textures.get("all"));
-                return createBlockModelProjection(textureAll, textureAll, textureAll, false);
-            }
-            case "minecraft:block/cube_column": {
-                BufferedImage side = loader.loadTexture(textures.get("side"));
-                BufferedImage end = loader.loadTexture(textures.get("end"));
-                return createBlockModelProjection(side, side, end, false);
-            }
-            case "minecraft:block/cube_column_horizontal": {
-                BufferedImage sideH = loader.loadTexture(textures.get("side"));
-                BufferedImage endH = loader.loadTexture(textures.get("end"));
-                return createBlockModelProjection(endH, sideH, sideH, true);
-            }
-            case "minecraft:block/template_farmland": {
-                BufferedImage dirt = loader.loadTexture(textures.get("dirt"));
-                BufferedImage top = loader.loadTexture(textures.get("top"));
-                return createBlockModelProjection(dirt, dirt, top, false);
-            }
-            case "minecraft:block/slab": {
-                BufferedImage topSlab = loader.loadTexture(textures.get("top"));
-                BufferedImage sideSlab = loader.loadTexture(textures.get("side"));
-                return createSlabBlockModelProjection(sideSlab, sideSlab, topSlab);
-            }
-            case "minecraft:block/crop": {
-                BufferedImage crop = loader.loadTexture(textures.get("crop"));
-                return createCropModelProjection(crop);
-            }
-            case "tfc:block/ore": {
-                BufferedImage oreAll = loader.loadTexture(textures.get("all"));
-                BufferedImage overlay = loader.loadTexture(textures.get("overlay"));
-                // 在Java中实现图像叠加
-                BufferedImage combined = new BufferedImage(oreAll.getWidth(), oreAll.getHeight(), BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = combined.createGraphics();
-                g.drawImage(oreAll, 0, 0, null);
-                g.drawImage(overlay, 0, 0, null);
-                g.dispose();
-                return createBlockModelProjection(combined, combined, combined, false);
-            }
-            default:
-                log.warn("Block Model: Unknown parent: {}@{}", parent, block);
-                throw new RuntimeException("Block Model : Unknown Parent '" + parent + "' : at '" + block + "'");
+        if (model.instanceOf("minecraft:block/block")) {
+            BufferedImage textureAll = loader.loadTexture(textures.get("all"));
+            return createBlockModelProjection(textureAll, textureAll, textureAll, false);
+        } else if (model.instanceOf("minecraft:block/cube_all")) {
+            BufferedImage textureAll = loader.loadTexture(textures.get("all"));
+            return createBlockModelProjection(textureAll, textureAll, textureAll, false);
+        } else if (model.instanceOf("minecraft:block/cube_column")) {
+            BufferedImage side = loader.loadTexture(textures.get("side"));
+            BufferedImage end = loader.loadTexture(textures.get("end"));
+            return createBlockModelProjection(side, side, end, false);
+        } else if (model.instanceOf("minecraft:block/cube_column_horizontal")) {
+            BufferedImage sideH = loader.loadTexture(textures.get("side"));
+            BufferedImage endH = loader.loadTexture(textures.get("end"));
+            return createBlockModelProjection(endH, sideH, sideH, true);
+        }else if (model.instanceOf("minecraft:block/template_farmland")) {
+            BufferedImage dirt = loader.loadTexture(textures.get("dirt"));
+            BufferedImage top = loader.loadTexture(textures.get("top"));
+            return createBlockModelProjection(dirt, dirt, top, false);
+        } else if (model.instanceOf( "minecraft:block/slab")) {
+            BufferedImage topSlab = loader.loadTexture(textures.get("top"));
+            BufferedImage sideSlab = loader.loadTexture(textures.get("side"));
+            return createSlabBlockModelProjection(sideSlab, sideSlab, topSlab);
+        } else if (model.instanceOf("minecraft:block/crop")) {
+            BufferedImage crop = loader.loadTexture(textures.get("crop"));
+            return createCropModelProjection(crop);
+        } else if (model.instanceOf("tfc:block/ore")) {
+            BufferedImage oreAll = loader.loadTexture(textures.get("all"));
+            BufferedImage overlay = loader.loadTexture(textures.get("overlay"));
+            // 在Java中实现图像叠加
+            BufferedImage combined = new BufferedImage(oreAll.getWidth(), oreAll.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = combined.createGraphics();
+            g.drawImage(oreAll, 0, 0, null);
+            g.drawImage(overlay, 0, 0, null);
+            g.dispose();
+            return createBlockModelProjection(combined, combined, combined, false);
+        } else{
+            log.warn("Unsupported parent: {}@{}", parent, block);
+            throw new RuntimeException("Block Model : Unknown Parent '" + parent + "' : at '" + block + "'");
         }
     }
 
