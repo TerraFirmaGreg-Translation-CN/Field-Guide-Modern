@@ -28,16 +28,16 @@ public class Image {
     }
 
     public Image(String fileName) throws IOException {
-        int width = 0;
-        int height = 0;
-        byte[] components = null;
+        int width;
+        int height;
+        byte[] components;
 
         BufferedImage image = ImageIO.read(new File(fileName));
 
         width = image.getWidth();
         height = image.getHeight();
 
-        int imgPixels[] = new int[width * height];
+        int[] imgPixels = new int[width * height];
         image.getRGB(0, 0, width, height, imgPixels, 0, width);
         components = new byte[width * height * 4];
 
@@ -54,7 +54,33 @@ public class Image {
         this.height = height;
         this.components = components;
     }
-    
+
+    public Image(BufferedImage image) {
+        int width;
+        int height;
+        byte[] components;
+
+        width = image.getWidth();
+        height = image.getHeight();
+
+        int[] imgPixels = new int[width * height];
+        image.getRGB(0, 0, width, height, imgPixels, 0, width);
+        components = new byte[width * height * 4];
+
+        for(int i = 0; i < width * height; i++) {
+            int pixel = imgPixels[i];
+
+            components[i * 4]     = (byte)((pixel >> 16) & 0xFF); // R
+            components[i * 4 + 1] = (byte)((pixel >> 8 ) & 0xFF); // G
+            components[i * 4 + 2] = (byte)((pixel      ) & 0xFF); // B
+            components[i * 4 + 3] = (byte)((pixel >> 24) & 0xFF); // A
+        }
+
+        this.width = width;
+        this.height = height;
+        this.components = components;
+    }
+
     public int getWidth() {
         return width;
     }
