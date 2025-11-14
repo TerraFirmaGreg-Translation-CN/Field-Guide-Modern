@@ -62,15 +62,7 @@ public class RendererTest extends Application {
         assetLoader = new AssetLoader(Paths.get(modpackPath));
 
         BlockModel itemModel = assetLoader.loadItemModel("beneath:unposter");
-
-        BlockModel blockModel = assetLoader.loadModel(itemModel.getParent());
-
-        Map<String, String> textures = blockModel.getTextures();
-
-        node = new Node();
-        for (ModelElement element : blockModel.getElements()) {
-            buildNode(node, element, textures);
-        }
+        Node node = buildModel(itemModel.getParent());
 
         rootNode.attachChild(node);
 
@@ -82,12 +74,23 @@ public class RendererTest extends Application {
     @Override
     protected void update(float delta) {}
 
-    double v3_scale = 1.0;
+    double v3_scale = 1.0 / 16;
     Vector3f v3(double x, double y, double z) {
         return new Vector3f((float)(x * v3_scale), (float)(y * v3_scale), (float)(z * v3_scale));
     }
     Vector2f v2(double s, double t) {
         return new Vector2f((float)(s / 16.0), (float)(t / 16.0));
+    }
+
+    public Node buildModel(String modelId) {
+        BlockModel blockModel = assetLoader.loadModel(modelId);
+        Map<String, String> textures = blockModel.getTextures();
+        Node node = new Node();
+        for (ModelElement element : blockModel.getElements()) {
+            buildNode(node, element, textures);
+        }
+
+        return node;
     }
 
     public void buildNode(Node rootNode, ModelElement element, Map<String, String> textures) {

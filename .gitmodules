@@ -1,0 +1,4 @@
+[submodule "Modpack-Modern"]
+	path = Modpack-Modern
+	url = git@github.com:TerraFirmaGreg-Team/Modpack-Modern.git
+	branch = dev

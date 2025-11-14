@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: Build Project
 
 on:
   push:
-    branches: ["master"]
+    branches: ["dev"]
 
 permissions:
   contents: write
@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "build"
   cancel-in-progress: false
 
 jobs:
@@ -41,13 +41,29 @@ jobs:
       - name: Build
         run: ./gradlew build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Build Pakku Modpack
+        run: |
+          cd Modpack-Modern
+          java -jar pakku.jar fetch
+          java -jar pakku.jar export
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'www'
+      - name: Copy modpack
+        run: |
+          mkdir run
+          mv ./Modpack-Modern/mods ./run
+          mv ./Modpack-Modern/kubejs ./run
+          mv ./Modpack-Modern/resourcepacks ./run
+          ls -l run/mods
+          ls -l run/kubejs
+          ls -l run/resourcepacks
+
+      #- name: Setup Pages
+      #  uses: actions/configure-pages@v5
+
+      #- name: Upload Pages artifact
+      #  uses: actions/upload-pages-artifact@v3
+      #  with:
+      #    path: 'www'
 
   deploy:
     needs: build

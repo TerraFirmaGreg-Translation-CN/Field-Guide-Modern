@@ -52,3 +52,5 @@ config.json
 /test/
 tmp
 *.jar
+
+/run/
