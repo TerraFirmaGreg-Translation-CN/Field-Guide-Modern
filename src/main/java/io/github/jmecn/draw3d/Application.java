@@ -1,5 +1,6 @@
 package io.github.jmecn.draw3d;
 
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +27,13 @@ public abstract class Application {
     protected String title;
 
     // 显示器
-    private Screen screen;
+    protected Screen screen;
 
     // 渲染器
-    private Renderer renderer;
+    protected Renderer renderer;
 
     // 摄像机
-    private Camera camera;
+    protected Camera camera;
     
     // 渲染队列
     protected List<Drawable> scene;
@@ -124,6 +125,10 @@ public abstract class Application {
                 deltaTime = System.nanoTime() - previousTime;
             }
 
+            if (screen.getInput().getKey(KeyEvent.VK_ESCAPE)) {
+                System.exit(0);
+            }
+
             previousTime = System.nanoTime();
             delta = deltaTime / 1000000000.0f;
 
@@ -179,7 +184,7 @@ public abstract class Application {
      * @param delta
      */
     protected abstract void update(float delta);
-    
+
     /**
      * 停止程序
      */
