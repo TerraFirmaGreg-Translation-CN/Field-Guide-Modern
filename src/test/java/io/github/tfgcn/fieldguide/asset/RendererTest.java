@@ -54,7 +54,7 @@ public class RendererTest extends Application {
     //String model = "beneath:block/unposter";
     //String model = "tfc:block/metal/anvil/bismuth_bronze";
     //String model = "firmalife:block/plant/pineapple_bush_2";
-    String model = "create:block/mechanical_pump/block";
+    //String model = "create:block/mechanical_pump/block";
     //String model = "create:block/mechanical_pump/item";
     //String model = "create:block/mechanical_pump/cog";
     //String model = "gtceu:block/machine/hv_chemical_reactor";// TODO 需要处理变体
@@ -62,6 +62,7 @@ public class RendererTest extends Application {
     //String model = "create:block/steam_engine/block";// TODO 纹理坐标映射不正确
     //String model = "tfc:block/wattle/unstained_wattle";
     //String model = "beneath:block/blackstone_aqueduct_base";
+    String model = "tfc:block/blast_furnace/unlit";
 
     Vector4f LIGHT = new Vector4f(1f, 1f, 1f, 1f);// top
     Vector4f LIGHT_GRAY = new Vector4f(0.8f, 0.8f, 0.8f, 1f);// north and south

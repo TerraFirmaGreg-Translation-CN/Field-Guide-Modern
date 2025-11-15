@@ -409,9 +409,18 @@ public class AssetLoader {
 
         Asset asset = loadResource(itemId, "models/item", "assets", ".json");
         try {
-            BlockModel itemModel = JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
-            itemModelCache.put(resourceLocation, itemModel);
-            return itemModel;
+            BlockModel model = JsonUtils.readFile(asset.getInputStream(), BlockModel.class);
+            model.getInherits().add(resourceLocation);
+
+            String parent = model.getParent();
+            if (parent != null && !parent.isEmpty()) {
+                BlockModel parentModel = loadModel(parent);
+                model.setParentModel(parentModel);
+            }
+
+            model.mergeWithParent();// important
+            itemModelCache.put(resourceLocation, model);
+            return model;
         } catch (Exception e) {
             log.warn("Failed to load item model: {}", itemId, e);
             throw new InternalException("Failed to load item model: " + itemId);
