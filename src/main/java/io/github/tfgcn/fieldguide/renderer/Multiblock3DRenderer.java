@@ -30,7 +30,7 @@ import java.util.Map;
  * @author yanmaoyuan
  */
 @Slf4j
-public class Block3DRenderer {
+public class Multiblock3DRenderer {
 
     static int SCALER = 16;
     static float SCALE = 1f / SCALER;
@@ -56,7 +56,9 @@ public class Block3DRenderer {
 
     private AssetLoader assetLoader;
 
-    public Block3DRenderer(AssetLoader assetLoader, int width, int height) {
+    Map<String, Material> materialCache = new HashMap<>();
+
+    public Multiblock3DRenderer(AssetLoader assetLoader, int width, int height) {
         this.assetLoader = assetLoader;
         this.width = width;
         this.height = height;
@@ -70,11 +72,10 @@ public class Block3DRenderer {
         camera = new Camera(width, height);
 
         // parallel
-        camera.setParallel(-11 * SCALE, 11 * SCALE, -11 * SCALE, 11 * SCALE, -1000f, 1000f);
-        camera.lookAt(new Vector3f(-100, 100, -100), new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+        camera.setParallel(-11 * SCALE, 11 * SCALE, -11 * SCALE, 11 * SCALE, -10000f, 10000f);
 
-        camera.setLocation(new Vector3f(32f, 32f, 32f).multLocal((float) SCALE));
-        camera.setDirection(new Vector3f(-1f, -1f, -1f).normalizeLocal());
+        camera.setLocation(new Vector3f(-100f, 100f, -100f).multLocal(SCALE));
+        camera.setDirection(new Vector3f(1f, -1f, 1f).normalizeLocal());
 
         // 场景根节点
         rootNode = new Node();
@@ -82,22 +83,51 @@ public class Block3DRenderer {
 
     /**
      * 渲染模型
-     * @param modelId
      * @return
      */
-    public BufferedImage render(String modelId) {
-        Node node = buildModel(modelId);
-        rootNode.attachChild(node);
-        BufferedImage image = render();
-        rootNode.detachChild(node);
-        return image;
-    }
+    public BufferedImage render(String[][] pattern, Map<String, String> mapping) {
 
-    public BufferedImage render(BlockModel model) {
-        Node node = buildModel(model);
-        rootNode.attachChild(node);
+        int height = pattern.length;
+        int col = pattern[0].length;
+        int row = pattern[0][0].length();
+        log.info("Model size: {}x{}x{}", col, height, row);
+
+        //camera.setParallel(-col * 10 * SCALE, col * 10 * SCALE, -row * 10 * SCALE, row * 10 * SCALE, -height * 10 * SCALE, height * 10 * SCALE);
+
+        //camera.setParallel(-11 * SCALE, 11 * SCALE, -11 * SCALE, 11 * SCALE, -1000f, 1000f);
+
+        //camera.updateViewProjectionMatrix();
+
+        Node root = new Node();
+        int y = 0;
+        for (int i = 0; i < height; i++) {
+            String[] layer = pattern[height - i - 1];
+            int z = 0;
+            for (String line : layer) {
+                for (int x = 0; x < col; x++) {
+                    char c = line.charAt(x);
+                    if (c == ' ') {
+                        continue;
+                    }
+                    String model = mapping.get(String.valueOf(c));
+                    if (model != null) {
+                        try {
+                            Node node = buildModel(model);
+                            node.getLocalTransform().getTranslation().addLocal(new Vector3f(x * 16 * SCALE, y * 16 * SCALE, z * 16 * SCALE));
+                            root.attachChild(node);
+                        } catch (Exception e) {
+                            log.error("Failed to build model: {}", model);
+                        }
+                    }
+                }
+                z += 1;
+            }
+            y += 1;
+        }
+
+        rootNode.attachChild(root);
         BufferedImage image = render();
-        rootNode.detachChild(node);
+        rootNode.detachChild(root);
         return image;
     }
 
@@ -148,7 +178,7 @@ public class Block3DRenderer {
     }
 
     public Node buildModel(String modelId) {
-        BlockModel blockModel = assetLoader.loadModel(modelId);
+        BlockModel blockModel = assetLoader.loadBlockModel(modelId);
         return buildModel(blockModel);
     }
 
@@ -161,9 +191,6 @@ public class Block3DRenderer {
 
         return node;
     }
-
-
-    Map<String, Material> materialCache = new HashMap<>();
 
     private Material makeMaterial(String texture) {
         if (materialCache.containsKey(texture)) {

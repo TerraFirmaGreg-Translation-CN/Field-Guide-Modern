@@ -101,7 +101,7 @@ public class MultiblockTest extends Application {
 
         // 初始化摄像机
         Camera cam = getCamera();
-        cam.lookAt(new Vector3f(32, 32, 32), new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+        cam.lookAt(new Vector3f(100, 100, 100), new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
     }
 
     @Override
