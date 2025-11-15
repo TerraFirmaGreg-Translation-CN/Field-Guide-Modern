@@ -39,7 +39,7 @@ public class TableFormatter {
         context.formatTitle(buffer, data.getTitle(), null);
         context.formatText(buffer, data.getText(), null);
 
-        if (legend != null) {
+        if (legend != null && !legend.isEmpty()) {
             buffer.add("<div class=\"row\"><div class=\"col-md-9\">");
         }
 
@@ -58,7 +58,7 @@ public class TableFormatter {
         }
         buffer.add("</tbody></table></figure>");
 
-        if (legend != null) {
+        if (legend != null && !legend.isEmpty()) {
             buffer.add("</div><div class=\"col-md-3\"><h4>Legend</h4>");
             for (PageTableLegend entry : legend) {
                 // These are just a color square followed by a name
@@ -76,9 +76,7 @@ public class TableFormatter {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static String getComponent(PageTableString th, String key) {
-
         if (th.getFill() != null) {
             // Solid fill
             String color = th.getFill().substring(2); // Remove the "2:" prefix
@@ -89,6 +87,11 @@ public class TableFormatter {
         if (text.isEmpty()) {
             return String.format("<%s></%s>", key, key);
         }
-        return String.format("<%s><p>%s</p></%s>", key, text, key);
+
+        if (th.isBold()) {
+            return String.format("<%s><p style=\"font-weight: bold;\">%s</p></%s>", key, text, key);
+        } else {
+            return String.format("<%s><p>%s</p></%s>", key, text, key);
+        }
     }
 }
