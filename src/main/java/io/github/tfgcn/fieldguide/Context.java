@@ -11,7 +11,7 @@ import io.github.tfgcn.fieldguide.patchouli.BookEntry;
 import io.github.tfgcn.fieldguide.patchouli.page.IPageDoubleRecipe;
 import io.github.tfgcn.fieldguide.patchouli.page.IPageWithText;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
-import io.github.tfgcn.fieldguide.mc.BlockModel;
+import io.github.tfgcn.fieldguide.minecraft.BlockModel;
 import io.github.tfgcn.fieldguide.patchouli.page.PageMultiblock;
 import io.github.tfgcn.fieldguide.patchouli.page.PageMultiblockData;
 import io.github.tfgcn.fieldguide.patchouli.page.tfc.PageMultiMultiblock;
@@ -33,7 +33,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 

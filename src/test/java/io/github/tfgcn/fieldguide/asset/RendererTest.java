@@ -1,20 +1,20 @@
 package io.github.tfgcn.fieldguide.asset;
 
-import io.github.jmecn.draw3d.Application;
-import io.github.jmecn.draw3d.material.Material;
-import io.github.jmecn.draw3d.material.Texture;
-import io.github.jmecn.draw3d.math.*;
-import io.github.jmecn.draw3d.renderer.Camera;
-import io.github.jmecn.draw3d.renderer.Image;
-import io.github.jmecn.draw3d.scene.Geometry;
-import io.github.jmecn.draw3d.scene.Mesh;
-import io.github.jmecn.draw3d.scene.Node;
-import io.github.jmecn.draw3d.shader.UnshadedShader;
+import io.github.tfgcn.fieldguide.render3d.Application;
+import io.github.tfgcn.fieldguide.render3d.material.Material;
+import io.github.tfgcn.fieldguide.render3d.material.Texture;
+import io.github.tfgcn.fieldguide.render3d.math.*;
+import io.github.tfgcn.fieldguide.render3d.renderer.Camera;
+import io.github.tfgcn.fieldguide.render3d.renderer.Image;
+import io.github.tfgcn.fieldguide.render3d.scene.Geometry;
+import io.github.tfgcn.fieldguide.render3d.scene.Mesh;
+import io.github.tfgcn.fieldguide.render3d.scene.Node;
+import io.github.tfgcn.fieldguide.render3d.shader.UnshadedShader;
 import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;
-import io.github.tfgcn.fieldguide.mc.BlockModel;
-import io.github.tfgcn.fieldguide.mc.ElementFace;
-import io.github.tfgcn.fieldguide.mc.ElementRotation;
-import io.github.tfgcn.fieldguide.mc.ModelElement;
+import io.github.tfgcn.fieldguide.minecraft.BlockModel;
+import io.github.tfgcn.fieldguide.minecraft.ElementFace;
+import io.github.tfgcn.fieldguide.minecraft.ElementRotation;
+import io.github.tfgcn.fieldguide.minecraft.ModelElement;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
