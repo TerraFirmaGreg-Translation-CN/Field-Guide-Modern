@@ -1,8 +1,6 @@
 package io.github.tfgcn.fieldguide.asset;
 
 import io.github.jmecn.draw3d.Application;
-import io.github.jmecn.draw3d.light.AmbientLight;
-import io.github.jmecn.draw3d.light.DirectionalLight;
 import io.github.jmecn.draw3d.material.Material;
 import io.github.jmecn.draw3d.material.RenderState;
 import io.github.jmecn.draw3d.material.Texture;
@@ -19,7 +17,6 @@ import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;
 import io.github.tfgcn.fieldguide.mc.BlockModel;
 import io.github.tfgcn.fieldguide.mc.ElementFace;
 import io.github.tfgcn.fieldguide.mc.ModelElement;
-import io.github.tfgcn.fieldguide.patchouli.page.PageMultiblockData;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
@@ -39,20 +36,11 @@ public class MultiblockTest extends Application {
         MultiblockTest app = new MultiblockTest();
         app.start();
     }
-    //String model = "beneath:block/unposter";
-    //String model = "tfc:block/metal/anvil/bismuth_bronze";// TODO up、down的纹理不正常
-    //String model = "firmalife:block/plant/pineapple_bush_2";// TODO 需要处理模型旋转
-    //String model = "create:block/mechanical_pump/item";// TODO 模型不正常，需要处理uv旋转
-    //String model = "gtceu:block/machine/hv_chemical_reactor";// TODO 需要处理变体
-    //String model = "createaddition:block/electric_motor/block";// TODO cullface, face.rotaton, element.name, element.rotation
-    //String model = "create:block/steam_engine/block";
-    //String model = "tfc:block/wattle/unstained_wattle";
-    String model = "beneath:block/blackstone_aqueduct_base";
 
-    Vector4f LIGHT = new Vector4f(1);// top
-    Vector4f LIGHT_GRAY = new Vector4f(0.8f);// north and south
-    Vector4f DARK_GRAY = new Vector4f(0.6f);// east and west
-    Vector4f DARK = new Vector4f(0.5f);// down
+    Vector4f LIGHT = new Vector4f(1f, 1f, 1f, 1f);// top
+    Vector4f LIGHT_GRAY = new Vector4f(0.8f, 0.8f, 0.8f, 1f);// north and south
+    Vector4f DARK_GRAY = new Vector4f(0.6f, 0.6f, 0.6f, 1f);// east and west
+    Vector4f DARK = new Vector4f(0.5f, 0.5f, 0.5f, 1f);// down
 
     Vector3f UP = new Vector3f(0, 1, 0);
     Vector3f DOWN = new Vector3f(0, -1, 0);
@@ -64,8 +52,8 @@ public class MultiblockTest extends Application {
     private AssetLoader assetLoader;
 
     public MultiblockTest() {
-        this.width = 1080;
-        this.height = 720;
+        this.width = 512;
+        this.height = 512;
         this.title = "Multiblock";
     }
 
@@ -75,16 +63,11 @@ public class MultiblockTest extends Application {
         String modpackPath = "Modpack-Modern";
         assetLoader = new AssetLoader(Paths.get(modpackPath));
 
-        String[][] pattern = {{"X"}, {"Y"}, {"0"}};
-        Map<String, String> mapping = new HashMap<>();
-        mapping.put("X", "firmalife:vat");
-        mapping.put("Y", "firmalife:cured_oven_bottom");
-
-        pattern = new String[][] {
+        String[][] pattern = new String[][] {
                 {"  G  ", "  G  ", "GGCGG", "  G  ", "  G  "},
                 {"XXXXX", "XXXXX", "XX0XX", "XXBXX", "XXXXX"}
         };
-        mapping = new HashMap<>();
+        Map<String, String> mapping = new HashMap<>();
         mapping.put("X", "tfc:rock/smooth/gabbro");
         mapping.put("G", "minecraft:light_blue_stained_glass");
         mapping.put("0", "tfc:charcoal_forge/heat_7");// [heat_level=7]
@@ -94,8 +77,9 @@ public class MultiblockTest extends Application {
         int height = pattern.length;
         int width = pattern[0].length;
 
-        int y = height * 16;
-        for (String[] layer : pattern) {
+        int y = 0;
+        for (int i = 0; i < height; i++) {
+            String[] layer = pattern[height - i - 1];
             int z = 0;
             for (String line : layer) {
                 for (int x = 0; x < width; x++) {
@@ -112,21 +96,12 @@ public class MultiblockTest extends Application {
                 }
                 z += 16;
             }
-            y -= 16;
+            y += 16;
         }
-//
-//        int i = 0;
-//        for (String block : mapping.values()) {
-//            System.out.println("block:" +block);
-//            Node node = buildModel(block);
-//            node.getLocalTransform().getTranslation().addLocal(new Vector3f(i * 16, 0, 0));
-//            rootNode.attachChild(node);
-//            i++;
-//        };
 
         // 初始化摄像机
         Camera cam = getCamera();
-        cam.lookAt(new Vector3f(20, 20, 20), new Vector3f(8, 8, 8), Vector3f.UNIT_Y);
+        cam.lookAt(new Vector3f(32, 32, 32), new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
     }
 
     @Override
@@ -157,10 +132,9 @@ public class MultiblockTest extends Application {
 
     Map<String, Material> materialCache = new HashMap<>();
 
-    private Material makeMaterial(String texture, RenderState.CullMode cullMode) {
-        String key = cullMode.name() + ":" + texture;
-        if (materialCache.containsKey(key)) {
-            return materialCache.get(key);
+    private Material makeMaterial(String texture) {
+        if (materialCache.containsKey(texture)) {
+            return materialCache.get(texture);
         }
 
         BufferedImage img = assetLoader.loadTexture(texture);
@@ -169,17 +143,14 @@ public class MultiblockTest extends Application {
         diffuseMap.setMagFilter(Texture.MagFilter.NEAREST);
 
         Material material = new Material();
+        material.setUseVertexColor(true);
         material.setShader(new UnshadedShader());
         material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
-        material.getRenderState().setCullMode(cullMode);
         material.getRenderState().setAlphaTest(true);
         material.getRenderState().setAlphaFalloff(0.1f);
-        material.setDiffuse(new Vector4f(1f));
-        material.setSpecular(new Vector4f(1f));
-        material.setAmbient(new Vector4f(1f));
         material.setDiffuseMap(diffuseMap);
 
-        materialCache.put(key, material);
+        materialCache.put(texture, material);
         return material;
     }
 
@@ -241,17 +212,15 @@ public class MultiblockTest extends Application {
 
             // Index
             int[] index = {0, 1, 2, 0, 2, 3};
-
-            RenderState.CullMode cullMode;
-            if (face.getCullface() == null) {
-                cullMode = RenderState.CullMode.BACK;
-            } else if (dir.equals(face.getCullface())) {
-                cullMode = RenderState.CullMode.BACK;
-            } else {
-                cullMode = RenderState.CullMode.FACE;
+            boolean isCull = false;
+            if (face.getCullface() != null && !dir.equals(face.getCullface())) {
+                // change face order to the nagative direction
+                index = new int[] {0, 2, 1, 0, 3, 2};
+                isCull = true;
+                // TODO change normals
             }
 
-            System.out.printf("%s: %d, cull %s -> %s\n", dir, face.getRotation(), face.getCullface(), cullMode);
+            System.out.printf("%s: %d, cull %s -> %s\n", dir, face.getRotation(), face.getCullface(), isCull);
             Mesh mesh;
             switch (dir) {
                 case "down": {
@@ -344,7 +313,7 @@ public class MultiblockTest extends Application {
             }
 
             String texture = getTexture(textures, face.getTexture());
-            Material material = makeMaterial(texture, cullMode);
+            Material material = makeMaterial(texture);
             rootNode.attachChild(new Geometry(mesh, material));
         }
     }

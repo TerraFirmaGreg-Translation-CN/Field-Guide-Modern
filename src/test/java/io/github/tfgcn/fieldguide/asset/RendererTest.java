@@ -39,19 +39,19 @@ public class RendererTest extends Application {
         app.start();
     }
     //String model = "beneath:block/unposter";
-    //String model = "tfc:block/metal/anvil/bismuth_bronze";// TODO up、down的纹理不正常
-    //String model = "firmalife:block/plant/pineapple_bush_2";// TODO 需要处理模型旋转
+    //String model = "tfc:block/metal/anvil/bismuth_bronze";
+    String model = "firmalife:block/plant/pineapple_bush_2";// TODO 需要处理模型旋转
     //String model = "create:block/mechanical_pump/item";// TODO 模型不正常，需要处理uv旋转
     //String model = "gtceu:block/machine/hv_chemical_reactor";// TODO 需要处理变体
     //String model = "createaddition:block/electric_motor/block";// TODO cullface, face.rotaton, element.name, element.rotation
     //String model = "create:block/steam_engine/block";
     //String model = "tfc:block/wattle/unstained_wattle";
-    String model = "beneath:block/blackstone_aqueduct_base";
+    //String model = "beneath:block/blackstone_aqueduct_base";
 
-    Vector4f LIGHT = new Vector4f(1);// top
-    Vector4f LIGHT_GRAY = new Vector4f(0.8f);// north and south
-    Vector4f DARK_GRAY = new Vector4f(0.6f);// east and west
-    Vector4f DARK = new Vector4f(0.5f);// down
+    Vector4f LIGHT = new Vector4f(1f, 1f, 1f, 1f);// top
+    Vector4f LIGHT_GRAY = new Vector4f(0.8f, 0.8f, 0.8f, 1f);// north and south
+    Vector4f DARK_GRAY = new Vector4f(0.6f, 0.6f, 0.6f, 1f);// east and west
+    Vector4f DARK = new Vector4f(0.5f, 0.5f, 0.5f, 1f);// down
 
     Vector3f UP = new Vector3f(0, 1, 0);
     Vector3f DOWN = new Vector3f(0, -1, 0);
@@ -63,8 +63,8 @@ public class RendererTest extends Application {
     private AssetLoader assetLoader;
 
     public RendererTest() {
-        this.width = 1080;
-        this.height = 720;
+        this.width = 512;
+        this.height = 512;
         this.title = model;
     }
 
@@ -85,9 +85,14 @@ public class RendererTest extends Application {
         DirectionalLight dirLight = new DirectionalLight(new Vector4f(0.3f), new Vector3f(-1f, -0.5f, -2f).normalizeLocal());
         lights.add(dirLight);
 
-        // 初始化摄像机
         Camera cam = getCamera();
-        cam.lookAt(new Vector3f(20, 20, 20), new Vector3f(8, 8, 8), Vector3f.UNIT_Y);
+
+        // parallel
+        //cam.setParallel(-16f, 16, -16, 16, -1000f, 1000f);
+        //cam.lookAt(new Vector3f(100, 100, 100), new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+
+        cam.setLocation(new Vector3f(32f, 32f, 32f));
+        cam.setDirection(new Vector3f(-1f, -1f, -1f).normalizeLocal());
     }
 
     @Override
@@ -118,10 +123,9 @@ public class RendererTest extends Application {
 
     Map<String, Material> materialCache = new HashMap<>();
 
-    private Material makeMaterial(String texture, RenderState.CullMode cullMode) {
-        String key = cullMode.name() + ":" + texture;
-        if (materialCache.containsKey(key)) {
-            return materialCache.get(key);
+    private Material makeMaterial(String texture) {
+        if (materialCache.containsKey(texture)) {
+            return materialCache.get(texture);
         }
 
         BufferedImage img = assetLoader.loadTexture(texture);
@@ -130,16 +134,13 @@ public class RendererTest extends Application {
         diffuseMap.setMagFilter(Texture.MagFilter.NEAREST);
 
         Material material = new Material();
-        material.setShader(new UnshadedShader());
-        material.getRenderState().setCullMode(cullMode);
         material.getRenderState().setAlphaTest(true);
         material.getRenderState().setAlphaFalloff(0.1f);
-        material.setDiffuse(new Vector4f(1f));
-        material.setSpecular(new Vector4f(1f));
-        material.setAmbient(new Vector4f(1f));
+        material.setUseVertexColor(true);
+        material.setShader(new UnshadedShader());
         material.setDiffuseMap(diffuseMap);
 
-        materialCache.put(key, material);
+        materialCache.put(texture, material);
         return material;
     }
 
@@ -202,16 +203,13 @@ public class RendererTest extends Application {
             // Index
             int[] index = {0, 1, 2, 0, 2, 3};
 
-            RenderState.CullMode cullMode;
-            if (face.getCullface() == null) {
-                cullMode = RenderState.CullMode.BACK;
-            } else if (dir.equals(face.getCullface())) {
-                cullMode = RenderState.CullMode.BACK;
-            } else {
-                cullMode = RenderState.CullMode.FACE;
+            if (face.getCullface() != null && !dir.equals(face.getCullface())) {
+                // change face order to the nagative direction
+                index = new int[] {0, 2, 1, 0, 3, 2};
+                // TODO change normals
             }
 
-            System.out.printf("%s: %d, cull %s -> %s\n", dir, face.getRotation(), face.getCullface(), cullMode);
+            System.out.printf("%s: %d, cull %s\n", dir, face.getRotation(), face.getCullface());
             Mesh mesh;
             switch (dir) {
                 case "down": {
@@ -304,7 +302,7 @@ public class RendererTest extends Application {
             }
 
             String texture = getTexture(textures, face.getTexture());
-            Material material = makeMaterial(texture, cullMode);
+            Material material = makeMaterial(texture);
             rootNode.attachChild(new Geometry(mesh, material));
         }
     }

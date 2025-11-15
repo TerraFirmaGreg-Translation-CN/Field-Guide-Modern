@@ -46,13 +46,19 @@ public class Camera {
     private float right;          // 右平面距离
     private float top;            // 上平面距离
     private float bottom;         // 下平面距离
-    
+
+    /**
+     * 正交投影观察范围
+     */
+    private float width;
+    private float height;
+
     /**
      * 视野范围默认为 70°
      */
     private float fov = (float) Math.toRadians(70);
     private float aspect;// 屏幕高宽比 width / height
-    
+
     /**
      * 是否平行投影
      */
@@ -75,7 +81,6 @@ public class Camera {
      */
     public Camera(int width, int height) {
         this.aspect = (float) width / height;// 屏幕宽高比
-        
         // 计算观察-投影变换矩阵
         updateViewProjectionMatrix();
     }
@@ -148,6 +153,20 @@ public class Camera {
     public void setParallel(boolean parallel) {
         this.parallel = parallel;
     }
+
+    public void setParallel(float left, float right, float bottom, float top, float near, float far) {
+        this.left = left;
+        this.right = right;
+        this.bottom = bottom;
+        this.top = top;
+        this.near = near;
+        this.far = far;
+        this.parallel = true;
+
+        updateViewMatrix();
+        updateProjectionMatrix();
+        projectionMatrix.mult(viewMatrix, viewProjectionMatrix);
+    }
     
     /**
      * 获取观察变换矩阵
@@ -213,11 +232,6 @@ public class Camera {
             // 透视投影
             setPerspective(fov, aspect, near, far);
         } else {
-            // 正交投影
-            left = -0.5f;
-            right = 0.5f;
-            top = 0.5f;
-            bottom = -0.5f;
             setOrthographic(left, right, bottom, top, near, far);
         }
     }
