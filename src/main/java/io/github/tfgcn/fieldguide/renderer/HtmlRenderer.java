@@ -41,10 +41,8 @@ public class HtmlRenderer {
         buildSearchPage(context);
 
         // Category pages
-        for (Map.Entry<String, BookCategory> entry : context.getSortedCategories()) {
-            String categoryId = entry.getKey();
-            BookCategory category = entry.getValue();
-
+        for (BookCategory category : context.getCategories()) {
+            String categoryId = category.getId();
             // Category Page
             buildCategoryPage(context, categoryId, category);
         }
@@ -105,8 +103,8 @@ public class HtmlRenderer {
         data.put("location", indexBreadcrumbModern(null));
 
         // contents
-        data.put("contents", generateTableOfContents(context.getSortedCategories()));
-        data.put("page_content", generateHomePageContent(context, context.getSortedCategories()));
+        data.put("contents", generateTableOfContents(context.getCategories()));
+        data.put("page_content", generateHomePageContent(context, context.getCategories()));
 
         // generate page
         context.getHtmlRenderer().generatePage("index.ftl", context.getOutputDir(), "index.html", data);
@@ -135,7 +133,7 @@ public class HtmlRenderer {
         data.put("location", indexBreadcrumbModern(null));
 
         // contents
-        data.put("contents", generateTableOfContents(context.getSortedCategories()));
+        data.put("contents", generateTableOfContents(context.getCategories()));
 
         // generate page
         context.getHtmlRenderer().generatePage("search.ftl", context.getOutputDir(), "search.html", data);
@@ -163,7 +161,7 @@ public class HtmlRenderer {
         data.put("index", "../");
         data.put("root", "../..");// context.getRootDir()
         data.put("location", generateCategoryBreadcrumb("../", cat.getName()));
-        data.put("contents", generateCategoryTableOfContents(context.getSortedCategories(), categoryId));
+        data.put("contents", generateCategoryTableOfContents(context.getCategories(), categoryId));
         data.put("page_content", generateCategoryPageContent(cat));
 
         // 生成分类页面
@@ -175,9 +173,8 @@ public class HtmlRenderer {
     }
 
     private void buildEntryPages(Context context, String categoryId, BookCategory cat) throws IOException, TemplateException {
-        for (Map.Entry<String, BookEntry> entryEntry : cat.getSortedEntries()) {
-            String entryId = entryEntry.getKey();
-            BookEntry entry = entryEntry.getValue();
+        for (BookEntry entry : cat.getEntries()) {
+            String entryId = entry.getId();
 
             Map<String, Object> data = new HashMap<>();
             data.put("title", context.translate(I18n.TITLE));
@@ -194,7 +191,7 @@ public class HtmlRenderer {
             data.put("index", "../");
             data.put("root", "../..");// context.getRootDir()
             data.put("location", generateEntryBreadcrumb("../", cat.getName(), entry.getName()));
-            data.put("contents", generateEntryTableOfContents(context.getSortedCategories(), categoryId, entryId));
+            data.put("contents", generateEntryTableOfContents(context.getCategories(), categoryId, entryId));
             data.put("page_content", generateEntryPageContent(entry));
 
             // 生成条目页面
@@ -234,16 +231,14 @@ public class HtmlRenderer {
         }
     }
 
-    public static String generateTableOfContents(List<Map.Entry<String, BookCategory>> sortedCategories) {
-        return sortedCategories.stream()
-                .map(entry -> {
-                    String catId = entry.getKey();
-                    BookCategory category = entry.getValue();
+    public static String generateTableOfContents(List<BookCategory> categories) {
+        return categories.stream()
+                .map(category -> {
                     return String.format(
                             """
                             <li><a href="./%s/">%s</a></li>
                             """,
-                            catId, category.getName()
+                            category.getId(), category.getName()
                     );
                 })
                 .collect(Collectors.joining("\n"));
@@ -252,16 +247,15 @@ public class HtmlRenderer {
     /**
      * 生成主页内容
      */
-    public static String generateHomePageContent(Context context, List<Map.Entry<String, BookCategory>> sortedCategories) {
+    public static String generateHomePageContent(Context context, List<BookCategory> categories) {
         String splashImage = getSplashLocation();
         String textHome = context.translate(I18n.HOME);
         String textEntries = context.translate(I18n.CATEGORIES);
 
         // 生成分类卡片
-        String categoryCards = sortedCategories.stream()
-                .map(entry -> {
-                    String catId = entry.getKey();
-                    BookCategory category = entry.getValue();
+        String categoryCards = categories.stream()
+                .map(category -> {
+                    String catId = category.getId();
                     return String.format(
                             """
                             <div class="col">
@@ -324,11 +318,10 @@ public class HtmlRenderer {
         );
     }
 
-    private static String generateCategoryTableOfContents(List<Map.Entry<String, BookCategory>> sortedCategories, String currentCategoryId) {
-        return sortedCategories.stream()
-                .map(entry -> {
-                    String catId = entry.getKey();
-                    BookCategory category = entry.getValue();
+    private static String generateCategoryTableOfContents(List<BookCategory> categories, String currentCategoryId) {
+        return categories.stream()
+                .map(category -> {
+                    String catId = category.getId();
 
                     if (!catId.equals(currentCategoryId)) {
                         return String.format(
@@ -339,9 +332,8 @@ public class HtmlRenderer {
                         );
                     } else {
                         // 当前分类，显示子条目
-                        String subEntries = category.getSortedEntries().stream()
-                                .map(subEntry -> {
-                                    BookEntry bookEntry = subEntry.getValue();
+                        String subEntries = category.getEntries().stream()
+                                .map(bookEntry -> {
                                     return String.format(
                                             """
                                             <li><a href="./%s.html">%s</a></li>
@@ -367,9 +359,8 @@ public class HtmlRenderer {
     }
 
     private static String generateCategoryPageContent(BookCategory cat) {
-        String categoryListing = cat.getSortedEntries().stream()
-                .map(entry -> {
-                    BookEntry bookEntry = entry.getValue();
+        String categoryListing = cat.getEntries().stream()
+                .map(bookEntry -> {
                     return String.format(
                             """
                             <div class="col">
@@ -422,12 +413,11 @@ public class HtmlRenderer {
         );
     }
 
-    private static String generateEntryTableOfContents(List<Map.Entry<String, BookCategory>> sortedCategories,
+    private static String generateEntryTableOfContents(List<BookCategory> categories,
                                                        String currentCategoryId, String currentEntryId) {
-        return sortedCategories.stream()
-                .map(entry -> {
-                    String catId = entry.getKey();
-                    BookCategory category = entry.getValue();
+        return categories.stream()
+                .map(category -> {
+                    String catId = category.getId();
 
                     if (!catId.equals(currentCategoryId)) {
                         return String.format(
@@ -438,10 +428,9 @@ public class HtmlRenderer {
                         );
                     } else {
                         // 当前分类，显示子条目
-                        String subEntries = category.getSortedEntries().stream()
-                                .map(subEntry -> {
-                                    String entryId = subEntry.getKey();
-                                    BookEntry bookEntry = subEntry.getValue();
+                        String subEntries = category.getEntries().stream()
+                                .map(bookEntry -> {
+                                    String entryId = bookEntry.getId();
                                     boolean isCurrent = entryId.equals(currentEntryId);
 
                                     return String.format(

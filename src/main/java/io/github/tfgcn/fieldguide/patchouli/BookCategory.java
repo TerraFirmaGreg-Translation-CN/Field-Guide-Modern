@@ -5,15 +5,13 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @see <a href="https://vazkiimods.github.io/Patchouli/docs/reference/category-json>Category JSON Format</a>
  */
 @Data
-public class BookCategory {
-    private List<String> entries = new ArrayList<>();
-    private List<Map.Entry<String, BookEntry>> sortedEntries = new ArrayList<>();
+public class BookCategory implements Comparable<BookCategory> {
+    private List<BookEntry> entries = new ArrayList<>();
 
     private String id;
     /**
@@ -57,17 +55,20 @@ public class BookCategory {
      */
     private boolean secret = false;
 
-    // Utility methods for adding entries
-    public void addEntry(String entryId) {
-        this.entries.add(entryId);
-    }
-
-    public void addSortedEntry(String entryId, BookEntry entry) {
-        this.sortedEntries.add(Map.entry(entryId, entry));
+    public void addEntry(BookEntry entry) {
+        this.entries.add(entry);
     }
 
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public int compareTo(BookCategory other) {
+        if (this.sort != other.sort) {
+            return Integer.compare(this.sort, other.sort);
+        }
+        return this.id.compareTo(other.id);
     }
 }

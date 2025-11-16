@@ -58,9 +58,9 @@ public class Context {
     private String lang;
 
     // 数据结构
-    private Map<String, BookCategory> categories = new HashMap<>();
-    private Map<String, BookEntry> entries = new HashMap<>();
-    private List<Map.Entry<String, BookCategory>> sortedCategories = new ArrayList<>();
+    private Map<String, BookCategory> categoryMap = new HashMap<>();
+    private Map<String, BookEntry> entryMap = new HashMap<>();
+    private List<BookCategory> categories = new ArrayList<>();
 
     // 所有权管理
     private Map<String, String> categoryOwners = new HashMap<>();
@@ -120,9 +120,9 @@ public class Context {
         this.lang = lang;
         this.outputDir = ProjectUtil.pathJoin(outputRootDir, lang);
         
-        this.categories = new HashMap<>();
-        this.entries = new HashMap<>();
-        this.sortedCategories = new ArrayList<>();
+        this.categoryMap = new HashMap<>();
+        this.entryMap = new HashMap<>();
+        this.categories = new ArrayList<>();
         this.langKeys = new HashMap<>();
         
         loadTranslations(lang);
@@ -206,14 +206,23 @@ public class Context {
         return nextId("content");
     }
 
+    public boolean hasCategory(String categoryId) {
+        return this.categoryMap.containsKey(categoryId);
+    }
+
+    public void addCategory(BookCategory category) {
+        this.categoryMap.put(category.getId(), category);
+        this.categories.add(category);
+    }
+
     public boolean hasEntry(String entryId) {
-        return this.entries.containsKey(entryId);
+        return this.entryMap.containsKey(entryId);
     }
 
     public void addEntry(String categoryId, String entryId, BookEntry entry, Map<String, String> search) {
         try {
-            this.entries.put(entryId, entry);
-            this.categories.get(categoryId).getEntries().add(entryId);
+            this.entryMap.put(entryId, entry);
+            this.categoryMap.get(categoryId).addEntry(entry);
             this.searchTree.add(search);
         } catch (Exception e) {
             // FIXME category not found for other languages
@@ -225,35 +234,9 @@ public class Context {
      * 对分类和条目进行排序
      */
     public void sort() {
-        // 排序分类
-        this.sortedCategories = new ArrayList<>(this.categories.entrySet());
-        this.sortedCategories.sort((a, b) -> {
-            BookCategory catA = a.getValue();
-            BookCategory catB = b.getValue();
-            if (catA.getSort() != catB.getSort()) {
-                return Integer.compare(catA.getSort(), catB.getSort());
-            }
-            return a.getKey().compareTo(b.getKey());
-        });
-
-        // 对每个分类下的条目排序
-        for (Map.Entry<String, BookCategory> entry : this.sortedCategories) {
-            BookCategory cat = entry.getValue();
-            List<String> sortedEntryNames = new ArrayList<>(cat.getEntries());
-            sortedEntryNames.sort((a, b) -> {
-                BookEntry entryA = this.entries.get(a);
-                BookEntry entryB = this.entries.get(b);
-                if (entryA.getSort() != entryB.getSort()) {
-                    return Integer.compare(entryA.getSort(), entryB.getSort());
-                }
-                return a.compareTo(b);
-            });
-            
-            List<Map.Entry<String, BookEntry>> sortedEntries = new ArrayList<>();
-            for (String entryName : sortedEntryNames) {
-                sortedEntries.add(Map.entry(entryName, this.entries.get(entryName)));
-            }
-            cat.setSortedEntries(sortedEntries);
+        this.categories.sort(BookCategory::compareTo);
+        for (BookCategory cat : this.categories) {
+            cat.getEntries().sort(BookEntry::compareTo);
         }
     }
     
@@ -940,6 +923,7 @@ public class Context {
         for (String b : blocks) {
             try {
                 BufferedImage image = getBlockImage(b);
+                image = resizeImage(image, 64, 64);
                 blockImages.add(image);
             } catch (Exception e) {
                 log.error("Failed loading block image: {}, message: {}", b, e.getMessage());

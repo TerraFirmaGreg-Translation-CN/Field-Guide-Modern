@@ -128,7 +128,8 @@ public class BookParser {
             TextFormatter.formatText(descriptionBuffer, category.getDescription(), context.getKeybindings());
             category.setDescription(String.join("", descriptionBuffer));
 
-            context.getCategories().put(categoryId, category);
+            context.addCategory(category);
+            context.getCategoryMap().put(categoryId, category);
             
         } catch (IOException e) {
             log.error("Failed to parse category file: {}", asset, e);

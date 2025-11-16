@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class BookEntry {
+public class BookEntry implements Comparable<BookEntry> {
     private List<String> buffer = new ArrayList<>();
 
     /**
@@ -108,14 +108,16 @@ public class BookEntry {
     private String iconPath = "";
     private String iconName = "";
 
-    // Equivalent to Python's push method
-    public void push(String text) {
-        buffer.add(text);
-    }
-
-    // Equivalent to Python's __str__ method
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public int compareTo(BookEntry other) {
+        if (this.sort != other.sort) {
+            return Integer.compare(this.sort, other.sort);
+        }
+        return this.id.compareTo(other.id);
     }
 }
