@@ -196,35 +196,25 @@ public class TextureRenderer {
         int height = grayscaleImage.getHeight();
         BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-        // 获取目标颜色的 RGB 分量（0-255 范围）
         float targetR = color.getRed() / 255.0f;
         float targetG = color.getGreen() / 255.0f;
         float targetB = color.getBlue() / 255.0f;
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                // 获取原始像素的 ARGB 值
                 int pixel = grayscaleImage.getRGB(x, y);
                 int alpha = (pixel >> 24) & 0xFF;
+                int gray = (pixel >> 16) & 0xFF;
+                float grayScale = gray / 255.0f;
 
-                // 对于灰度图像，RGB 分量通常是相同的
-                // 我们取其中一个分量作为亮度值（0-255）
-                int gray = (pixel >> 16) & 0xFF; // 使用红色分量
+                int r = (int) (grayScale * targetR * 255);
+                int g = (int) (grayScale * targetG * 255);
+                int b = (int) (grayScale * targetB * 255);
 
-                // 将灰度值归一化到 0-1 范围
-                float normalizedGray = gray / 255.0f;
-
-                // 将归一化的灰度值与目标颜色相乘
-                int r = (int) (normalizedGray * targetR * 255);
-                int g = (int) (normalizedGray * targetG * 255);
-                int b = (int) (normalizedGray * targetB * 255);
-
-                // 确保值在有效范围内
                 r = Math.min(255, Math.max(0, r));
                 g = Math.min(255, Math.max(0, g));
                 b = Math.min(255, Math.max(0, b));
 
-                // 创建新的像素值
                 int newPixel = (alpha << 24) | (r << 16) | (g << 8) | b;
                 result.setRGB(x, y, newPixel);
             }

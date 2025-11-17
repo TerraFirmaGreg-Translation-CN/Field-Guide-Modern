@@ -5,6 +5,7 @@ import com.google.gson.stream.JsonReader;
 import io.github.tfgcn.fieldguide.data.gtceu.utils.ResourceHelper;
 import io.github.tfgcn.fieldguide.data.mc.tag.TagElement;
 import io.github.tfgcn.fieldguide.data.mc.tag.Tags;
+import io.github.tfgcn.fieldguide.data.tfc.TFCWood;
 import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.MCMeta;
 import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;
@@ -67,6 +68,7 @@ public class AssetLoader {
 
         initBuiltinModels();
         initGtceuIngots();
+        initTFCWoods();
     }
 
     private void initBuiltinModels() {
@@ -111,6 +113,22 @@ public class AssetLoader {
         model.setTextures(Map.of("layer0", item));
         itemModelCache.put(item, model);
         log.info("register gtceu ingot: {}", item);
+    }
+
+    private void initTFCWoods() {
+        BufferedImage lumberBase = loadTexture("tfc:item/wood/lumber");
+        BufferedImage twigBase = loadTexture("tfc:item/wood/twig");
+
+        for (TFCWood wood : TFCWood.values()) {
+
+            String name = wood.getSerializedName();
+            Color woodColor = new Color(wood.getWoodColor().getCol());
+
+            BufferedImage lumber = multiplyImageByColor(lumberBase, woodColor);
+            registeredImage.put("tfc:item/wood/lumber_" + name, lumber);
+            BufferedImage twig = multiplyImageByColor(twigBase, woodColor);
+            registeredImage.put("tfc:item/wood/twig_" + name, twig);
+        }
     }
 
     private BufferedImage createIngot(int colorMain, int colorSecondary, String iconSet) {
@@ -392,15 +410,16 @@ public class AssetLoader {
         Asset asset = getAsset(assetKey);
         if (asset == null) {
             log.error("Texture not found: {}", assetKey);
-            return null;
+            missingAssets.add(assetKey.getId());
+            throw new AssetNotFoundException("Texture not found: " + assetKey.getResourcePath());
         }
 
         try {
             return ImageIO.read(asset.getInputStream());
         } catch (IOException e) {
             log.error("Error loading texture: {}", assetKey, e);
+            throw new InternalException("Error loading texture: " + assetKey);
         }
-        return null;
     }
 
     public Asset loadResource(String resourceLocation, String resourceType, String resourceRoot, String resourceSuffix) {

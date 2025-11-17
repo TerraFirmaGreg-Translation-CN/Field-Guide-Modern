@@ -89,7 +89,12 @@ public class BlockStateConditionAdapter extends TypeAdapter<Condition> {
         Map<String, String> properties = new TreeMap<>();
         properties.put(firstKey, in.nextString());
         while (in.hasNext()) {
-            properties.put(in.nextName(), in.nextString());
+            switch(in.peek()) {
+                case STRING -> properties.put(in.nextName(), in.nextString());
+                case NUMBER -> properties.put(in.nextName(), in.nextDouble() + "");
+                case BOOLEAN -> properties.put(in.nextName(), in.nextBoolean() + "");
+                default -> throw new IllegalArgumentException("Unknown property type: " + in.peek());
+            }
         }
         in.endObject();
 
