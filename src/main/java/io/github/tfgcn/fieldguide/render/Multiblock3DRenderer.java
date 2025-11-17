@@ -90,9 +90,9 @@ public class Multiblock3DRenderer {
         int row = pattern[0][0].length();
         log.debug("Model size: {}x{}x{}", col, height, row);
 
-        float startX = -col * 8f;
-        float startZ = -row * 8f;
+        float startX = -row * 8f;
         float startY = -height * 8f;
+        float startZ = -col * 8f;
 
         for (int y = 0; y < height; y++) {
             String[] layer = pattern[height - y - 1];

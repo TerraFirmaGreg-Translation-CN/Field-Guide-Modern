@@ -1,6 +1,7 @@
 package io.github.tfgcn.fieldguide.data.mc.blockstate;
 
 import com.google.gson.annotations.JsonAdapter;
+import io.github.tfgcn.fieldguide.exception.InternalException;
 import io.github.tfgcn.fieldguide.gson.BlockStateVariantMapAdapter;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -49,9 +50,9 @@ public class BlockState {
         }
 
         // FIXME 改为扫描多个blockState文件
-        if (defaultVariants != null && !defaultVariants.isEmpty()) {
-            return defaultVariants;
-        }
+//        if (defaultVariants != null && !defaultVariants.isEmpty()) {
+//            return defaultVariants;
+//        }
         log.warn("No variants found, state:{} in variants: {}", state, variants.keySet());
 
         if (hasMultipart()) {
@@ -80,7 +81,7 @@ public class BlockState {
     /**
      * 根据权重选择变体
      */
-    public Variant selectByWeight(List<Variant> variants) {
+    public static Variant selectByWeight(List<Variant> variants) {
         if (variants.size() == 1) {
             return variants.getFirst();
         }
@@ -102,5 +103,27 @@ public class BlockState {
 
         // 如果权重计算有问题，返回第一个
         return variants.getFirst();
+    }
+
+    public List<Variant> getDefault() {
+        if (hasVariants()) {
+            for (List<Variant> sublist : variants.values()) {
+                if (sublist != null && !sublist.isEmpty()) {
+                    return sublist;
+                }
+            }
+        }
+
+        if (hasMultipart()) {
+            for (MultiPartCase partCase : multipart) {
+                List<Variant> sublist = partCase.getApply();
+                if (sublist != null && !sublist.isEmpty()) {
+                    return sublist;
+                }
+            }
+        }
+
+        log.info("Nothing found in this blockstate");
+        return List.of();
     }
 }

@@ -435,9 +435,88 @@ public class AssetLoader {
 
     public BlockModel loadBlockModelWithState(String modelId) {
         // FIXME 这样对吗？有一些blockState文件中没有定义默认模型，导致 modelId 中没有 [] 时，无法正确找到映射的方块。
-        BlockVariant blockVariant = loadBlockVariant(modelId);
-        loadBlockStates(blockVariant.getBlock());
-        return loadModel(blockVariant.getVariant().getModel());
+        BlockVariant blockVariant = parseBlockState(modelId);
+        if (!blockVariant.hasProperties()) {
+            // FIXME what to do if no variants found ?
+            log.debug("No properties for blockStateId:{}", modelId);
+            try {
+                return loadBlockModel(modelId);
+            } catch (Exception e) {
+                log.error("Failed to load model: {}", modelId);
+            }
+        }
+
+        if (blockModelCache.containsKey(modelId)) {
+            return blockModelCache.get(modelId);
+        }
+
+        String blockStateId = blockVariant.getBlock();
+        Map<String, String> state = blockVariant.getProperties();
+        List<BlockState> list = loadBlockStates(blockVariant.getBlock());
+        if (list == null || list.isEmpty()) {
+            log.info("No blockstate found for {}", modelId);
+            throw new AssetNotFoundException("No blockstates found: " + modelId);
+        }
+
+        for (BlockState blockState : list) {
+            if (blockState.hasVariants()) {
+                List<Variant> variants = blockState.selectByVariants(state);
+                if (variants == null || variants.isEmpty()) {
+                    log.info("BlockState: No matching variant found for '{}'", blockStateId);
+                } else {
+                    blockVariant.setVariants(variants);
+                    Variant variant = BlockState.selectByWeight(variants);
+                    blockVariant.setVariant(variant);
+                    break;
+                }
+            } else if (blockState.hasMultipart()) {
+                List<Variant> variants = blockState.selectByMultipart(state);
+
+                if (variants == null || variants.isEmpty()) {
+                    log.info("BlockState: No matching multipart case found for '{}'", blockStateId);
+                } else {
+                    blockVariant.setVariants(variants);
+                    break;
+                }
+            } else {
+                log.info("BlockState : Must be a 'variants' or 'multipart' block state: {}", blockStateId);
+            }
+        }
+
+        BlockModel model = null;
+        if (blockVariant.getVariant() != null) {
+            model = loadModel(blockVariant.getVariant().getModel());
+        } else if (blockVariant.getVariants() != null && !blockVariant.getVariants().isEmpty()){
+            // FIXME 这里不太对，应该是同时返回多个model
+            List<Variant> variants = blockVariant.getVariants();
+            Variant variant;
+            if (variants.size() > 1) {
+                log.info("multi variants found, {} -> {}", modelId, variants);
+                variant = BlockState.selectByWeight(variants);
+            } else {
+                variant = variants.getFirst();
+            }
+            model = loadModel(variant.getModel());
+        } else {
+            // 这是一段兼容逻辑。因为存在一些模型完全找不到任何匹配的数据
+            for (BlockState b : list) {
+                List<Variant> defaultVariant = b.getDefault();
+                if (defaultVariant != null && !defaultVariant.isEmpty()) {
+                    log.info("Use default variant for {}, {}", modelId, defaultVariant);
+
+                    Variant defaultVar = BlockState.selectByWeight(defaultVariant);
+                    model = loadModel(defaultVar.getModel());
+                    break;
+                }
+            }
+            if (model == null) {
+                log.warn("No variants found for: {}", blockVariant);
+                throw new InternalException("BlockVariants not found:" + modelId);
+            }
+        }
+
+        blockModelCache.put(modelId, model);
+        return model;
     }
 
     public static BlockVariant parseBlockState(String blockStateId) {
