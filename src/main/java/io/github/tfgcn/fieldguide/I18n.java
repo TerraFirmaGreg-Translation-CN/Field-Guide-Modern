@@ -25,10 +25,11 @@ public final class I18n {
     public static final String KEY_USE = key("key.use");
     public static final String KEY_DROP = key("key.drop");
     public static final String KEY_SNEAK = key("key.sneak");
+    public static final String KEY_SWAP_OFFHAND = key("key.swapOffhand");
     public static final String KEY_CYCLE_CHISEL_MODE = key("tfc.key.cycle_chisel_mode");
     public static final String KEY_PLACE_BLOCK = key("tfc.key.place_block");
 
-    public static final String[] KEYS = {KEY_INVENTORY, KEY_ATTACK, KEY_USE, KEY_DROP, KEY_SNEAK, KEY_CYCLE_CHISEL_MODE, KEY_PLACE_BLOCK};
+    public static final String[] KEYS = {KEY_INVENTORY, KEY_ATTACK, KEY_USE, KEY_DROP, KEY_SNEAK, KEY_SWAP_OFFHAND, KEY_CYCLE_CHISEL_MODE, KEY_PLACE_BLOCK};
 
     private I18n() {
     }

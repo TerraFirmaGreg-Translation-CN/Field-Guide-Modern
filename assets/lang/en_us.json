@@ -24,6 +24,7 @@
     "key.use": "Right Click",
     "key.drop": "Q",
     "key.sneak": "Shift",
+    "key.swapOffhand": "F",
     "tfc.key.cycle_chisel_mode": "M",
-    "tfc.key.place_block": "V",
+    "tfc.key.place_block": "V"
 }

@@ -48,18 +48,18 @@ public class BookParser {
                 context.getLastUid().get("item"), 
                 context.getLastUid().get("image"));
 
-        log.info("Missing language keys: {}", context.getMissingKeys().size());
-        for (String key : context.getMissingKeys()) {
-            System.out.println(key);
-        }
-        log.info("Missing asset keys: {}", context.getLoader().getMissingAssets().size());
-        for (String key : context.getLoader().getMissingAssets()) {
-            System.out.println(key);
-        }
-        log.info("Missing image keys: {}", context.getMissingImages().size());
-        for (String key : context.getMissingImages()) {
-            System.out.println(key);
-        }
+//        log.info("Missing language keys: {}", context.getMissingKeys().size());
+//        for (String key : context.getMissingKeys()) {
+//            System.out.println(key);
+//        }
+//        log.info("Missing asset keys: {}", context.getLoader().getMissingAssets().size());
+//        for (String key : context.getLoader().getMissingAssets()) {
+//            System.out.println(key);
+//        }
+//        log.info("Missing image keys: {}", context.getMissingImages().size());
+//        for (String key : context.getMissingImages()) {
+//            System.out.println(key);
+//        }
     }
 
     public void parseBook(Context context) {
@@ -69,7 +69,7 @@ public class BookParser {
 
     private void parseCategories(Context context) {
         // assets/tfc/patchouli_books/field_guide/en_us/categories
-        String categoriesPath = Constants.getCategoryDir(context.getLang().getCode());
+        String categoriesPath = Constants.getCategoryDir(context.getLang().getKey());
         List<Asset> assets;
         try {
             assets = context.listAssets(categoriesPath);
@@ -90,7 +90,7 @@ public class BookParser {
 
     private void parseEntries(Context context) {
         // assets/tfc/patchouli_books/field_guide/en_us/entries
-        String entriesPath = Constants.getEntryDir(context.getLang().getCode());
+        String entriesPath = Constants.getEntryDir(context.getLang().getKey());
         List<Asset> assets;
         try {
             assets = context.listAssets(entriesPath);

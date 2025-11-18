@@ -33,7 +33,7 @@ public class AssetLoaderTest {
     void testLoadBook() throws IOException {
         Book book = loader.loadBook(FIELD_GUIDE);
         for (Language lang : Language.values()) {
-            Book localizedBook = loader.loadBook(FIELD_GUIDE, lang.getCode(), book);
+            Book localizedBook = loader.loadBook(FIELD_GUIDE, lang.getKey(), book);
             localizedBook.report();
         }
     }

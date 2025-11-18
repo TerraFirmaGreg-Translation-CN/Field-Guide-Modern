@@ -2,6 +2,7 @@ package io.github.tfgcn.fieldguide;
 
 import lombok.Getter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
@@ -16,20 +17,20 @@ public enum Language {
     ZH_HK("zh_hk", "繁體中文（港澳)"),
     ZH_TW("zh_tw", "繁體中文(台灣)"),
     ;
-    private final String code;
-    private final String name;
+    private final String key;
+    private final String value;
 
-    Language(String code, String name) {
-        this.code = code;
-        this.name = name;
+    Language(String key, String value) {
+        this.key = key;
+        this.value = value;
     }
 
     public static List<Language> asList() {
-        return List.of(values());
+        return Arrays.asList(values());
     }
 
     @Override
     public String toString() {
-        return code;
+        return key;
     }
 }

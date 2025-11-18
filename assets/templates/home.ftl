@@ -43,11 +43,11 @@
             <!-- Language submenu -->
             <li class="nav-item px-2 dropdown">
               <a class="nav-link dropdown-toggle" id="lang-dropdown-button" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-translate"></i> ${current_lang.name}
+                <i class="bi bi-translate"></i> ${current_lang.value}
               </a>
               <div class="dropdown-menu" aria-labelledby="lang-dropdown-button">
                 <#list languages as lang>
-                <a href="${root}/${lang.code}/index.html" class="dropdown-item">${lang.name}</a>
+                <a href="${root}/${lang.key}/index.html" class="dropdown-item">${lang.value}</a>
                 </#list>
               </div>
             </li>
@@ -172,12 +172,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="${root}/static/icons.min.js"></script>
-
-    <script>
-      window._CURRENT_ROOT = '${root}';
-      window._CURRENT_LANG = '${current_lang.code}';
-    </script>
-
     <script src="${root}/static/tooltips.js"></script>
     <script src="${root}/static/search.js"></script>
   </body>

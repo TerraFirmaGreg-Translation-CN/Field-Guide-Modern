@@ -83,11 +83,11 @@ public class MCMeta {
                 Map<String, Object> objects = (Map<String, Object>) assets.get("objects");
                 
                 for (Language lang : languages) {
-                    if (lang.getCode().equals("en_us")) {
+                    if (lang.getKey().equals("en_us")) {
                         continue; // This file is in the main client jar
                     }
                     
-                    String langKey = "minecraft/lang/" + lang.getCode() + ".json";
+                    String langKey = "minecraft/lang/" + lang.getKey() + ".json";
                     Map<String, Object> langObject = (Map<String, Object>) objects.get(langKey);
                     if (langObject == null) {
                         log.warn("Language file not found: " + langKey);
@@ -99,7 +99,7 @@ public class MCMeta {
                     byte[] languageData = download(languageUrl);
                     Map<String, Object> languageJson = parseJson(languageData);
                     
-                    Path langPath = Paths.get(CACHE, "assets", "minecraft", "lang", lang.getCode() + ".json");
+                    Path langPath = Paths.get(CACHE, "assets", "minecraft", "lang", lang.getKey() + ".json");
                     try (FileWriter fw = new FileWriter(langPath.toFile(), StandardCharsets.UTF_8)) {
                         writeJson(fw, languageJson);
                     }

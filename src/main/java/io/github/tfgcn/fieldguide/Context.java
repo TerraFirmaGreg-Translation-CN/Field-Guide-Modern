@@ -119,14 +119,14 @@ public class Context {
      */
     public Context withLang(Language lang) {
         this.lang = lang;
-        this.outputLangDir = outputRootDir + "/" + lang.getCode();
+        this.outputLangDir = outputRootDir + "/" + lang.getKey();
 
         this.categoryMap = new HashMap<>();
         this.entryMap = new HashMap<>();
         this.categories = new ArrayList<>();
         this.langKeys = new HashMap<>();
         
-        loadTranslations(lang.getCode());
+        loadTranslations(lang.getKey());
         
         this.keybindings = new HashMap<>();
         for (String key : I18n.KEYS) {

@@ -305,7 +305,7 @@ public class AssetLoader {
      * @throws IOException
      */
     public Book loadBook(String bookId) throws IOException {
-        String lang = Language.EN_US.getCode();
+        String lang = Language.EN_US.getKey();
         // load book
         String bookPath = Constants.getBookPath(bookId);
         Asset bookAsset = getAsset(bookPath);
