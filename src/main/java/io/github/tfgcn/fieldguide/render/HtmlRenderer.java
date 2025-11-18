@@ -68,10 +68,6 @@ public class HtmlRenderer {
         }
     }
 
-    private static String getSplashLocation() {
-        return "splash";
-    }
-
 
     public void copyStaticFiles(Context context) throws IOException {
 
@@ -107,7 +103,6 @@ public class HtmlRenderer {
         data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
         data.put("languages", getLanguageDropdown(Constants.LANGUAGES, context));
         data.put("index", "#");
-        data.put("location", indexBreadcrumbModern(null));
 
         // contents
         data.put("categories", context.getCategories());
@@ -135,8 +130,7 @@ public class HtmlRenderer {
         data.put("current_lang_key", context.getLang());
         data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
         data.put("languages", getLanguageDropdown(Constants.LANGUAGES, context));
-        data.put("index", "../");
-        data.put("location", indexBreadcrumbModern(null));
+        data.put("index", "./");
 
         // contents
         data.put("categories", context.getCategories());
@@ -169,7 +163,6 @@ public class HtmlRenderer {
         data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
         data.put("languages", getLanguageDropdown(Constants.LANGUAGES, context));
         data.put("index", "../");
-        data.put("location", generateCategoryBreadcrumb("../", cat.getName()));
 
         data.put("categories", context.getCategories());
         data.put("current_category", cat);
@@ -184,8 +177,6 @@ public class HtmlRenderer {
 
     private void buildEntryPages(Context context, String categoryId, BookCategory cat) throws IOException, TemplateException {
         for (BookEntry entry : cat.getEntries()) {
-            String entryId = entry.getId();
-
             Map<String, Object> data = new HashMap<>();
             data.put("title", context.translate(I18n.TITLE));
             data.put("long_title", entry.getName() + " | " + context.translate(I18n.SHORT_TITLE));
@@ -202,7 +193,6 @@ public class HtmlRenderer {
             data.put("current_lang", context.translate(String.format(I18n.LANGUAGE_NAME, context.getLang())));
             data.put("languages", getLanguageDropdown(Constants.LANGUAGES, context));
             data.put("index", "../");
-            data.put("location", generateEntryBreadcrumb("../", cat.getName(), entry.getName()));
 
             data.put("categories", context.getCategories());
             data.put("current_category", cat);
@@ -234,46 +224,9 @@ public class HtmlRenderer {
                 .collect(Collectors.toList());
     }
 
-    public static String indexBreadcrumbModern(String relativePath) {
-        String iconHtml = "<i class=\"bi bi-house-fill\"></i>";
-
-        if (relativePath == null || relativePath.trim().isEmpty()) {
-            return "<li class=\"breadcrumb-item\">" + iconHtml + "</li>";
-        } else {
-            return """
-                <li class="breadcrumb-item">
-                    <a href="%s">%s</a>
-                </li>
-                """.formatted(relativePath, iconHtml);
-        }
-    }
-
-    private static String generateCategoryBreadcrumb(String relativePath, String categoryName) {
-        String indexBreadcrumb = indexBreadcrumbModern(relativePath);
-        return String.format(
-                """
-                %s
-                <li class="breadcrumb-item active" aria-current="page">%s</li>
-                """,
-                indexBreadcrumb, categoryName
-        );
-    }
-
     private static String cleanImagePath(String iconPath) {
         if (iconPath == null) return "";
         return iconPath.replace("../../_images/", "").replace("..\\..\\_images\\", "");
-    }
-
-    private static String generateEntryBreadcrumb(String relativePath, String categoryName, String entryName) {
-        String indexBreadcrumb = indexBreadcrumbModern(relativePath);
-        return String.format(
-                """
-                %s
-                <li class="breadcrumb-item"><a href="./">%s</a></li>
-                <li class="breadcrumb-item active" aria-current="page">%s</li>
-                """,
-                indexBreadcrumb, categoryName, entryName
-        );
     }
 
     private static String generateEntryPageContent(BookEntry entry) {

@@ -117,7 +117,15 @@
         <div class="col-md-9">
           <nav class="mb-4" aria-label="breadcrumb">
             <ol class="breadcrumb">
-              ${location}
+              <li class="breadcrumb-item">
+                <a href="../"><i class="bi bi-house-fill"></i></a>
+              </li>
+              <li class="breadcrumb-item">
+                <a href="./">${current_category.name}</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                ${current_entry.name}
+              </li>
             </ol>
           </nav>
 
