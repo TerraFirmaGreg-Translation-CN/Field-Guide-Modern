@@ -8,7 +8,6 @@ import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.asset.ItemStackResult;
 import io.github.tfgcn.fieldguide.exception.InternalException;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
-import io.github.tfgcn.fieldguide.render.CraftingRecipeFormatter;
 
 import java.util.List;
 import java.util.Map;

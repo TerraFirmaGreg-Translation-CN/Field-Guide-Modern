@@ -3,7 +3,6 @@ package io.github.tfgcn.fieldguide.render.components;
 import io.github.tfgcn.fieldguide.Context;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.asset.ItemStackResult;
-import io.github.tfgcn.fieldguide.render.CraftingRecipeFormatter;
 
 import java.util.*;
 
