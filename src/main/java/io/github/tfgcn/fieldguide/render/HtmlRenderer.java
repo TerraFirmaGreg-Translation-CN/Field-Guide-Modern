@@ -2,9 +2,9 @@ package io.github.tfgcn.fieldguide.render;
 
 import freemarker.template.*;
 import io.github.tfgcn.fieldguide.*;
-import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.data.patchouli.BookCategory;
 import io.github.tfgcn.fieldguide.data.patchouli.BookEntry;
+import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.localization.I18n;
 import io.github.tfgcn.fieldguide.localization.Language;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
@@ -23,9 +23,16 @@ public class HtmlRenderer {
 
     private final Configuration cfg;
 
-    public HtmlRenderer(String templateDir) throws IOException {
+    private final LocalizationManager localizationManager;
+
+    private final String outputRootDir;
+
+    public HtmlRenderer(LocalizationManager localizationManager, String outputRootDir) throws IOException {
+        this.localizationManager = localizationManager;
+        this.outputRootDir = outputRootDir;
+
         cfg = new Configuration(Configuration.VERSION_2_3_32);
-        cfg.setDirectoryForTemplateLoading(new File(templateDir));
+        cfg.setDirectoryForTemplateLoading(new File(Constants.TEMPLATE_DIR));
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         cfg.setAutoEscapingPolicy(Configuration.DISABLE_AUTO_ESCAPING_POLICY);
@@ -37,38 +44,37 @@ public class HtmlRenderer {
     public void buildBookHtml(Context context) throws Exception {
 
         // copy files from assets/static to outputDir
-        copyStaticFiles(context.getOutputRootDir());
+        copyStaticFiles();
 
         // Home page
-        buildHomePage(context);
+        buildHomePage(context.getCategories());
 
         // Search page
-        buildSearchPage(context);
+        buildSearchPage(context.getCategories());
+
+        saveSearchData(context.getSearchTree());
 
         // Category pages
         for (BookCategory category : context.getCategories()) {
-            // Category Page
-            buildCategoryPage(context, category);
+            buildCategoryPage(category, context.getCategories());
         }
 
         System.out.println("Static site generated successfully!");
     }
 
-    public void generatePage(String templateName, String outputDir, String outputFileName, Map<String, Object> data)
+    public void generatePage(String templateName, String outputFileName, Map<String, Object> data)
             throws IOException, TemplateException {
         
         Template template = cfg.getTemplate(templateName);
-        Path outputPath = Paths.get(outputDir, outputFileName);
+        Path outputPath = Paths.get(outputRootDir, localizationManager.getCurrentLanguage().getKey(), outputFileName);
 
         FileUtils.createParentDirectories(outputPath.toFile());
-        try (Writer out = new OutputStreamWriter(
-                Files.newOutputStream(outputPath), StandardCharsets.UTF_8)) {
+        try (Writer out = new OutputStreamWriter(Files.newOutputStream(outputPath), StandardCharsets.UTF_8)) {
             template.process(data, out);
         }
     }
 
-
-    public void copyStaticFiles(String outputRootDir) throws IOException {
+    public void copyStaticFiles() throws IOException {
 
         // copy files from assets/static to outputDir
         FileUtils.deleteDirectory(new File(outputRootDir + "/static"));
@@ -80,126 +86,123 @@ public class HtmlRenderer {
         FileUtils.copyFile(new File("assets/templates/redirect.html"), new File(outputRootDir + "/index.html"));
     }
 
-    public void buildHomePage(Context context) throws IOException, TemplateException {
-        LocalizationManager lm = context.getLocalizationManager();
+    public void buildHomePage(List<BookCategory> categories) throws IOException, TemplateException {
         Map<String, Object> data = new HashMap<>();
         // meta
-        data.put("title", lm.translate(I18n.TITLE));
-        data.put("long_title", lm.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
-        data.put("short_description", lm.translate(I18n.HOME));
+        data.put("title", localizationManager.translate(I18n.TITLE));
+        data.put("long_title", localizationManager.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
+        data.put("short_description", localizationManager.translate(I18n.HOME));
         data.put("preview_image", "splash.png");
-        data.put("root", "..");// context.getBasePath()
+        data.put("root", "..");
 
         // text
-        data.put("text_index", lm.translate(I18n.INDEX));
-        data.put("text_home", lm.translate(I18n.HOME));
-        data.put("text_github", lm.translate(I18n.GITHUB));
-        data.put("text_discord", lm.translate(I18n.DISCORD));
-        data.put("text_categories", lm.translate(I18n.CATEGORIES));
-        data.put("text_contents", lm.translate(I18n.CONTENTS));
+        data.put("text_index", localizationManager.translate(I18n.INDEX));
+        data.put("text_home", localizationManager.translate(I18n.HOME));
+        data.put("text_github", localizationManager.translate(I18n.GITHUB));
+        data.put("text_discord", localizationManager.translate(I18n.DISCORD));
+        data.put("text_categories", localizationManager.translate(I18n.CATEGORIES));
+        data.put("text_contents", localizationManager.translate(I18n.CONTENTS));
 
         // langs and navigation
-        data.put("current_lang", lm.getCurrentLanguage());
+        data.put("current_lang", localizationManager.getCurrentLanguage());
         data.put("languages", Language.asList());
         data.put("index", "#");
 
         // contents
-        data.put("categories", context.getCategories());
+        data.put("categories", categories);
 
         // generate page
-        context.getHtmlRenderer().generatePage("home.ftl", context.getOutputLangDir(), "index.html", data);
+        generatePage("home.ftl", "index.html", data);
     }
 
-    public void buildSearchPage(Context context) throws IOException, TemplateException {
-        LocalizationManager lm = context.getLocalizationManager();
+    public void buildSearchPage(List<BookCategory> categories) throws IOException, TemplateException {
         Map<String, Object> data = new HashMap<>();
         // meta
-        data.put("title", lm.translate(I18n.TITLE));
-        data.put("long_title", lm.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
-        data.put("short_description", lm.translate(I18n.HOME));
+        data.put("title", localizationManager.translate(I18n.TITLE));
+        data.put("long_title", localizationManager.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
+        data.put("short_description", localizationManager.translate(I18n.HOME));
         data.put("preview_image", "splash.png");
-        data.put("root", "..");// basePath
+        data.put("root", "..");
 
         // text
-        data.put("text_index", lm.translate(I18n.INDEX));
-        data.put("text_contents", lm.translate(I18n.CONTENTS));
-        data.put("text_github", lm.translate(I18n.GITHUB));
-        data.put("text_discord", lm.translate(I18n.DISCORD));
+        data.put("text_index", localizationManager.translate(I18n.INDEX));
+        data.put("text_contents", localizationManager.translate(I18n.CONTENTS));
+        data.put("text_github", localizationManager.translate(I18n.GITHUB));
+        data.put("text_discord", localizationManager.translate(I18n.DISCORD));
 
         // langs and navigation
-        data.put("current_lang", lm.getCurrentLanguage());
+        data.put("current_lang", localizationManager.getCurrentLanguage());
         data.put("languages", Language.asList());
         data.put("index", "./");
 
         // contents
-        data.put("categories", context.getCategories());
+        data.put("categories", categories);
 
         // generate page
-        context.getHtmlRenderer().generatePage("search.ftl", context.getOutputLangDir(), "search.html", data);
+        generatePage("search.ftl", "search.html", data);
+    }
 
-        for (Map<String, String> result : context.getSearchTree()) {
+    public void saveSearchData(List<Map<String, String>> searchTree) throws IOException {
+
+        for (Map<String, String> result : searchTree) {
             String originalContent = result.get("content");
             String content = searchStrip(originalContent);
             result.put("content", content);
         }
-        JsonUtils.writeFile(new File(context.getOutputLangDir() + "/search_index.json"), context.getSearchTree());
+        JsonUtils.writeFile(new File(outputRootDir + "/" + localizationManager.getCurrentLanguage().getKey() + "/search_index.json"), searchTree);
     }
 
-    public void buildCategoryPage(Context context, BookCategory cat) throws IOException, TemplateException {
-        LocalizationManager lm = context.getLocalizationManager();
+    public void buildCategoryPage(BookCategory cat, List<BookCategory> categories) throws IOException, TemplateException {
         Map<String, Object> data = new HashMap<>();
-        data.put("title", lm.translate(I18n.TITLE));
-        data.put("long_title", cat.getName() + " | " + lm.translate(I18n.SHORT_TITLE));
+        data.put("title", localizationManager.translate(I18n.TITLE));
+        data.put("long_title", cat.getName() + " | " + localizationManager.translate(I18n.SHORT_TITLE));
         data.put("short_description", cat.getName());
         data.put("preview_image", "splash.png");
         data.put("root", "../..");
 
-        data.put("text_index", lm.translate(I18n.INDEX));
-        data.put("text_contents", lm.translate(I18n.CONTENTS));
-        data.put("text_github", lm.translate(I18n.GITHUB));
-        data.put("text_discord", lm.translate(I18n.DISCORD));
+        data.put("text_index", localizationManager.translate(I18n.INDEX));
+        data.put("text_contents", localizationManager.translate(I18n.CONTENTS));
+        data.put("text_github", localizationManager.translate(I18n.GITHUB));
+        data.put("text_discord", localizationManager.translate(I18n.DISCORD));
 
-        data.put("current_lang", lm.getCurrentLanguage());
+        data.put("current_lang", localizationManager.getCurrentLanguage());
         data.put("languages", Language.asList());
         data.put("index", "../");
 
-        data.put("categories", context.getCategories());
+        data.put("categories", categories);
         data.put("current_category", cat);
 
         // 生成分类页面
-        String outputDir = Paths.get(context.getOutputLangDir(), cat.getId()).toString();
-        context.getHtmlRenderer().generatePage("category.ftl", outputDir, "index.html", data);
+        generatePage("category.ftl", cat.getId() + "/index.html", data);
 
         // 生成该分类下的条目页面
-        buildEntryPages(context, cat);
+        buildEntryPages(cat, categories);
     }
 
-    private void buildEntryPages(Context context, BookCategory cat) throws IOException, TemplateException {
-        LocalizationManager lm = context.getLocalizationManager();
+    private void buildEntryPages(BookCategory cat, List<BookCategory> categories) throws IOException, TemplateException {
         for (BookEntry entry : cat.getEntries()) {
             Map<String, Object> data = new HashMap<>();
-            data.put("title", lm.translate(I18n.TITLE));
-            data.put("long_title", entry.getName() + " | " + lm.translate(I18n.SHORT_TITLE));
+            data.put("title", localizationManager.translate(I18n.TITLE));
+            data.put("long_title", entry.getName() + " | " + localizationManager.translate(I18n.SHORT_TITLE));
             data.put("short_description", entry.getName());
             data.put("preview_image", cleanImagePath(entry.getIconPath()));
             data.put("root", "../..");
 
-            data.put("text_index", lm.translate(I18n.INDEX));
-            data.put("text_contents", lm.translate(I18n.CONTENTS));
-            data.put("text_github", lm.translate(I18n.GITHUB));
-            data.put("text_discord", lm.translate(I18n.DISCORD));
+            data.put("text_index", localizationManager.translate(I18n.INDEX));
+            data.put("text_contents", localizationManager.translate(I18n.CONTENTS));
+            data.put("text_github", localizationManager.translate(I18n.GITHUB));
+            data.put("text_discord", localizationManager.translate(I18n.DISCORD));
 
-            data.put("current_lang", lm.getCurrentLanguage());
+            data.put("current_lang", localizationManager.getCurrentLanguage());
             data.put("languages", Language.asList());
             data.put("index", "../");
 
-            data.put("categories", context.getCategories());
+            data.put("categories", categories);
             data.put("current_category", cat);
             data.put("current_entry", entry);
 
             // 生成条目页面
-            String outputFileName = cat.getId() + "/" + entry.getRelId() + ".html";
-            context.getHtmlRenderer().generatePage("entry.ftl", context.getOutputLangDir(), outputFileName, data);
+            generatePage("entry.ftl", cat.getId() + "/" + entry.getRelId() + ".html", data);
         }
     }
 
@@ -213,6 +216,6 @@ public class HtmlRenderer {
 
     private static String cleanImagePath(String iconPath) {
         if (iconPath == null) return "";
-        return iconPath.replace("../../_images/", "").replace("..\\..\\_images\\", "");
+        return iconPath.replace("../../", "").replace("..\\..\\", "");
     }
 }

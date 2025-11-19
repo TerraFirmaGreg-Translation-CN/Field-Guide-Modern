@@ -159,7 +159,7 @@ public class TextFormatter {
             }
         } else if (VANILLA_COLORS.containsKey(key)) {
             colorTags(VANILLA_COLORS.get(key));
-        } else if (key.startsWith("k:") && keybindings.containsKey(key.substring(2))) {
+        } else if (key.startsWith("k:") && keybindings.containsKey(key.substring(2))) {// FIXME 考虑使用LocalizationManager来判断语言
             buffer.add(keybindings.get(key.substring(2)));
         } else if (key.startsWith("t:")) {
             String tooltips = key.substring(2);

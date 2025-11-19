@@ -69,9 +69,10 @@ public class Context {
         this.basePath = basePath;
         this.debugI18n = debugI18n;
 
-        this.htmlRenderer = new HtmlRenderer("assets/templates");
         this.localizationManager = new LazyLocalizationManager(loader);
         this.textureRenderer = new TextureRenderer(loader, localizationManager, outputRootDir);
+
+        this.htmlRenderer = new HtmlRenderer(localizationManager, outputRootDir);
 
         // 初始化计数器
         lastUid.put("content", 0);

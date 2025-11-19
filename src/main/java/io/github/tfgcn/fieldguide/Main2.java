@@ -1,5 +1,6 @@
 package io.github.tfgcn.fieldguide;
 
+import freemarker.template.TemplateException;
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
 import io.github.tfgcn.fieldguide.data.patchouli.Book;
@@ -10,15 +11,19 @@ import io.github.tfgcn.fieldguide.exception.InternalException;
 import io.github.tfgcn.fieldguide.localization.Language;
 import io.github.tfgcn.fieldguide.localization.LazyLocalizationManager;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
+import io.github.tfgcn.fieldguide.render.HtmlRenderer;
 import io.github.tfgcn.fieldguide.render.PageRenderer;
 import io.github.tfgcn.fieldguide.render.TextFormatter;
 import io.github.tfgcn.fieldguide.render.TextureRenderer;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
 import picocli.CommandLine;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static io.github.tfgcn.fieldguide.Constants.FIELD_GUIDE;
@@ -64,17 +69,20 @@ public class Main2 implements Callable<Integer>  {
         TextureRenderer textureRenderer = new TextureRenderer(assetLoader, localizationManager, outputDir);
 
         PageRenderer pageRenderer = new PageRenderer(assetLoader, localizationManager, textureRenderer);
+
+        HtmlRenderer htmlRenderer = new HtmlRenderer(localizationManager, outputDir);
         // Load en_us book as a fallback
         Book fallback = assetLoader.loadBook(FIELD_GUIDE);
 
         for (Language lang : Language.values()) {
             Book book = assetLoader.loadBook(FIELD_GUIDE, lang, fallback);
-            render(book, lang, localizationManager, textureRenderer, pageRenderer);
+            prepare(book, lang, localizationManager, textureRenderer, pageRenderer);
+            generateHtml(book, htmlRenderer);
         }
         return 0;
     }
 
-    public void render(Book book, Language lang, LocalizationManager localizationManager, TextureRenderer textureRenderer, PageRenderer pageRenderer) {
+    public void prepare(Book book, Language lang, LocalizationManager localizationManager, TextureRenderer textureRenderer, PageRenderer pageRenderer) {
 
         // prepare
         localizationManager.switchLanguage(lang);
@@ -133,5 +141,30 @@ public class Main2 implements Callable<Integer>  {
         } catch (Exception e) {
             log.error("Failed to get item image for entry: {}", entry.getId());
         }
+    }
+
+    public void generateHtml(Book book, HtmlRenderer htmlRenderer) throws IOException, TemplateException {
+
+        htmlRenderer.copyStaticFiles();
+
+        // Home page
+        htmlRenderer.buildHomePage(book.getCategories());
+
+        // Search page
+        htmlRenderer.buildSearchPage(book.getCategories());
+
+        // search data
+        List<Map<String, String>> searchData = new ArrayList<>();
+        for (BookEntry entry : book.getEntries()) {
+            searchData.addAll(entry.getSearchTree());
+        }
+        htmlRenderer.saveSearchData(searchData);
+
+        // Category pages
+        for (BookCategory category : book.getCategories()) {
+            htmlRenderer.buildCategoryPage(category, book.getCategories());
+        }
+
+        System.out.println("Static site generated successfully!");
     }
 }

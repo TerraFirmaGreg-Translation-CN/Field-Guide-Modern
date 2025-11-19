@@ -9,7 +9,7 @@
     <meta property="og:url" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG" />
     <meta property="og:title" content="${long_title}" />
     <meta property="og:description" content="${short_description}" />
-    <meta property="og:image" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG/_images/${preview_image}" />
+    <meta property="og:image" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG/${preview_image}" />
 
     <title>${long_title}</title>
 
