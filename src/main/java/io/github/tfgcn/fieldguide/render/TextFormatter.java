@@ -46,6 +46,8 @@ public class TextFormatter {
         )
     );
 
+    private static final Pattern SEARCH_STRIP_PATTERN = Pattern.compile("\\$\\([^)]*\\)");
+
     private static final Pattern FORMATTING_PATTERN = Pattern.compile("(\\$\\(([^)]*)\\))|§(.)");
     private static final Pattern OL_PATTERN = Pattern.compile("\\$\\\\(br\\\\) {2}[0-9+]. ");
 
@@ -64,12 +66,16 @@ public class TextFormatter {
         processText(text);
     }
 
-    public static void formatText(List<String> buffer, String text, Map<String, String> keybindings) {
-        new TextFormatter(buffer, text, keybindings);
+    public static String searchStrip(String input) {
+        return SEARCH_STRIP_PATTERN.matcher(input).replaceAll("");
     }
 
     public static String stripVanillaFormatting(String text) {
         return text.replaceAll("§.", "");
+    }
+
+    public static void formatText(List<String> buffer, String text, Map<String, String> keybindings) {
+        new TextFormatter(buffer, text, keybindings);
     }
 
     private void processText(String text) {

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -116,6 +117,7 @@ public class BookEntry implements Comparable<BookEntry> {
 
     // render inner html
     private transient List<String> buffer = new ArrayList<>();
+    private transient List<Map<String, String>> searchTree = new ArrayList<>();
     private transient boolean isRendered = false;
     private transient String innerHtml;
 
@@ -148,5 +150,13 @@ public class BookEntry implements Comparable<BookEntry> {
         }
 
         this.relId = entryId.split("/")[1];
+    }
+
+    public void addSearchContent(String content) {
+        Map<String, String> searchData = new HashMap<>();
+        searchData.put("content", content);
+        searchData.put("entry", name);
+        searchData.put("url", "./" + categoryId + "/" + relId + ".html");
+        this.searchTree.add(searchData);
     }
 }

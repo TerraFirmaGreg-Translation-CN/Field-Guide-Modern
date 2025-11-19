@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public class FluidLoader {
 
-    private static final Map<String, FluidImageResult> CACHE = new HashMap<>();
+    private static final Map<String, FluidImageResult> FLUID_CACHE = new HashMap<>();
 
     // 流体颜色映射
     private static final Map<String, String> FLUID_COLORS = Map.ofEntries(
@@ -107,8 +107,8 @@ public class FluidLoader {
         String fluid = decoded.getFluid();
         int amount = decoded.getAmount();
 
-        if (CACHE.containsKey(fluid)) {
-            FluidImageResult entry = CACHE.get(fluid);
+        if (FLUID_CACHE.containsKey(fluid)) {
+            FluidImageResult entry = FLUID_CACHE.get(fluid);
             String name = entry.getName();
             if (entry.getKey() != null) {
                 try {
@@ -176,7 +176,7 @@ public class FluidLoader {
 
         FluidImageResult result = new FluidImageResult(path, finalName, key);
 
-        CACHE.put(fluid, result);
+        FLUID_CACHE.put(fluid, result);
         return result;
     }
 

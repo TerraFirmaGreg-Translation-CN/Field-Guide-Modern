@@ -27,7 +27,7 @@ public class KnappingRecipes {
     );
     
     public static final String KNAPPING_RECIPE_OUTLINE = "tfc:textures/gui/book/icons.png";
-    private static final Map<String, KnappingRecipe> CACHE = new HashMap<>();
+    private static final Map<String, KnappingRecipe> KNAPPING_RECIPE_CACHE = new HashMap<>();
     
     /**
      * 格式化敲击配方
@@ -36,8 +36,8 @@ public class KnappingRecipes {
      * @return 包含配方ID和图片路径的数组
      */
     public static KnappingRecipe formatKnappingRecipe(Context context, String recipeId) {
-        if (CACHE.containsKey(recipeId)) {
-            return CACHE.get(recipeId);
+        if (KNAPPING_RECIPE_CACHE.containsKey(recipeId)) {
+            return KNAPPING_RECIPE_CACHE.get(recipeId);
         }
         
         Map<String, Object> recipeData = context.getLoader().loadRecipe(recipeId);
@@ -110,7 +110,7 @@ public class KnappingRecipes {
         AssetKey assetKey = new AssetKey(recipeId, "textures/recipes", "assets", ".png");
         String path = context.getTextureRenderer().saveImage(assetKey.getResourcePath(), img);
         KnappingRecipe result = new KnappingRecipe(recipeId, path);
-        CACHE.put(recipeId, result);
+        KNAPPING_RECIPE_CACHE.put(recipeId, result);
         return result;
     }
 }

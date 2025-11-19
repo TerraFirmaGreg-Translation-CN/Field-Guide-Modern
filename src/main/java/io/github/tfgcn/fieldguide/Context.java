@@ -1,11 +1,7 @@
 package io.github.tfgcn.fieldguide;
 
-import com.google.gson.reflect.TypeToken;
 import io.github.tfgcn.fieldguide.asset.Asset;
-import io.github.tfgcn.fieldguide.asset.AssetKey;
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
-import io.github.tfgcn.fieldguide.exception.InternalException;
-import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.data.patchouli.BookCategory;
 import io.github.tfgcn.fieldguide.data.patchouli.BookEntry;
 import io.github.tfgcn.fieldguide.asset.ItemImageResult;
@@ -14,15 +10,10 @@ import io.github.tfgcn.fieldguide.localization.Language;
 import io.github.tfgcn.fieldguide.localization.LazyLocalizationManager;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
 import io.github.tfgcn.fieldguide.render.*;
-import io.github.tfgcn.fieldguide.render.components.Block3DRenderer;
-import io.github.tfgcn.fieldguide.render.components.Multiblock3DRenderer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.List;
 
@@ -158,7 +149,7 @@ public class Context {
 
             if (search != null) {
                 Map<String, String> searchData = new HashMap<>(search);
-                searchData.put("content", text);
+                searchData.put("content", TextFormatter.searchStrip(text));
                 this.searchTree.add(searchData);
             }
         }
