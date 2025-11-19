@@ -307,24 +307,3 @@ public class CraftingRecipeFormatter {
     }
 }
 
-/**
- * 合成配方类
- */
-class CraftingRecipe {
-    public Object[] grid = new Object[9]; // grid[x + 3 * y]
-    public ItemStackResult output;
-    public boolean shapeless = false;
-}
-
-/**
- * 带数量的成分结果类
- */
-class SizedIngredientResult {
-    public final ItemImageResult ingredient;
-    public final int count;
-
-    public SizedIngredientResult(ItemImageResult ingredient, int count) {
-        this.ingredient = ingredient;
-        this.count = count;
-    }
-}
