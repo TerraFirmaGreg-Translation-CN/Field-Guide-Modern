@@ -222,7 +222,7 @@ public class PageRenderer {
         String html = String.format("""
             <div class="item-header">
                 <span href="#" data-bs-toggle="tooltip" title="%s">
-                    <img src="%s" alt="%s" />
+                    <img src="../../%s" alt="%s" />
                 </span>
                 <%s>%s</%s>
             </div>
@@ -293,8 +293,7 @@ public class PageRenderer {
             for (int i = 0; i < processedImages.size(); i++) {
                 Map.Entry<String, String> imageEntry = processedImages.get(i);
                 String active = i == 0 ? "active" : "";
-                parts.append(String.format(ImageTemplates.IMAGE_MULTIPLE_PART,
-                        active, imageEntry.getValue(), imageEntry.getKey()));
+                parts.append(String.format(ImageTemplates.IMAGE_MULTIPLE_PART, active, imageEntry.getValue(), imageEntry.getKey()));
 
                 if (i > 0) {
                     seq.append(String.format(ImageTemplates.IMAGE_MULTIPLE_SEQ, uid, i, i + 1));
@@ -424,7 +423,7 @@ public class PageRenderer {
                 buffer.add(String.format("""
                     <div class="crafting-recipe-item crafting-recipe-pos-%d-%d">
                         <span href="#" data-bs-toggle="tooltip" title="%s" class="crafting-recipe-item-tooltip"></span>
-                        <img class="recipe-item" src="%s" />
+                        <img class="recipe-item" src="../../%s" />
                     </div>
                     """, x, y, ingredient.getName(), ingredient.getPath()));
             }
@@ -436,7 +435,7 @@ public class PageRenderer {
                     <div class="crafting-recipe-item crafting-recipe-pos-out">
                         <span href="#" data-bs-toggle="tooltip" title="%s" class="crafting-recipe-item-tooltip"></span>
                         %s
-                        <img class="recipe-item" src="%s" />
+                        <img class="recipe-item" src="../../%s" />
                     </div>
                 </div>
             </div>
@@ -874,12 +873,12 @@ public class PageRenderer {
                     <div class="crafting-recipe-item misc-recipe-pos-in">
                         <span href="#" data-bs-toggle="tooltip" title="%s" class="crafting-recipe-item-tooltip"></span>
                         %s
-                        <img class="recipe-item" src="%s" />
+                        <img class="recipe-item" src="../../%s" />
                     </div>
                     <div class="crafting-recipe-item misc-recipe-pos-out">
                         <span href="#" data-bs-toggle="tooltip" title="%s" class="crafting-recipe-item-tooltip"></span>
                         %s
-                        <img class="recipe-item" src="%s" />
+                        <img class="recipe-item" src="../../%s" />
                     </div>
                 </div>
             </div>
@@ -1059,7 +1058,7 @@ public class PageRenderer {
         return String.format("""
         <div class="crafting-recipe-item two-recipe-pos-%d">
             <span href="#" data-bs-toggle="tooltip" title="%s" class="crafting-recipe-item-tooltip"></span>
-            <img class="recipe-item" src="%s" />
+            <img class="recipe-item" src="../../%s" />
             %s
         </div>
         """, index, name, path, extraBit == null ? "" : extraBit);

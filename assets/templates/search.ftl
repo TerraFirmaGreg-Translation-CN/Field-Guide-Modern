@@ -99,7 +99,7 @@
           <ul class="list-unstyled lh-lg">
             <li><a href="${index}">${text_index}</a></li>
             <#list categories as category>
-            <li><a href="./${category.id}/">${category.name}</a></li>
+            <li><a href="${category.id}.html">${category.name}</a></li>
             </#list>
           </ul>
         </nav>

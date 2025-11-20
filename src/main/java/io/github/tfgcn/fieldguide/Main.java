@@ -81,8 +81,6 @@ public class Main implements Callable<Integer>  {
             prepare(book, localizationManager, textureRenderer, pageRenderer);
             generateHtml(book, htmlRenderer);
         }
-
-        JsonUtils.writeFile(new File(outputDir + "/recipes.json"), assetLoader.recipeCache);
         return 0;
     }
 

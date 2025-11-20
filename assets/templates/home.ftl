@@ -99,7 +99,7 @@
           <ul class="list-unstyled lh-lg">
             <li><a href="${index}">${text_index}</a></li>
             <#list categories as category>
-            <li><a href="./${category.id}/">${category.name}</a></li>
+            <li><a href="${category.id}.html">${category.name}</a></li>
             </#list>
           </ul>
         </nav>
@@ -135,7 +135,7 @@
                 <div class="col">
                     <div class="card">
                         <div class="card-header">
-                            <a href="${category.id}/index.html">${category.name}</a>
+                            <a href="${category.id}.html">${category.name}</a>
                         </div>
                         <div class="card-body">
                             ${category.description}

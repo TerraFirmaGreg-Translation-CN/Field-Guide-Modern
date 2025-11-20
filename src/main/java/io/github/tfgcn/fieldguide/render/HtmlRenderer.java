@@ -158,7 +158,7 @@ public class HtmlRenderer {
         data.put("long_title", cat.getName() + " | " + localizationManager.translate(I18n.SHORT_TITLE));
         data.put("short_description", cat.getName());
         data.put("preview_image", "splash.png");
-        data.put("root", "../..");
+        data.put("root", "..");
 
         data.put("text_index", localizationManager.translate(I18n.INDEX));
         data.put("text_contents", localizationManager.translate(I18n.CONTENTS));
@@ -167,13 +167,13 @@ public class HtmlRenderer {
 
         data.put("current_lang", localizationManager.getCurrentLanguage());
         data.put("languages", Language.asList());
-        data.put("index", "../");
+        data.put("index", "./");
 
         data.put("categories", categories);
         data.put("current_category", cat);
 
         // 生成分类页面
-        generatePage("category.ftl", cat.getId() + "/index.html", data);
+        generatePage("category.ftl", cat.getId() + ".html", data);
 
         // 生成该分类下的条目页面
         buildEntryPages(cat, categories);
@@ -202,7 +202,7 @@ public class HtmlRenderer {
             data.put("current_entry", entry);
 
             // 生成条目页面
-            generatePage("entry.ftl", cat.getId() + "/" + entry.getRelId() + ".html", data);
+            generatePage("entry.ftl", entry.getId() + ".html", data);
         }
     }
 

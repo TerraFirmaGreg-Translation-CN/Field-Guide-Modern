@@ -2,21 +2,21 @@ package io.github.tfgcn.fieldguide.render;
 
 public class ImageTemplates {
     public static final String IMAGE_SINGLE = 
-        "<img class=\"d-block w-200 mx-auto img-fluid\" src=\"%s\" alt=\"%s\">";
+        "<img class=\"d-block w-200 mx-auto img-fluid\" src=\"../../%s\" alt=\"%s\">";
     
     public static final String IMAGE_KNAPPING = 
         "<div class=\"d-flex align-items-center justify-content-center\">" +
         "    <div class=\"knapping-recipe\">" +
         "        <img class=\"knapping-recipe-img\" src=\"../../_images/knapping.png\">" +
         "        <div class=\"knapping-recipe-overlay\">" +
-        "            <img class=\"knapping-recipe-img\" src=\"%s\" alt=\"%s\">" +
+        "            <img class=\"knapping-recipe-img\" src=\"../../%s\" alt=\"%s\">" +
         "        </div>" +
         "    </div>" +
         "</div>";
     
     public static final String IMAGE_MULTIPLE_PART = 
         "<div class=\"carousel-item %s\">" +
-        "    <img class=\"d-block w-200 mx-auto img-fluid\" src=\"%s\" alt=\"%s\">" +
+        "    <img class=\"d-block w-200 mx-auto img-fluid\" src=\"../../%s\" alt=\"%s\">" +
         "</div>";
     
     public static final String IMAGE_MULTIPLE_SEQ = 

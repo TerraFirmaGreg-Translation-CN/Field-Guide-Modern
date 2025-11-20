@@ -247,12 +247,10 @@ public class BookParser {
                     for (int i = 0; i < processedImages.size(); i++) {
                         Map.Entry<String, String> imageEntry = processedImages.get(i);
                         String active = i == 0 ? "active" : "";
-                        parts.append(String.format(ImageTemplates.IMAGE_MULTIPLE_PART,
-                                active, imageEntry.getValue(), imageEntry.getKey()));
+                        parts.append(String.format(ImageTemplates.IMAGE_MULTIPLE_PART, active, imageEntry.getValue(), imageEntry.getKey()));
 
                         if (i > 0) {
-                            seq.append(String.format(ImageTemplates.IMAGE_MULTIPLE_SEQ,
-                                    uid, i, i + 1));
+                            seq.append(String.format(ImageTemplates.IMAGE_MULTIPLE_SEQ, uid, i, i + 1));
                         }
                     }
 

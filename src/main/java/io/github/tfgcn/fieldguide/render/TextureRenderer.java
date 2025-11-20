@@ -210,7 +210,7 @@ public class TextureRenderer {
             if (images.isEmpty()) {
                 log.error("Failed to create item image for: {}", item);
                 // Fallback to using the placeholder image
-                ItemImageResult fallback = new ItemImageResult("../../_images/placeholder_64.png", name, null);
+                ItemImageResult fallback = new ItemImageResult("_images/placeholder_64.png", name, null);
                 itemImageCache.put(item, fallback);
             }
 
@@ -252,7 +252,7 @@ public class TextureRenderer {
             log.error("Failed to create item image: {}, message: {}", item, e.getMessage());
             if (placeholder) {
                 // Fallback to using the placeholder image
-                ItemImageResult fallback = new ItemImageResult("../../_images/placeholder_64.png", name, null);
+                ItemImageResult fallback = new ItemImageResult("_images/placeholder_64.png", name, null);
                 itemImageCache.put(item, fallback);
                 return fallback;
             }
@@ -431,7 +431,7 @@ public class TextureRenderer {
         }
 
         // Return relative path
-        return "../../" + path;
+        return path;
     }
 
     /**
@@ -460,7 +460,7 @@ public class TextureRenderer {
             encoder.finish();
         }
 
-        return "../../" + path;
+        return path;
     }
 
     /// ///////////// block_loader
@@ -1226,7 +1226,7 @@ public class TextureRenderer {
 
             if (placeholder) {
                 // 回退到使用占位符图像
-                path = "../../_images/fluid.png";
+                path = "_images/fluid.png";
             } else {
                 throw new RuntimeException(e);
             }

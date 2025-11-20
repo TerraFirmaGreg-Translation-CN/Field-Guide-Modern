@@ -47,7 +47,7 @@
               </a>
               <div class="dropdown-menu" aria-labelledby="lang-dropdown-button">
                 <#list languages as lang>
-                <a href="${root}/${lang.key}/${current_category.id}/${current_entry.relId}.html" class="dropdown-item">${lang.value}</a>
+                <a href="${root}/${lang.key}/${current_entry.id}.html" class="dropdown-item">${lang.value}</a>
                 </#list>
               </div>
             </li>
@@ -100,11 +100,11 @@
             <li><a href="${index}">${text_index}</a></li>
             <#list categories as category>
             <li>
-              <a href="../${category.id}/">${category.name}</a>
+              <a href="../${category.id}.html">${category.name}</a>
               <#if current_category.id == category.id && category.entries?? && category.entries?size gt 0>
               <ul>
                 <#list category.entries as entry>
-                <li><a href="./${entry.relId}.html"<#if current_entry.relId == entry.relId> class="active"</#if>>${entry.name}</a></li>
+                <li><a href="${entry.relId}.html"<#if current_entry.relId == entry.relId> class="active"</#if>>${entry.name}</a></li>
                 </#list>
               </ul>
               </#if>
@@ -131,7 +131,7 @@
 
           <h1 class="d-flex align-items-center mb-4">
             <#if current_entry.iconPath?? && current_entry.iconPath?has_content>
-            <img class="icon-title me-3" src="${current_entry.iconPath}" alt="${current_entry.name}" title="${current_entry.iconName!current_entry.name}" />
+            <img class="icon-title me-3" src="${root}/${current_entry.iconPath}" alt="${current_entry.name}" title="${current_entry.iconName!current_entry.name}" />
             </#if>
             <span>${current_entry.name}</span>
           </h1>

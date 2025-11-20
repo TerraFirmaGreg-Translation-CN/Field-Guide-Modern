@@ -169,7 +169,7 @@ public class AssetLoader {
 
         addCacheFolder(sources);// 0- Cache
         addModsJars(sources);// 1- Mod JARs
-        addResourcePacks(sources);// 2- Resource Packs
+        //addResourcePacks(sources);// 2- Resource Packs
         addKubejs(sources);// 3- KubeJS
 
         // Reverse the list

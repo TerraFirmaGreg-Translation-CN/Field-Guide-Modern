@@ -47,7 +47,7 @@
               </a>
               <div class="dropdown-menu" aria-labelledby="lang-dropdown-button">
                 <#list languages as lang>
-                <a href="${root}/${lang.key}/${current_category.id}/index.html" class="dropdown-item">${lang.value}</a>
+                <a href="${root}/${lang.key}/${current_category.id}.html" class="dropdown-item">${lang.value}</a>
                 </#list>
               </div>
             </li>
@@ -100,11 +100,11 @@
             <li><a href="${index}">${text_index}</a></li>
             <#list categories as category>
             <li>
-              <a href="../${category.id}/">${category.name}</a>
+              <a href="${category.id}.html">${category.name}</a>
               <#if current_category.id == category.id && category.entries?? && category.entries?size gt 0>
               <ul>
                 <#list category.entries as entry>
-                <li><a href="./${entry.relId}.html">${entry.name}</a></li>
+                <li><a href="${entry.id}.html">${entry.name}</a></li>
               </#list>
               </ul>
               </#if>
@@ -134,10 +134,10 @@
               <div class="card">
                 <div class="card-body">
                   <div class="d-flex align-items-center">
-                    <#assign iconSrc = ((entry.iconPath)?? && entry.iconPath?has_content)?then(entry.iconPath, '../../_images/placeholder_16.png')>
+                    <#assign iconSrc = ((entry.iconPath)?? && entry.iconPath?has_content)?then(entry.iconPath, '_images/placeholder_16.png')>
                     <#assign altText = (entry.iconName)!(entry.name)!>
-                    <img class="entry-card-icon me-2" src="${iconSrc}" alt="${altText}" />
-                    <a href="${entry.relId}.html">${entry.name}</a>
+                    <img class="entry-card-icon me-2" src="${root}/${iconSrc}" alt="${altText}" />
+                    <a href="${entry.id}.html">${entry.name}</a>
                   </div>
                 </div>
               </div>
