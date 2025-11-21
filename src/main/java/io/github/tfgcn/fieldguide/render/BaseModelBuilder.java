@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 @Slf4j
 public class BaseModelBuilder {
@@ -81,7 +83,7 @@ public class BaseModelBuilder {
     }
 
     /**
-     * 构建节点元素
+     * 构建节点元素 - 相同材质的Face组合为一个Mesh
      */
     public void buildNode(Node rootNode, ModelElement element, Map<String, String> textures) {
         Map<String, ElementFace> faces = element.getFaces();
@@ -122,15 +124,41 @@ public class BaseModelBuilder {
         y2 -= o2;
         z2 -= o3;
 
-        // 处理每个面
+        // 按材质分组收集面数据
+        Map<String, MaterialFaceGroup> materialGroups = new HashMap<>();
+
+        // 处理每个面，按材质分组
         for (Map.Entry<String, ElementFace> entry : faces.entrySet()) {
             String dir = entry.getKey();
             ElementFace face = entry.getValue();
 
-            Geometry geometry = createFaceGeometry(dir, face, x1, y1, z1, x2, y2, z2, noShade);
-            if (geometry != null) {
-                String texture = getTexture(textures, face.getTexture());
-                Material material = makeMaterial(texture);
+            String texture = getTexture(textures, face.getTexture());
+            
+            // 获取或创建材质组
+            MaterialFaceGroup group = materialGroups.computeIfAbsent(texture, MaterialFaceGroup::new);
+
+            // 创建面数据
+            Vector2f[] texCoords = createTextureCoords(face);
+            int[] indices = createIndices(dir, face);
+            FaceData faceData = createFaceData(dir, x1, y1, z1, x2, y2, z2, noShade);
+            
+            if (faceData != null) {
+                group.addFace(faceData, texCoords, indices);
+                
+                // 处理色调索引
+                if (face.getTintIndex() != null && face.getTintIndex() >= 0) {
+                    // TODO: 处理色调
+                    log.info("tintindex: {}", face.getTintIndex());
+                }
+            }
+        }
+
+        // 为每个材质组创建Geometry
+        for (MaterialFaceGroup group : materialGroups.values()) {
+            Mesh mesh = group.createMesh();
+            if (mesh != null) {
+                Geometry geometry = new Geometry(mesh);
+                Material material = makeMaterial(group.texture);
                 geometry.setMaterial(material);
 
                 // 应用旋转和位移
@@ -426,6 +454,53 @@ public class BaseModelBuilder {
             this.positions = positions;
             this.normals = normals;
             this.colors = colors;
+        }
+    }
+
+    /**
+     * 相同材质的面数据收集器
+     */
+    protected static class MaterialFaceGroup {
+        public final String texture;
+        public final List<Vector3f> positions = new ArrayList<>();
+        public final List<Vector3f> normals = new ArrayList<>();
+        public final List<Vector2f> texCoords = new ArrayList<>();
+        public final List<Vector4f> colors = new ArrayList<>();
+        public final List<Integer> indices = new ArrayList<>();
+
+        public MaterialFaceGroup(String texture) {
+            this.texture = texture;
+        }
+
+        public void addFace(FaceData faceData, Vector2f[] faceTexCoords, int[] faceIndices) {
+            int baseIndex = positions.size();
+            
+            // 添加顶点数据
+            for (int i = 0; i < faceData.positions.length; i++) {
+                positions.add(faceData.positions[i]);
+                normals.add(faceData.normals[i]);
+                texCoords.add(faceTexCoords[i]);
+                colors.add(faceData.colors[i]);
+            }
+            
+            // 添加索引（调整偏移）
+            for (int index : faceIndices) {
+                indices.add(baseIndex + index);
+            }
+        }
+
+        public Mesh createMesh() {
+            if (positions.isEmpty()) {
+                return null;
+            }
+            
+            Vector3f[] posArray = positions.toArray(new Vector3f[0]);
+            Vector3f[] normArray = normals.toArray(new Vector3f[0]);
+            Vector2f[] texArray = texCoords.toArray(new Vector2f[0]);
+            Vector4f[] colorArray = colors.toArray(new Vector4f[0]);
+            int[] indexArray = indices.stream().mapToInt(i -> i).toArray();
+            
+            return new Mesh(posArray, indexArray, texArray, normArray, colorArray);
         }
     }
 }

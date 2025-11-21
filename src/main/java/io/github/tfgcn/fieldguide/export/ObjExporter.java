@@ -27,14 +27,10 @@ import java.util.Map;
 @Slf4j
 public class ObjExporter {
 
-    private int vertexOffset = 1;
-
-    private List<String> vertexLines = new ArrayList<>();
-    private List<String> texCoordLines = new ArrayList<>();
-    private List<String> faceLines = new ArrayList<>();
     private List<String> objectLines = new ArrayList<>();
 
     private Map<Material, Integer> materialMap = new HashMap<>();
+    private Map<String, Integer> textureMaterialMap = new HashMap<>(); // 基于纹理路径的材质映射
     private List<String> materialLines = new ArrayList<>();
 
     /**
@@ -50,98 +46,21 @@ public class ObjExporter {
     public void export(Node rootNode, String filePath, String modelName) throws IOException {
         reset();
 
-        // 收集所有几何体
+        // 直接写入文件，不再需要中间处理步骤
+        writeObjFile(rootNode, filePath, modelName);
+
         List<Geometry> geometries = rootNode.getGeometryList(null);
-
-        // 处理每个几何体
-        for (Geometry geometry : geometries) {
-            processGeometry(geometry, modelName);
-        }
-
-        // 写入文件
-        writeObjFile(filePath, modelName);
-
         log.info("成功导出OBJ文件: {}, 包含 {} 个几何体", filePath, geometries.size());
     }
 
     private void reset() {
-        vertexOffset = 1;
-        vertexLines.clear();
-        texCoordLines.clear();
-        faceLines.clear();
         objectLines.clear();
         materialMap.clear();
+        textureMaterialMap.clear();
         materialLines.clear();
     }
 
-    private void processGeometry(Geometry geometry, String baseName) {
-        Mesh mesh = geometry.getMesh();
-        if (mesh == null) return;
 
-        // 获取变换后的顶点数据
-        Vertex[] vertexes = mesh.getVertexes();
-        Vector3f[] positions = new Vector3f[vertexes.length];
-        Vector2f[] texCoords = new Vector2f[vertexes.length];
-        for (int i = 0; i < vertexes.length; i++) {
-            Vertex vertex = vertexes[i];
-            positions[i] = vertex.position;
-            texCoords[i] = vertex.texCoord;
-        }
-
-        positions = getTransformedPositions(geometry, positions);
-        int[] indices = mesh.getIndexes();
-
-        if (positions == null || indices == null || indices.length == 0) {
-            return;
-        }
-
-        // 添加对象定义
-        String objectName = baseName + "_" + objectLines.size();
-        objectLines.add("o " + objectName);
-
-        // 处理材质
-        Material material = geometry.getMaterial();
-        if (material != null) {
-            materialMap.computeIfAbsent(material, k -> materialMap.size());
-            String materialName = String.valueOf(materialMap.get(material));
-            objectLines.add("usemtl " + materialName);
-        } else {
-            objectLines.add("usemtl default");
-        }
-
-        // 添加顶点数据
-        for (Vector3f position : positions) {
-            vertexLines.add(String.format("v %.6f %.6f %.6f",
-                position.x, position.y, position.z));
-        }
-
-        // 添加纹理坐标
-        for (Vector2f texCoord : texCoords) {
-            texCoordLines.add(String.format("vt %.6f %.6f",
-                texCoord.x, texCoord.y));
-        }
-
-        // 添加面
-        for (int i = 0; i < indices.length; i += 3) {
-            if (i + 2 >= indices.length) break;
-
-            int idx1 = indices[i] + vertexOffset;
-            int idx2 = indices[i + 1] + vertexOffset;
-            int idx3 = indices[i + 2] + vertexOffset;
-
-            String faceLine;
-            // v/vt 格式
-            faceLine = String.format("f %d/%d %d/%d %d/%d",
-                idx1, idx1,
-                idx2, idx2,
-                idx3, idx3);
-
-            faceLines.add(faceLine);
-        }
-
-        // 更新偏移量
-        vertexOffset += positions.length;
-    }
 
     /**
      * 从材质中提取纹理路径
@@ -175,7 +94,20 @@ public class ObjExporter {
         return transformed;
     }
 
-    private void writeObjFile(String filePath, String modelName) throws IOException {
+    private Vector3f[] getTransformedNormals(Geometry geometry, Vector3f[] normals) {
+        if (normals == null) return null;
+
+        // 应用几何体的变换（法线需要使用旋转矩阵的逆矩阵）
+        Vector3f[] transformed = new Vector3f[normals.length];
+        for (int i = 0; i < normals.length; i++) {
+            transformed[i] = geometry.getWorldTransform().transformNormal(normals[i], new Vector3f());
+            // 确保法线是单位向量
+            transformed[i].normalizeLocal();
+        }
+        return transformed;
+    }
+
+    private void writeObjFile(Node rootNode, String filePath, String modelName) throws IOException {
         Path path = Paths.get(filePath);
         Files.createDirectories(path.getParent());
 
@@ -191,24 +123,84 @@ public class ObjExporter {
             writer.println("mtllib " + path.getFileName().toString().replace(".obj", ".mtl"));
             writer.println();
 
-            // 写入顶点
-            writer.println("# Vertices");
-            vertexLines.forEach(writer::println);
+            // 收集所有几何体数据，然后分别处理每个对象
+            List<Geometry> geometries = rootNode.getGeometryList(null);
+            
+            // 预处理材质映射
+            for (Geometry geometry : geometries) {
+                Material material = geometry.getMaterial();
+                if (material != null) {
+                    String textureName = extractTexturePath(material);
+                    String materialKey = (textureName != null) ? textureName : ("material_" + System.identityHashCode(material));
+                    
+                    textureMaterialMap.computeIfAbsent(materialKey, k -> {
+                        int index = materialMap.size();
+                        materialMap.put(material, index);
+                        return index;
+                    });
+                }
+            }
+            
+            // 全局顶点、纹理坐标、法线索引
+            int globalVertexIndex = 1;
+            int globalTexCoordIndex = 1;
+            int globalNormalIndex = 1;
+
+            // 写入所有顶点、纹理坐标和法线
+            writer.println("# Global Vertex Data");
+            for (Geometry geometry : geometries) {
+                globalVertexIndex = writeVertexData(writer, geometry, globalVertexIndex);
+            }
             writer.println();
 
             // 写入纹理坐标
-            if (!texCoordLines.isEmpty()) {
-                writer.println("# Texture Coordinates");
-                texCoordLines.forEach(writer::println);
-                writer.println();
+            writer.println("# Global Texture Coordinates");
+            for (Geometry geometry : geometries) {
+                globalTexCoordIndex = writeTexCoordData(writer, geometry, globalTexCoordIndex);
             }
+            writer.println();
+
+            // 写入法线
+            writer.println("# Global Normals");
+            for (Geometry geometry : geometries) {
+                globalNormalIndex = writeNormalData(writer, geometry, globalNormalIndex);
+            }
+            writer.println();
 
             // 写入对象和面
             writer.println("# Objects and Faces");
-            for (String objectLine : objectLines) {
-                writer.println(objectLine);
+            int currentVertexOffset = 1;
+            int currentTexCoordOffset = 1;
+            int currentNormalOffset = 1;
+            
+            for (int geomIndex = 0; geomIndex < geometries.size(); geomIndex++) {
+                Geometry geometry = geometries.get(geomIndex);
+                String objectName = modelName + "_" + geomIndex;
+                
+                writer.println("o " + objectName);
+                
+                // 处理材质
+                Material material = geometry.getMaterial();
+                if (material != null) {
+                    String textureName = extractTexturePath(material);
+                    String materialKey = (textureName != null) ? textureName : ("material_" + System.identityHashCode(material));
+                    
+                    Integer materialIndex = textureMaterialMap.get(materialKey);
+                    if (materialIndex != null) {
+                        writer.println("usemtl material_" + materialIndex);
+                    } else {
+                        writer.println("usemtl default");
+                    }
+                } else {
+                    writer.println("usemtl default");
+                }
+                
+                // 写入这个几何体的面数据
+                currentVertexOffset = writeFaceData(writer, geometry, currentVertexOffset, currentTexCoordOffset, currentNormalOffset);
+                currentTexCoordOffset = currentVertexOffset;
+                currentNormalOffset = currentVertexOffset;
+                writer.println();
             }
-            faceLines.forEach(writer::println);
         }
 
         // 写入MTL文件
@@ -233,9 +225,9 @@ public class ObjExporter {
 
             // 写入所有材质
             for (Map.Entry<Material, Integer> entry : materialMap.entrySet()) {
-                writer.println("newmtl " + entry.getValue());
+                writer.println("newmtl material_" + entry.getValue());
                 writer.println("Ka 1.000 1.000 1.000"); // 环境光
-                writer.println("Kd 0.000 0.000 0.000"); // 漫反射
+                writer.println("Kd 1.000 1.000 1.000"); // 漫反射
                 writer.println("Ks 0.000 0.000 0.000"); // 高光
                 writer.println("Ns 0.000");             // 高光指数
                 writer.println("d 1.0");                // 不透明度
@@ -249,5 +241,92 @@ public class ObjExporter {
                 writer.println();
             }
         }
+    }
+
+    private int writeVertexData(PrintWriter writer, Geometry geometry, int startIndex) {
+        Mesh mesh = geometry.getMesh();
+        if (mesh == null) return startIndex;
+
+        Vertex[] vertexes = mesh.getVertexes();
+        Vector3f[] positions = new Vector3f[vertexes.length];
+        for (int i = 0; i < vertexes.length; i++) {
+            positions[i] = vertexes[i].position;
+        }
+        
+        positions = getTransformedPositions(geometry, positions);
+        if (positions == null) return startIndex;
+
+        for (Vector3f position : positions) {
+            writer.println(String.format("v %.6f %.6f %.6f",
+                position.x, position.y, position.z));
+        }
+        
+        return startIndex + positions.length;
+    }
+
+    private int writeTexCoordData(PrintWriter writer, Geometry geometry, int startIndex) {
+        Mesh mesh = geometry.getMesh();
+        if (mesh == null) return startIndex;
+
+        Vertex[] vertexes = mesh.getVertexes();
+        Vector2f[] texCoords = new Vector2f[vertexes.length];
+        for (int i = 0; i < vertexes.length; i++) {
+            texCoords[i] = vertexes[i].texCoord;
+        }
+
+        for (Vector2f texCoord : texCoords) {
+            writer.println(String.format("vt %.6f %.6f",
+                texCoord.x, texCoord.y));
+        }
+        
+        return startIndex + texCoords.length;
+    }
+
+    private int writeNormalData(PrintWriter writer, Geometry geometry, int startIndex) {
+        Mesh mesh = geometry.getMesh();
+        if (mesh == null) return startIndex;
+
+        Vertex[] vertexes = mesh.getVertexes();
+        Vector3f[] normals = new Vector3f[vertexes.length];
+        for (int i = 0; i < vertexes.length; i++) {
+            normals[i] = vertexes[i].normal;
+        }
+        
+        normals = getTransformedNormals(geometry, normals);
+        if (normals == null) return startIndex;
+
+        for (Vector3f normal : normals) {
+            writer.println(String.format("vn %.6f %.6f %.6f",
+                normal.x, normal.y, normal.z));
+        }
+        
+        return startIndex + normals.length;
+    }
+
+    private int writeFaceData(PrintWriter writer, Geometry geometry, int vertexOffset, int texCoordOffset, int normalOffset) {
+        Mesh mesh = geometry.getMesh();
+        if (mesh == null) return vertexOffset;
+
+        int[] indices = mesh.getIndexes();
+        if (indices == null || indices.length == 0) return vertexOffset;
+
+        for (int i = 0; i < indices.length; i += 3) {
+            if (i + 2 >= indices.length) break;
+
+            int idx1 = indices[i] + vertexOffset;
+            int idx2 = indices[i + 1] + vertexOffset;
+            int idx3 = indices[i + 2] + vertexOffset;
+
+            String faceLine;
+            // v/vt/vn 格式
+            faceLine = String.format("f %d/%d/%d %d/%d/%d %d/%d/%d",
+                idx1, idx1, idx1,
+                idx2, idx2, idx2,
+                idx3, idx3, idx3);
+
+            writer.println(faceLine);
+        }
+        
+        return vertexOffset + mesh.getVertexes().length;
     }
 }

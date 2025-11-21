@@ -91,6 +91,36 @@ public class Transform {
     }
     
     /**
+     * 对法线进行空间变换
+     * 法线的变换只应用旋转，不考虑缩放（除非是均匀缩放）
+     * 平移不影响法线方向
+     * @param in 输入法线向量
+     * @param store 存储结果的向量
+     * @return 变换后的法线向量
+     */
+    public Vector3f transformNormal(final Vector3f in, Vector3f store){
+        if (store == null)
+            store = new Vector3f();
+        
+        store.set(in);
+        
+        // 检查是否为均匀缩放
+        if (scale.x == scale.y && scale.y == scale.z) {
+            // 均匀缩放：法线需要反向缩放以保持单位长度
+            if (scale.x != 0) {
+                store.multLocal(1.0f / scale.x);
+            }
+        }
+        // 非均匀缩放时不处理缩放，因为会破坏法线的垂直性
+        // 这种情况下应该使用完整的矩阵逆转置变换，但为简化这里忽略
+        
+        // 只应用旋转变换
+        rot.mult(store, store);
+        
+        return store;
+    }
+    
+    /**
      * 三种变换转为4x4矩阵
      * @return
      */
