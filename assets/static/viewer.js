@@ -23,8 +23,8 @@ class GLBViewer {
             height: containerHeight,
             backgroundColor: 0xe6f3ff, // Minecraft 风格的浅蓝色背景
             enableControls: true,
-            enableGrid: true,
-            enableAxes: true,
+            enableGrid: false,
+            enableAxes: false,
             enableShadows: true,
             autoRotate: false,
             rotationSpeed: 0.01,

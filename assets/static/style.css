@@ -208,3 +208,44 @@ table td {
 table th:first-child, table td:first-child { margin-top: 0; }
 table th:last-child, table td:last-child { margin-bottom: 0; }
 table tr th { border-bottom: 0; }
+
+
+.glb-viewer-container {
+    margin: 20px auto;
+    background: transparent;
+    height: 400px;
+    position: relative;
+    transition: all 0.3s ease;
+    width: 80%;
+    max-width: 600px;
+}
+
+.glb-viewer-container .glb-viewer {
+    width: 100%;
+    height: 100%;
+}
+
+.glb-viewer-container.drag-over {
+    border-color: #007bff;
+    background: #e3f2fd;
+    transform: scale(1.02);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .glb-viewer-container {
+        height: 300px;
+        width: 95%;
+    }
+}
+
+/* 深色主题支持 */
+[data-bs-theme="dark"] .glb-viewer-container {
+    background: transparent;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .glb-viewer-container.drag-over {
+    background: #1e3a5f;
+    border-color: #0d6efd;
+}

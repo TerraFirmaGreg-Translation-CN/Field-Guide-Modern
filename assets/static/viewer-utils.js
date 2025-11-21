@@ -5,7 +5,7 @@ class GLBViewerUtils {
      * 在指定容器中创建一个嵌入式的 GLB 查看器
      */
     static createEmbeddedViewer(containerId, modelUrl, options = {}) {
-        // 移除固定尺寸设置，让查看器自适应容器
+        // 设置自适应容器样式
         const defaultOptions = {
             backgroundColor: 0xf0f0f0,
             enableGrid: false,
@@ -13,7 +13,7 @@ class GLBViewerUtils {
             enableShadows: true,
             autoRotate: false,
             rotationSpeed: 0.01,
-            showLoadingIndicator: true,
+            showLoadingIndicator: false, // 默认禁用加载指示器
             showErrorMessages: true
         };
         
@@ -26,13 +26,14 @@ class GLBViewerUtils {
             return null;
         }
         
-        // 直接使用原容器，设置必要的样式
-        container.style.cssText = 'position: relative; display: inline-block;';
+        // 保留容器的position设置，但不覆盖宽高属性
+        container.style.position = 'relative';
+        container.style.display = 'block';
         
-        // 如果指定了宽度和高度，则设置固定尺寸
-        if (finalOptions.width && finalOptions.height) {
-            container.style.width = `${finalOptions.width}px`;
-            container.style.height = `${finalOptions.height}px`;
+        // 移除之前可能存在的loading元素
+        const existingLoading = container.querySelector('.glb-viewer-loading');
+        if (existingLoading) {
+            container.removeChild(existingLoading);
         }
         
 
@@ -43,9 +44,20 @@ class GLBViewerUtils {
             
             // 加载模型
             if (modelUrl) {
-                viewer.loadGLB(modelUrl, finalOptions.modelOptions).catch(error => {
+                viewer.loadGLB(modelUrl, finalOptions.modelOptions).then(() => {
+                    // 确保加载完成后隐藏loading指示器
+                    const loadingIndicator = container.querySelector('.glb-viewer-loading');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }).catch(error => {
                     if (finalOptions.showErrorMessages !== false) {
-                        this.showError(viewerContainer, error.message);
+                        this.showError(container, error.message);
+                    }
+                    // 错误时也隐藏loading指示器
+                    const loadingIndicator = container.querySelector('.glb-viewer-loading');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
                     }
                 });
             }
@@ -54,7 +66,12 @@ class GLBViewerUtils {
             
         } catch (error) {
             console.error('Failed to create GLB viewer:', error);
-            this.showError(viewerContainer, `初始化失败: ${error.message}`);
+            this.showError(container, `初始化失败: ${error.message}`);
+            // 错误时也隐藏loading指示器
+            const loadingIndicator = container.querySelector('.glb-viewer-loading');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
             return null;
         }
     }
@@ -64,12 +81,17 @@ class GLBViewerUtils {
      * 专门用于显示多方块结构
      */
     static createMultiblockViewer(containerId, modelUrl, multiblockData = {}) {
+        // 获取容器并设置尺寸
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.style.width = '100%';
+            container.style.height = '100%';
+        }
+        
         const options = {
-            width: 800,
-            height: 600,
             backgroundColor: 0xf0f0f0,
-            enableGrid: true,
-            enableAxes: true,
+            enableGrid: false,
+            enableAxes: false,
             enableShadows: true,
             autoRotate: true,
             rotationSpeed: 0.005,
@@ -77,6 +99,24 @@ class GLBViewerUtils {
             modelOptions: {
                 position: [0, 0, 0],
                 scale: [1, 1, 1]
+            },
+            // 添加窗口大小变化事件处理
+            onViewerCreated: (viewer) => {
+                const updateSize = () => {
+                    if (viewer && typeof viewer.updateRendererSize === 'function') {
+                        viewer.updateRendererSize();
+                    }
+                };
+                
+                window.addEventListener('resize', updateSize);
+                
+                // 立即执行一次以确保初始大小正确
+                updateSize();
+                
+                // 清理函数
+                return () => {
+                    window.removeEventListener('resize', updateSize);
+                };
             }
         };
         
@@ -213,9 +253,9 @@ class GLBViewerUtils {
             // 生成容器ID
             const containerId = `glb-viewer-${identifier}`;
             
-            // 创建HTML内容
+            // 创建HTML内容 - 不包含loading指示器
             const html = `
-                <div id="${containerId}" class="glb-viewer-container" style="min-height: 300px;"></div>
+                <div id="${containerId}" class="glb-viewer-container" style="min-height: 300px; position: relative; display: inline-block;"></div>
             `;
             
             // 添加到缓冲区

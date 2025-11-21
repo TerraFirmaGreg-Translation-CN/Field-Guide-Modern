@@ -544,15 +544,16 @@ public class BaseModelBuilder {
     }
 
     protected Material createMaterial(String texture, String overlayTexture) {
-        // 先生成唯一的文件名
-        String fileName = texture.replace("assets/minecraft/textures/", "").replace(".png", "");
+        // 先生成唯一的文件名，正确处理mod路径（替换冒号和其他非法字符）
+        String fileName = texture.replace("assets/minecraft/textures/", "").replace(".png", "").replace(":", "_");
         if (overlayTexture != null) {
-            String overlayName = overlayTexture.replace("assets/minecraft/textures/", "").replace(".png", "").replace("/", "_");
+            String overlayName = overlayTexture.replace("assets/minecraft/textures/", "").replace(".png", "").replace(":", "_").replace("/", "_");
             fileName += "_overlay_" + overlayName;
         }
         fileName += ".png";
         
-        File imageFile = assetLoader.getOutputDir().resolve(fileName).toFile();
+        // 确保文件生成在assets/textures目录下
+        File imageFile = assetLoader.getOutputDir().resolve("assets/textures/" + fileName).toFile();
         BufferedImage img;
         
         // 如果文件已存在，直接从文件读取

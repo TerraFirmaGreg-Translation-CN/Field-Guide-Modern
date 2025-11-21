@@ -655,7 +655,8 @@ public class PageRenderer {
         try {
             // 获取多方块结构的图片路径
             String src = textureRenderer.getMultiBlockImage(page);
-            buffer.add(String.format(IMAGE_SINGLE, src, "Block Visualization"));
+            // FIXME remove me later, use 3d viewer instead
+            // buffer.add(String.format(IMAGE_SINGLE, src, "Block Visualization"));
             
             // 添加 GLB 3D 模型查看器
             if (src != null && src.endsWith(".png")) {
@@ -687,16 +688,14 @@ public class PageRenderer {
      * 添加 GLB 查看器到缓冲区
      */
     private void addGLBViewer(List<String> buffer, String viewerId, String glbPath) {
-        // 只使用data属性，依靠页面加载时的GLBViewerUtils.autoInitViewers()来初始化
-        // 避免重复初始化导致的页面闪烁问题
         buffer.add(String.format("""
-            <div class="glb-viewer-container" style="margin: 20px 0;">
+            <div class="glb-viewer-container">
                 <div id="%s" class="glb-viewer" 
                      data-glb-viewer="../../%s"
                      data-viewer-type="multiblock"
                      data-auto-rotate="true"
-                     style="width: 100%%; height: 400px; border: 1px solid #ccc; border-radius: 4px;">
-                    <div class="glb-viewer-loading" style="display: flex; align-items: center; justify-content: center; height: 100%%; background: #f8f9fa;">
+                     style="width: 100%%; height: 100%%;">
+                    <div class="glb-viewer-loading" style="display: flex; align-items: center; justify-content: center; height: 100%%; background: transparent;">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading 3D model...</span>
                         </div>
