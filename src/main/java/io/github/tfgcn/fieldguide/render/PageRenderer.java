@@ -655,6 +655,43 @@ public class PageRenderer {
         try {
             String src = textureRenderer.getMultiBlockImage(page);
             buffer.add(String.format(IMAGE_SINGLE, src, "Block Visualization"));
+            
+            // 添加 GLB 3D 模型查看器
+            // 使用与图片相同的路径结构，只是后缀改为 .glb
+            if (src != null && src.endsWith(".png")) {
+                String glbPath = src.substring(0, src.length() - 4) + ".glb";
+                String viewerId = "glb-viewer-" + System.currentTimeMillis(); // 使用时间戳作为唯一ID
+                
+                // 添加 GLB 查看器 div
+                buffer.add(String.format("""
+                    <div class="glb-viewer-container" style="margin: 20px 0;">
+                        <div id="%s" 
+                             class="glb-viewer" 
+                             data-glb-path="%s"
+                             style="width: 100%%; height: 400px; border: 1px solid #ccc; border-radius: 4px;">
+                            <div class="glb-viewer-loading" style="display: flex; align-items: center; justify-content: center; height: 100%%; background: #f8f9fa;">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading 3D model...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glb-viewer-controls" style="margin-top: 10px; text-align: center;">
+                            <button class="btn btn-sm btn-outline-primary" onclick="resetCamera('%s')">Reset View</button>
+                            <small class="text-muted ms-2">Use mouse to rotate • Scroll to zoom • Right-click to pan</small>
+                        </div>
+                    </div>
+                    <script>
+                        // 初始化 GLB 查看器
+                        if (typeof window.GLBViewerUtils !== 'undefined') {
+                            window.GLBViewerUtils.parseGLBViewer('%s');
+                        }
+                    </script>
+                    """, 
+                    viewerId,
+                    glbPath, 
+                    viewerId,
+                    viewerId));
+            }
         } catch (Exception e) {
             // FIXME add me later log.error("Multiblock image processing failed, message: {}", e.getMessage());
             // Fallback

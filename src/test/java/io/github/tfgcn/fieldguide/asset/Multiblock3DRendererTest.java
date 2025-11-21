@@ -1,5 +1,6 @@
 package io.github.tfgcn.fieldguide.asset;
 
+import io.github.tfgcn.fieldguide.export.GlTFExporter;
 import io.github.tfgcn.fieldguide.export.ObjExporter;
 import io.github.tfgcn.fieldguide.render.BlockStateModelBuilder;
 import io.github.tfgcn.fieldguide.render.Multiblock3DRenderer;
@@ -45,10 +46,17 @@ public class Multiblock3DRendererTest {
 
         try {
             Node rootNode = renderer.buildMultiblock(pattern, mapping);
-            ObjExporter exporter = new ObjExporter();
-            exporter.export(rootNode, "output/multiblock.obj");
+            
+            // 导出OBJ格式
+            ObjExporter objExporter = new ObjExporter();
+            objExporter.export(rootNode, "output/multiblock.obj");
+            
+            // 导出GLTF格式
+            GlTFExporter gltfExporter = new GlTFExporter();
+            gltfExporter.export(rootNode, "output/multiblock.glb");
+            
         } catch (Exception e) {
-            log.error("Error exporting OBJ file:", e);
+            log.error("Error exporting 3D model files:", e);
         }
 
     }

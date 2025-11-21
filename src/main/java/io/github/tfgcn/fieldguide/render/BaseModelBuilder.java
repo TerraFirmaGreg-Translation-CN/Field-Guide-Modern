@@ -16,10 +16,13 @@ import io.github.tfgcn.fieldguide.render3d.scene.Geometry;
 import io.github.tfgcn.fieldguide.render3d.scene.Mesh;
 import io.github.tfgcn.fieldguide.render3d.scene.Node;
 import io.github.tfgcn.fieldguide.render3d.shader.UnshadedShader;
+import io.github.tfgcn.fieldguide.render3d.animation.AnimatedTexture;
+import io.github.tfgcn.fieldguide.render3d.animation.AnimatedMaterial;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +56,7 @@ public class BaseModelBuilder {
 
     protected AssetLoader assetLoader;
     protected Map<String, Material> materialCache = new HashMap<>();
+    protected Map<String, AnimatedTexture> animatedTextureCache = new HashMap<>();
 
     public BaseModelBuilder(AssetLoader assetLoader) {
         this.assetLoader = assetLoader;
@@ -127,13 +131,18 @@ public class BaseModelBuilder {
         // 按材质分组收集面数据
         Map<String, MaterialFaceGroup> materialGroups = new HashMap<>();
 
+        String overlayTexture = null;
+        if (textures.containsKey("overlay")) {
+            overlayTexture = getTexture(textures, "#overlay");
+        }
+
         // 处理每个面，按材质分组
         for (Map.Entry<String, ElementFace> entry : faces.entrySet()) {
             String dir = entry.getKey();
             ElementFace face = entry.getValue();
 
             String texture = getTexture(textures, face.getTexture());
-            
+
             // 获取或创建材质组
             MaterialFaceGroup group = materialGroups.computeIfAbsent(texture, MaterialFaceGroup::new);
 
@@ -158,7 +167,7 @@ public class BaseModelBuilder {
             Mesh mesh = group.createMesh();
             if (mesh != null) {
                 Geometry geometry = new Geometry(mesh);
-                Material material = makeMaterial(group.texture);
+                Material material = createAnimatedMaterial(group.texture, overlayTexture);
                 geometry.setMaterial(material);
 
                 // 应用旋转和位移
@@ -379,17 +388,185 @@ public class BaseModelBuilder {
     /**
      * 创建材质
      */
-    protected Material makeMaterial(String texture) {
-        return materialCache.computeIfAbsent(texture, this::createMaterial);
+    protected Material makeMaterial(String texture, String overlayTexture) {
+        // 创建唯一的缓存键，包含基础纹理和overlay纹理信息
+        String cacheKey = overlayTexture != null ? texture + "_overlay_" + overlayTexture : texture;
+        return materialCache.computeIfAbsent(cacheKey, it -> createMaterial(texture, overlayTexture));
+    }
+    
+    /**
+     * 创建动画材质（如果检测到动画纹理）
+     */
+    protected Material createAnimatedMaterial(String texture, String overlayTexture) {
+        // 检测基础纹理是否为动画
+        AnimatedTexture baseAnimated = getOrCreateAnimatedTexture(texture);
+        AnimatedTexture overlayAnimated = overlayTexture != null ? getOrCreateAnimatedTexture(overlayTexture) : null;
+        
+        // 如果有动画纹理，创建动画材质
+        if (baseAnimated.isAnimated() || (overlayAnimated != null && overlayAnimated.isAnimated())) {
+            return createAnimatedMaterialInternal(baseAnimated, overlayAnimated);
+        }
+        
+        // 否则创建普通材质
+        return createMaterial(texture, overlayTexture);
+    }
+    
+    /**
+     * 获取或创建动画纹理
+     */
+    private AnimatedTexture getOrCreateAnimatedTexture(String texture) {
+        return animatedTextureCache.computeIfAbsent(texture, t -> {
+            AssetKey assetKey = new AssetKey(texture, "textures", "assets", ".png");
+            BufferedImage img = assetLoader.loadTexture(assetKey);
+            
+            AnimatedTexture animatedTexture = new AnimatedTexture();
+            animatedTexture.setTexturePath(texture);
+            animatedTexture.setAnimated(AnimatedTexture.isAnimationAtlas(img));
+            
+            if (animatedTexture.isAnimated()) {
+                animatedTexture.setFrameCount(AnimatedTexture.calculateFrameCount(img));
+                animatedTexture.setFrames(AnimatedTexture.extractFrames(img));
+                log.info("Created animated texture: {} with {} frames", texture, animatedTexture.getFrameCount());
+            } else {
+                animatedTexture.setFrameCount(1);
+                animatedTexture.setFrames(List.of(img));
+            }
+            
+            return animatedTexture;
+        });
+    }
+    
+    /**
+     * 创建动画材质内部实现
+     */
+    private Material createAnimatedMaterialInternal(AnimatedTexture baseAnimated, AnimatedTexture overlayAnimated) {
+        // 如果有overlay，需要合并动画帧
+        if (overlayAnimated != null && overlayAnimated.isAnimated()) {
+            return createCombinedAnimatedMaterial(baseAnimated, overlayAnimated);
+        } else {
+            return createSingleAnimatedMaterial(baseAnimated, overlayAnimated);
+        }
+    }
+    
+    /**
+     * 创建单个动画材质
+     */
+    private Material createSingleAnimatedMaterial(AnimatedTexture baseAnimated, AnimatedTexture overlayAnimated) {
+        AnimatedMaterial material = new AnimatedMaterial(baseAnimated);
+        
+        // 设置材质属性
+        material.getRenderState().setAlphaTest(true);
+        material.getRenderState().setAlphaFalloff(0.1f);
+        
+        // 检测是否为玻璃材质，设置相应的混合模式
+        boolean isGlassTexture = isGlassTexture(baseAnimated.getTexturePath()) || 
+                                 (overlayAnimated != null && isGlassTexture(overlayAnimated.getTexturePath()));
+        if (isGlassTexture) {
+            material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
+            log.debug("Detected glass animated texture: {}, using ALPHA_BLEND", baseAnimated.getTexturePath());
+        } else {
+            material.getRenderState().setBlendMode(RenderState.BlendMode.OFF);
+        }
+        
+        material.setUseVertexColor(true);
+        material.setShader(new UnshadedShader());
+        
+        // 如果有静态overlay，合并到第一帧
+        if (overlayAnimated != null && !overlayAnimated.isAnimated() && !overlayAnimated.getFrames().isEmpty()) {
+            BufferedImage overlayFrame = overlayAnimated.getFrames().get(0);
+            List<BufferedImage> combinedFrames = combineFramesWithOverlay(
+                baseAnimated.getFrames(), overlayFrame);
+            baseAnimated.setFrames(combinedFrames);
+        }
+        
+        // 设置纹理
+        if (!baseAnimated.getFrames().isEmpty()) {
+            io.github.tfgcn.fieldguide.render3d.renderer.Image image = 
+                new io.github.tfgcn.fieldguide.render3d.renderer.Image(baseAnimated.getFrames().get(0));
+            Texture diffuseMap = new Texture(image);
+            diffuseMap.setName(baseAnimated.getTexturePath());
+            diffuseMap.setMagFilter(Texture.MagFilter.NEAREST);
+            material.setDiffuseMap(diffuseMap);
+        }
+        
+        return material;
+    }
+    
+    /**
+     * 创建组合动画材质（两个动画纹理）
+     */
+    private Material createCombinedAnimatedMaterial(AnimatedTexture baseAnimated, AnimatedTexture overlayAnimated) {
+        // 合并两个动画的帧数（取最大值）
+        int maxFrames = Math.max(baseAnimated.getFrameCount(), overlayAnimated.getFrameCount());
+        List<BufferedImage> combinedFrames = combineAnimatedFrames(
+            baseAnimated.getFrames(), overlayAnimated.getFrames(), maxFrames);
+        
+        baseAnimated.setFrames(combinedFrames);
+        baseAnimated.setFrameCount(maxFrames);
+        
+        return createSingleAnimatedMaterial(baseAnimated, null);
+    }
+    
+    /**
+     * 合并静态overlay到所有帧
+     */
+    private List<BufferedImage> combineFramesWithOverlay(List<BufferedImage> frames, BufferedImage overlay) {
+        return frames.stream().map(frame -> {
+            BufferedImage combined = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = combined.createGraphics();
+            g.drawImage(frame, 0, 0, null);
+            g.drawImage(overlay, 0, 0, null);
+            g.dispose();
+            return combined;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+    
+    /**
+     * 合并两个动画的帧
+     */
+    private List<BufferedImage> combineAnimatedFrames(List<BufferedImage> baseFrames, List<BufferedImage> overlayFrames, int totalFrames) {
+        List<BufferedImage> combined = new ArrayList<>();
+        
+        for (int i = 0; i < totalFrames; i++) {
+            BufferedImage baseFrame = baseFrames.get(i % baseFrames.size());
+            BufferedImage overlayFrame = overlayFrames.get(i % overlayFrames.size());
+            
+            BufferedImage combinedFrame = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = combinedFrame.createGraphics();
+            g.drawImage(baseFrame, 0, 0, null);
+            g.drawImage(overlayFrame, 0, 0, null);
+            g.dispose();
+            
+            combined.add(combinedFrame);
+        }
+        
+        return combined;
     }
 
-    protected Material createMaterial(String texture) {
-        AssetKey assetKey = new AssetKey(texture, "textures", "assets", ".png");
-        BufferedImage img = assetLoader.loadTexture(assetKey);
-
-        // write to file
-        File imageFile = assetLoader.getOutputDir().resolve(assetKey.getResourcePath()).toFile();
-        if (!imageFile.exists()) {
+    protected Material createMaterial(String texture, String overlayTexture) {
+        // 先生成唯一的文件名
+        String fileName = texture.replace("assets/minecraft/textures/", "").replace(".png", "");
+        if (overlayTexture != null) {
+            String overlayName = overlayTexture.replace("assets/minecraft/textures/", "").replace(".png", "").replace("/", "_");
+            fileName += "_overlay_" + overlayName;
+        }
+        fileName += ".png";
+        
+        File imageFile = assetLoader.getOutputDir().resolve(fileName).toFile();
+        BufferedImage img;
+        
+        // 如果文件已存在，直接从文件读取
+        if (imageFile.exists()) {
+            try {
+                img = ImageIO.read(imageFile);
+            } catch (IOException e) {
+                log.error("Error reading existing image: {}", imageFile, e);
+                // 如果读取失败，回退到重新生成
+                img = generateCombinedImage(texture, overlayTexture);
+            }
+        } else {
+            // 文件不存在，生成并保存
+            img = generateCombinedImage(texture, overlayTexture);
             try {
                 FileUtils.createParentDirectories(imageFile);
                 ImageIO.write(img, "png", imageFile);
@@ -400,18 +577,101 @@ public class BaseModelBuilder {
 
         Image image = new Image(img);
         Texture diffuseMap = new Texture(image);
-        diffuseMap.setName(assetKey.getResourcePath());
+        // 使用唯一的文件路径设置纹理名称，包含overlay信息
+        diffuseMap.setName(fileName);
         diffuseMap.setMagFilter(Texture.MagFilter.NEAREST);
 
         Material material = new Material();
         material.getRenderState().setAlphaTest(true);
         material.getRenderState().setAlphaFalloff(0.1f);
-        material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND); // 设置混合模式
+        
+        // 检测是否为玻璃材质，设置相应的混合模式
+        boolean isGlassTexture = isGlassTexture(texture) || (overlayTexture != null && isGlassTexture(overlayTexture));
+        if (isGlassTexture) {
+            material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
+            log.debug("Detected glass texture: {}, using ALPHA_BLEND", texture);
+        } else {
+            material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
+        }
+        
         material.setUseVertexColor(true);
         material.setShader(new UnshadedShader());
         material.setDiffuseMap(diffuseMap);
 
         return material;
+    }
+
+    /**
+     * 生成组合纹理图像（向后兼容方法）
+     */
+    private BufferedImage generateCombinedImage(String texture, String overlayTexture) {
+        AssetKey assetKey = new AssetKey(texture, "textures", "assets", ".png");
+        BufferedImage img = assetLoader.loadTexture(assetKey);
+        log.debug("Loading base texture: {}, original size: {}x{}", texture, img.getWidth(), img.getHeight());
+
+        // 对于动画纹理图集，提取第一帧
+        img = extractFirstFrameIfNeeded(img);
+        log.debug("Processed texture size: {}x{}", img.getWidth(), img.getHeight());
+
+        if (overlayTexture != null) {
+            AssetKey overlayKey = new AssetKey(overlayTexture, "textures", "assets", ".png");
+            BufferedImage overlayImg = assetLoader.loadTexture(overlayKey);
+            log.debug("Loading overlay texture: {}, original size: {}x{}", overlayTexture, overlayImg.getWidth(), overlayImg.getHeight());
+            
+            // 同样处理overlay纹理
+            overlayImg = extractFirstFrameIfNeeded(overlayImg);
+            log.debug("Processed overlay size: {}x{}", overlayImg.getWidth(), overlayImg.getHeight());
+
+            BufferedImage combined = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = combined.createGraphics();
+            g.drawImage(img, 0, 0, null);
+            g.drawImage(overlayImg, 0, 0, null);
+            g.dispose();
+
+            img = combined;
+        }
+        
+        return img;
+    }
+
+    /**
+     * 检查并提取动画纹理的第一帧
+     * 只处理垂直动画图集（16x16N），其他NPOT纹理不处理
+     */
+    private BufferedImage extractFirstFrameIfNeeded(BufferedImage img) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        
+        // 检查是否是垂直动画图集：宽度16，高度是16的倍数
+        if (width == 16 && height > 16 && height % 16 == 0) {
+            log.debug("Detected animation atlas (16x{}), extracting first frame (16x16)", height);
+            // 提取第一帧 (0, 0, 16, 16)
+            return img.getSubimage(0, 0, 16, 16);
+        }
+        
+        return img; // 其他情况直接返回原图
+    }
+
+    /**
+     * 检测纹理是否为玻璃材质
+     */
+    private boolean isGlassTexture(String texturePath) {
+        if (texturePath == null) {
+            return false;
+        }
+        
+        // 转换为小写进行匹配
+        String lowerPath = texturePath.toLowerCase();
+        
+        // 检测常见的玻璃纹理关键词
+        return lowerPath.contains("glass") || 
+               lowerPath.contains("stained_glass") ||
+               lowerPath.contains("tinted_glass") ||
+               lowerPath.contains("glass_pane") ||
+               lowerPath.contains("stained_glass_pane") ||
+               // TFC 相关玻璃纹理
+               lowerPath.contains("tfc:glass") ||
+               lowerPath.contains("tfc/glass");
     }
 
     /**

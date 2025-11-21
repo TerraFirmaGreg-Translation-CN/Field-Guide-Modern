@@ -10,8 +10,10 @@ import io.github.tfgcn.fieldguide.data.patchouli.page.PageMultiblockData;
 import io.github.tfgcn.fieldguide.data.tfc.page.PageMultiMultiblock;
 import io.github.tfgcn.fieldguide.data.tfc.page.TFCMultiblockData;
 import io.github.tfgcn.fieldguide.exception.InternalException;
+import io.github.tfgcn.fieldguide.export.GlTFExporter;
 import io.github.tfgcn.fieldguide.localization.I18n;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
+import io.github.tfgcn.fieldguide.render3d.scene.Node;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -89,6 +91,7 @@ public class TextureRenderer {
     private final LocalizationManager localizationManager;
     private final SingleBlock3DRenderer singleBlock3DRenderer;
     private final Multiblock3DRenderer multiblock3DRenderer;
+    private final BlockStateModelBuilder blockStateModelBuilder;
 
     // Cache
     private final Map<String, String> IMAGE_CACHE = new HashMap<>();
@@ -101,13 +104,15 @@ public class TextureRenderer {
     public TextureRenderer(AssetLoader loader, LocalizationManager localizationManager) {
         this.loader = loader;
         this.localizationManager = localizationManager;
+        this.blockStateModelBuilder = new BlockStateModelBuilder(loader);
         this.singleBlock3DRenderer = new SingleBlock3DRenderer(new BaseModelBuilder(loader), 256, 256);
-        this.multiblock3DRenderer = new Multiblock3DRenderer(new BlockStateModelBuilder(loader), 256, 256);
+        this.multiblock3DRenderer = new Multiblock3DRenderer(blockStateModelBuilder, 256, 256);
 
         lastUid.put("content", 0);
         lastUid.put("image", 0);
         lastUid.put("item", 0);
         lastUid.put("block", 0);
+        lastUid.put("model", 0);
         lastUid.put("fluid", 0);
     }
 
@@ -621,9 +626,11 @@ public class TextureRenderer {
         String key;
         List<BufferedImage> images;
 
+        Node node = null;
         if (data.getMultiblock() != null) {
             PageMultiblockData multiblock = data.getMultiblock();
 
+            node = multiblock3DRenderer.buildMultiblock(multiblock.getPattern(), multiblock.getMapping());
             Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
             key = result.getKey();
             images = result.getValue();
@@ -641,6 +648,12 @@ public class TextureRenderer {
             path = saveImage("assets/generated/" + blockId + ".png", images.getFirst());
         } else {
             path = saveGif("assets/generated/" + blockId + ".gif", images);
+        }
+
+        if (node != null) {
+            GlTFExporter exporter = new GlTFExporter();
+            String glbPath = "assets/generated/" + blockId + ".glb";
+            exporter.export(node, loader.getOutputDir().resolve(glbPath).toString());
         }
 
         CACHE.put(key, path);
@@ -662,7 +675,8 @@ public class TextureRenderer {
         if (!Arrays.deepEquals(pattern, validPattern1) && !Arrays.deepEquals(pattern, validPattern2)) {
             if (!Arrays.deepEquals(pattern, validPattern3)) {
                 try {
-                    BufferedImage image = multiblock3DRenderer.render(pattern, data.getMapping());
+                    Node node = multiblock3DRenderer.buildMultiblock(data.getPattern(), data.getMapping());
+                    BufferedImage image = multiblock3DRenderer.render(node);
                     return new Pair<>(Arrays.deepToString(pattern), List.of(image));
                 } catch (Exception e) {
                     log.error("Failed loading multiblock image: {}, mapping: {}, message: {}", Arrays.deepToString(pattern), data.getMapping(), e.getMessage(), e);

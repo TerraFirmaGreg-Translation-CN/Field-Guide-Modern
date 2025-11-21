@@ -162,9 +162,17 @@
       </footer>
     </div>
 
+    <!-- Three.js and GLB loader -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/examples/jsm/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/examples/jsm/loaders/GLTFLoader.js"></script>
+    
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="${root}/static/icons.min.js"></script>
     <script src="${root}/static/tooltips.js"></script>
     <script src="${root}/static/search.js"></script>
+    <script src="${root}/static/viewer.js"></script>
+    <script src="${root}/static/viewer-utils.js"></script>
   </body>
 </html>

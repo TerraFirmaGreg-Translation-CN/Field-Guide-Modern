@@ -555,7 +555,7 @@ public class AssetLoader {
             List<Variant> variants = blockVariant.getVariants();
             Variant variant;
             if (variants.size() > 1) {
-                log.info("multi variants found, {} -> {}", modelId, variants);
+                log.debug("multi variants found, {} -> {}", modelId, variants);
                 variant = BlockState.selectByWeight(variants);
             } else {
                 variant = variants.getFirst();

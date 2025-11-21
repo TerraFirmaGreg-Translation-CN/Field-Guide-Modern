@@ -34,6 +34,16 @@ public class Multiblock3DRenderer extends BaseRenderer {
     }
 
     /**
+     * 渲染场景
+     */
+    public BufferedImage render(Node scene) {
+        rootNode.attachChild(scene);
+        BufferedImage image = render();
+        rootNode.detachChild(scene);
+        return image;
+    }
+
+    /**
      * 构建多方块结构
      */
     public Node buildMultiblock(String[][] pattern, Map<String, String> mapping) {
@@ -42,6 +52,10 @@ public class Multiblock3DRenderer extends BaseRenderer {
         int col = pattern[0].length;
         int row = pattern[0][0].length();
         log.debug("Model size: {}x{}x{}", col, height, row);
+
+        // 调整摄像机位置
+        int max = Math.max(Math.max(col, height), row);
+        camera.lookAt(v3(max * 10, max * 10, max * 10), v3(0, 0, 0), Vector3f.UNIT_Y);
 
         float startX = -row * 8f;
         float startY = -height * 8f;
@@ -67,11 +81,6 @@ public class Multiblock3DRenderer extends BaseRenderer {
                 }
             }
         }
-
-        // 调整摄像机位置
-        int max = Math.max(Math.max(col, height), row);
-        camera.lookAt(v3(max * 10, max * 10, max * 10), v3(0, 0, 0), Vector3f.UNIT_Y);
-
         return root;
     }
 }
