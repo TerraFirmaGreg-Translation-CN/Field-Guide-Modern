@@ -1,6 +1,6 @@
 package io.github.tfgcn.fieldguide.asset;
 
-import io.github.tfgcn.fieldguide.render.components.Multiblock3DRenderer;
+import io.github.tfgcn.fieldguide.render.Multiblock3DRenderer;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

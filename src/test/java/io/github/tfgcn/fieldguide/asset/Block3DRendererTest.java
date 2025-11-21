@@ -1,6 +1,6 @@
 package io.github.tfgcn.fieldguide.asset;
 
-import io.github.tfgcn.fieldguide.render.components.Block3DRenderer;
+import io.github.tfgcn.fieldguide.render.Block3DRenderer;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Paths;

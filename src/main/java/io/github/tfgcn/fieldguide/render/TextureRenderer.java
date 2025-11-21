@@ -1,7 +1,7 @@
 package io.github.tfgcn.fieldguide.render;
 
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
-import io.github.tfgcn.fieldguide.Context;
+import io.github.tfgcn.fieldguide.Pair;
 import io.github.tfgcn.fieldguide.asset.*;
 import io.github.tfgcn.fieldguide.data.minecraft.blockmodel.BlockModel;
 import io.github.tfgcn.fieldguide.data.minecraft.blockstate.BlockVariant;
@@ -12,8 +12,6 @@ import io.github.tfgcn.fieldguide.data.tfc.page.TFCMultiblockData;
 import io.github.tfgcn.fieldguide.exception.InternalException;
 import io.github.tfgcn.fieldguide.localization.I18n;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
-import io.github.tfgcn.fieldguide.render.components.Block3DRenderer;
-import io.github.tfgcn.fieldguide.render.components.Multiblock3DRenderer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -57,7 +55,7 @@ public class TextureRenderer {
 
     /// fluid images
 
-    private final Map<String, FluidImageResult> FLUID_CACHE = new HashMap<>();
+    private final Map<String, ItemImageResult> FLUID_CACHE = new HashMap<>();
 
     // 流体颜色映射
     private final static Map<String, String> FLUID_COLORS = Map.ofEntries(
@@ -593,7 +591,7 @@ public class TextureRenderer {
             List<TFCMultiblockData> multiblocks = data.getMultiblocks();
             StringBuilder keyBuilder = new StringBuilder("multiblocks-");
             for (TFCMultiblockData block : multiblocks) {
-                Context.Pair<String, List<BufferedImage>> result = getMultiBlockImages(block);
+                Pair<String, List<BufferedImage>> result = getMultiBlockImages(block);
                 keyBuilder.append(result.getKey());
                 images.addAll(result.getValue());
             }
@@ -630,7 +628,7 @@ public class TextureRenderer {
         if (data.getMultiblock() != null) {
             PageMultiblockData multiblock = data.getMultiblock();
 
-            Context.Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
+            Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
             key = result.getKey();
             images = result.getValue();
         } else {
@@ -654,7 +652,7 @@ public class TextureRenderer {
     }
 
     // FIXME 重构实现真正的多方快结构
-    public Context.Pair<String, List<BufferedImage>> getMultiBlockImages(PageMultiblockData data) throws Exception {
+    public Pair<String, List<BufferedImage>> getMultiBlockImages(PageMultiblockData data) throws Exception {
         if (data.getPattern() == null) {
             throw new RuntimeException("Multiblock : No 'pattern' field");
         }
@@ -669,7 +667,7 @@ public class TextureRenderer {
             if (!Arrays.deepEquals(pattern, validPattern3)) {
                 try {
                     BufferedImage image = multiblock3DRenderer.render(pattern, data.getMapping());
-                    return new Context.Pair<>(Arrays.deepToString(pattern), List.of(image));
+                    return new Pair<>(Arrays.deepToString(pattern), List.of(image));
                 } catch (Exception e) {
                     log.error("Failed loading multiblock image: {}, mapping: {}, message: {}", Arrays.deepToString(pattern), data.getMapping(), e.getMessage(), e);
                 }
@@ -699,7 +697,7 @@ public class TextureRenderer {
             }
         }
 
-        return new Context.Pair<>(block, blockImages);
+        return new Pair<>(block, blockImages);
     }
 
     public BufferedImage getBlockImage(String blockState) throws Exception {
@@ -711,14 +709,14 @@ public class TextureRenderer {
         return createBlockModelImage(block, model);
     }
 
-    public static Context.Pair<String, Map<String, String>> parseBlockState(String blockState) {
+    public static Pair<String, Map<String, String>> parseBlockState(String blockState) {
         if (blockState.contains("[")) {
             String[] parts = blockState.substring(0, blockState.length() - 1).split("\\[");
             String block = parts[0];
             Map<String, String> properties = parseBlockProperties(parts[1]);
-            return new Context.Pair<>(block, properties);
+            return new Pair<>(block, properties);
         } else {
-            return new Context.Pair<>(blockState, new HashMap<>());
+            return new Pair<>(blockState, new HashMap<>());
         }
     }
 
@@ -1160,17 +1158,17 @@ public class TextureRenderer {
     /**
      * 获取流体图像
      */
-    public FluidImageResult getFluidImage(Object fluidIn, boolean placeholder) {
+    public ItemImageResult getFluidImage(Object fluidIn, boolean placeholder) {
         return getFluidImage(fluidIn, placeholder, true);
     }
 
-    public FluidImageResult getFluidImage(Object fluidIn, boolean placeholder, boolean includeAmount) {
+    public ItemImageResult getFluidImage(Object fluidIn, boolean placeholder, boolean includeAmount) {
         FluidResult decoded = decodeFluid(fluidIn);
         String fluid = decoded.getFluid();
         int amount = decoded.getAmount();
 
         if (FLUID_CACHE.containsKey(fluid)) {
-            FluidImageResult entry = FLUID_CACHE.get(fluid);
+            ItemImageResult entry = FLUID_CACHE.get(fluid);
             String name = entry.getName();
             if (entry.getKey() != null) {
                 try {
@@ -1236,7 +1234,7 @@ public class TextureRenderer {
         String finalName = includeAmount && amount > 0 ?
                 String.format("%s mB %s", amount, name) : name;
 
-        FluidImageResult result = new FluidImageResult(path, finalName, key);
+        ItemImageResult result = new ItemImageResult(path, finalName, key);
 
         FLUID_CACHE.put(fluid, result);
         return result;

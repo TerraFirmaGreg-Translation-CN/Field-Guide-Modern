@@ -20,7 +20,6 @@ import io.github.tfgcn.fieldguide.data.minecraft.blockstate.Variant;
 import io.github.tfgcn.fieldguide.data.minecraft.blockmodel.BlockModel;
 import io.github.tfgcn.fieldguide.Constants;
 import io.github.tfgcn.fieldguide.exception.InternalException;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
@@ -58,8 +57,7 @@ public class AssetLoader {
 
     private final Map<String, BufferedImage> registeredImage;
 
-    @Getter
-    private final Set<String> missingAssets = new TreeSet<>();
+    private AssetStats assetStats = new AssetStats();
 
     public AssetLoader(Path instanceRoot) {
         this.instanceRoot = instanceRoot;
@@ -69,6 +67,8 @@ public class AssetLoader {
         this.itemModelCache = new TreeMap<>();
         this.tagsCache = new TreeMap<>();
         this.registeredImage = new HashMap<>();
+
+        assetStats = new AssetStats();
 
         initializeSources();
 
@@ -465,7 +465,7 @@ public class AssetLoader {
         Asset asset = getAsset(assetKey);
         if (asset == null) {
             log.error("Texture not found: {}", assetKey);
-            missingAssets.add(assetKey.getId());
+            assetStats.addMissingTexture(assetKey.getId());
             throw new AssetNotFoundException("Texture not found: " + assetKey.getResourcePath());
         }
 
@@ -482,7 +482,7 @@ public class AssetLoader {
 
         Asset asset = getAsset(assetKey.getResourcePath());
         if (asset == null) {
-            missingAssets.add(resourceLocation);
+            assetStats.addMissingAsset(resourceLocation);
             throw new AssetNotFoundException("Resource not found: " + resourceLocation + " in " + assetKey.getResourcePath());
         }
         return asset;
@@ -667,33 +667,6 @@ public class AssetLoader {
         } else {
             throw new RuntimeException("BlockState : Must be a 'variants' or 'multipart' block state: '" + blockStateId + "'");
         }
-    }
-
-    /**
-     * 根据权重选择变体
-     */
-    private Variant selectVariantByWeight(List<Variant> variants) {
-        if (variants.size() == 1) {
-            return variants.getFirst();
-        }
-
-        // 计算总权重
-        int totalWeight = variants.stream().mapToInt(Variant::getWeight).sum();
-
-        // 随机选择
-        Random random = new Random();
-        int randomValue = random.nextInt(totalWeight);
-        int currentWeight = 0;
-
-        for (Variant variant : variants) {
-            currentWeight += variant.getWeight();
-            if (randomValue < currentWeight) {
-                return variant;
-            }
-        }
-
-        // 如果权重计算有问题，返回第一个
-        return variants.getFirst();
     }
 
     public BlockModel loadModel(String modelId) {

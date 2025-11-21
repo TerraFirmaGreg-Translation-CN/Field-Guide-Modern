@@ -1,4 +1,4 @@
-package io.github.tfgcn.fieldguide.render.components;
+package io.github.tfgcn.fieldguide.render;
 
 import io.github.tfgcn.fieldguide.asset.AssetLoader;
 import io.github.tfgcn.fieldguide.exception.AssetNotFoundException;

@@ -8,7 +8,6 @@ import io.github.tfgcn.fieldguide.data.patchouli.BookCategory;
 import io.github.tfgcn.fieldguide.data.patchouli.BookEntry;
 import io.github.tfgcn.fieldguide.data.patchouli.BookPage;
 import io.github.tfgcn.fieldguide.exception.InternalException;
-import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.localization.Language;
 import io.github.tfgcn.fieldguide.localization.LazyLocalizationManager;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
@@ -19,7 +18,6 @@ import io.github.tfgcn.fieldguide.render.TextureRenderer;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;

@@ -9,7 +9,9 @@ import io.github.tfgcn.fieldguide.exception.InternalException;
 import io.github.tfgcn.fieldguide.gson.JsonUtils;
 import io.github.tfgcn.fieldguide.localization.I18n;
 import io.github.tfgcn.fieldguide.localization.LocalizationManager;
-import io.github.tfgcn.fieldguide.render.components.*;
+import io.github.tfgcn.fieldguide.render.components.CraftingRecipe;
+import io.github.tfgcn.fieldguide.render.components.KnappingRecipe;
+import io.github.tfgcn.fieldguide.render.components.KnappingType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
@@ -572,21 +574,6 @@ public class PageRenderer {
     }
 
     /**
-     * 格式化带数量的成分
-     */
-    public SizedIngredientResult formatSizedIngredient(Object data) {
-        ItemImageResult ingredient = formatIngredient(data);
-        int count = 1;
-        if (data instanceof Map) {
-            Map<String, Object> mapData = (Map<String, Object>) data;
-            if (mapData.containsKey("count")) {
-                count = ((Number) mapData.get("count")).intValue();
-            }
-        }
-        return new SizedIngredientResult(ingredient, count);
-    }
-
-    /**
      * 格式化物品堆
      */
     public ItemStackResult formatItemStack(Object data) {
@@ -884,10 +871,10 @@ public class PageRenderer {
             </div>
             """,
                 inResult.getName(),
-                CraftingRecipeFormatter.formatCount(inCount),
+                formatCount(inCount),
                 inResult.getPath(),
                 outResult.getName(),
-                CraftingRecipeFormatter.formatCount(outResult.getCount()),
+                formatCount(outResult.getCount()),
                 outResult.getPath()
         ));
     }
@@ -1000,7 +987,7 @@ public class PageRenderer {
             inPath = ingredientResult.getPath();
             inName = ingredientResult.getName();
             int count = inItem.containsKey("count") ? ((Number) inItem.get("count")).intValue() : 1;
-            inputItemDiv = makeIcon(inName, inPath, 1, CraftingRecipeFormatter.formatCount(count));
+            inputItemDiv = makeIcon(inName, inPath, 1, formatCount(count));
         }
 
         // 处理输出物品
@@ -1014,7 +1001,7 @@ public class PageRenderer {
 
         // 处理输入流体
         if (data.containsKey("input_fluid")) {
-            FluidImageResult fluidResult = textureRenderer.getFluidImage(data.get("input_fluid"), true);
+            ItemImageResult fluidResult = textureRenderer.getFluidImage(data.get("input_fluid"), true);
             fInPath = fluidResult.getPath();
             fInName = fluidResult.getName();
             inputFluidDiv = makeIcon(fInName, fInPath, 2, "");
@@ -1022,7 +1009,7 @@ public class PageRenderer {
 
         // 处理输出流体
         if (data.containsKey("output_fluid")) {
-            FluidImageResult fluidResult = textureRenderer.getFluidImage(data.get("output_fluid"), true);
+            ItemImageResult fluidResult = textureRenderer.getFluidImage(data.get("output_fluid"), true);
             fOutPath = fluidResult.getPath();
             fOutName = fluidResult.getName();
             outputFluidDiv = makeIcon(fOutName, fOutPath, 4, "");
