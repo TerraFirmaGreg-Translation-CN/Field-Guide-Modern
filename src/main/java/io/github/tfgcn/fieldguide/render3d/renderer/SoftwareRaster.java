@@ -99,13 +99,13 @@ public class SoftwareRaster extends ImageRaster {
             destColor.x = srcColor.x;
             destColor.y = srcColor.y;
             destColor.z = srcColor.z;
-            destColor.w = srcColor.w;// <-- 这里有问题
+            destColor.w = srcColor.w;
             break;
         case ADD:
             destColor.x += srcColor.x;
             destColor.y += srcColor.y;
             destColor.z += srcColor.z;
-            destColor.w = srcColor.w;// <-- 这里应该怎么计算？
+            destColor.w += srcColor.w;
             break;
         case ALPHA_BLEND:
             destColor.x = destColor.x + (srcColor.x - destColor.x) * srcColor.w;
