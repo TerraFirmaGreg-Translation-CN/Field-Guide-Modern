@@ -17,8 +17,12 @@ import io.github.tfgcn.fieldguide.render3d.scene.Mesh;
 import io.github.tfgcn.fieldguide.render3d.scene.Node;
 import io.github.tfgcn.fieldguide.render3d.shader.UnshadedShader;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -354,6 +358,18 @@ public class BaseModelBuilder {
     protected Material createMaterial(String texture) {
         AssetKey assetKey = new AssetKey(texture, "textures", "assets", ".png");
         BufferedImage img = assetLoader.loadTexture(assetKey);
+
+        // write to file
+        File imageFile = assetLoader.getOutputDir().resolve(assetKey.getResourcePath()).toFile();
+        if (!imageFile.exists()) {
+            try {
+                FileUtils.createParentDirectories(imageFile);
+                ImageIO.write(img, "png", imageFile);
+            } catch (IOException e) {
+                log.error("Error writing image: {}", imageFile, e);
+            }
+        }
+
         Image image = new Image(img);
         Texture diffuseMap = new Texture(image);
         diffuseMap.setName(assetKey.getResourcePath());

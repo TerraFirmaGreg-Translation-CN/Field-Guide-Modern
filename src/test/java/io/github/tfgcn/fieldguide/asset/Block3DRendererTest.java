@@ -1,8 +1,10 @@
 package io.github.tfgcn.fieldguide.asset;
 
+import io.github.tfgcn.fieldguide.render.BaseModelBuilder;
 import io.github.tfgcn.fieldguide.render.SingleBlock3DRenderer;
 
 import java.awt.image.BufferedImage;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -15,7 +17,7 @@ public class Block3DRendererTest {
     public static void main(String[] args) {
         String modpackPath = "Modpack-Modern";
         AssetLoader assetLoader = new AssetLoader(Paths.get(modpackPath));
-        SingleBlock3DRenderer renderer = new SingleBlock3DRenderer(assetLoader, 256, 256);
+        SingleBlock3DRenderer renderer = new SingleBlock3DRenderer(new BaseModelBuilder(assetLoader), 256, 256);
         BufferedImage image = renderer.render("beneath:block/unposter");
     }
 }

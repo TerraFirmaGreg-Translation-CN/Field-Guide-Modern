@@ -1,6 +1,7 @@
 package io.github.tfgcn.fieldguide.asset;
 
 import io.github.tfgcn.fieldguide.export.ObjExporter;
+import io.github.tfgcn.fieldguide.render.BlockStateModelBuilder;
 import io.github.tfgcn.fieldguide.render.Multiblock3DRenderer;
 import io.github.tfgcn.fieldguide.render3d.scene.Node;
 import lombok.extern.slf4j.Slf4j;
@@ -23,19 +24,12 @@ public class Multiblock3DRendererTest {
     public static void main(String[] args) throws IOException {
         String modpackPath = "Modpack-Modern";
         AssetLoader assetLoader = new AssetLoader(Paths.get(modpackPath));
-        Multiblock3DRenderer renderer = new Multiblock3DRenderer(assetLoader, 512, 512);
+        BlockStateModelBuilder builder = new BlockStateModelBuilder(assetLoader);
+        Multiblock3DRenderer renderer = new Multiblock3DRenderer(builder, 512, 512);
 
         String[][] pattern = new String[][] {
                 {"  G  ", "  G  ", "GGCGG", "  G  ", "  G  "},
                 {"XXXXX", "XXXXX", "XX0XX", "XXBXX", "XXXXX"}
-        };
-
-        pattern = new String[][] {
-                {"XXX", "XXX", "XXX"},
-                {"GGG", "G G", "GGG"},
-                {"GGG", "G G", "GGG"},
-                {"GGG", "G G", "GGG"},
-                {"XXX", "XXX", "XXX"}
         };
 
         Map<String, String> mapping = new HashMap<>();

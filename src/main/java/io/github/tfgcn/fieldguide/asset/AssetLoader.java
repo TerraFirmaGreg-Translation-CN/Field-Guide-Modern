@@ -20,6 +20,7 @@ import io.github.tfgcn.fieldguide.data.minecraft.blockstate.Variant;
 import io.github.tfgcn.fieldguide.data.minecraft.blockmodel.BlockModel;
 import io.github.tfgcn.fieldguide.Constants;
 import io.github.tfgcn.fieldguide.exception.InternalException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
@@ -47,6 +48,9 @@ import static io.github.tfgcn.fieldguide.render.TextureRenderer.multiplyImageByC
 public class AssetLoader {
 
     private final Path instanceRoot;
+    @Getter
+    private final Path outputDir;
+
     private final List<AssetSource> sources;
     private final Map<String, AssetSource> resourceCache;
     private final Map<String, BlockModel> blockModelCache;
@@ -57,10 +61,15 @@ public class AssetLoader {
 
     private final Map<String, BufferedImage> registeredImage;
 
-    private AssetStats assetStats = new AssetStats();
+    private AssetStats assetStats;
 
     public AssetLoader(Path instanceRoot) {
+        this(instanceRoot, Paths.get("output"));
+    }
+
+    public AssetLoader(Path instanceRoot, Path outputDir) {
         this.instanceRoot = instanceRoot;
+        this.outputDir = outputDir;
         this.sources = new ArrayList<>();
         this.resourceCache = new HashMap<>();
         this.blockModelCache = new TreeMap<>();

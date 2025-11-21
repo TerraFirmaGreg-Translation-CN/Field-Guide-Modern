@@ -90,8 +90,6 @@ public class TextureRenderer {
     private final SingleBlock3DRenderer singleBlock3DRenderer;
     private final Multiblock3DRenderer multiblock3DRenderer;
 
-    private final String outputRootDir;
-
     // Cache
     private final Map<String, String> IMAGE_CACHE = new HashMap<>();
     private final Map<String, ItemImageResult> itemImageCache = new HashMap<>();
@@ -100,13 +98,11 @@ public class TextureRenderer {
 
     private final Map<String, Integer> lastUid = new HashMap<>();
 
-    public TextureRenderer(AssetLoader loader, LocalizationManager localizationManager, String outputRootDir) {
+    public TextureRenderer(AssetLoader loader, LocalizationManager localizationManager) {
         this.loader = loader;
         this.localizationManager = localizationManager;
-        this.singleBlock3DRenderer = new SingleBlock3DRenderer(loader, 256, 256);
-        this.multiblock3DRenderer = new Multiblock3DRenderer(loader, 256, 256);
-
-        this.outputRootDir = outputRootDir;
+        this.singleBlock3DRenderer = new SingleBlock3DRenderer(new BaseModelBuilder(loader), 256, 256);
+        this.multiblock3DRenderer = new Multiblock3DRenderer(new BlockStateModelBuilder(loader), 256, 256);
 
         lastUid.put("content", 0);
         lastUid.put("image", 0);
@@ -417,7 +413,7 @@ public class TextureRenderer {
      * @return the relative id to that location.
      */
     public String saveImage(String path, BufferedImage image) {
-        File outputFile = new File(outputRootDir, path);
+        File outputFile = loader.getOutputDir().resolve(path).toFile();
         try {
             // Create output directory if it doesn't exist
             FileUtils.createParentDirectories(outputFile);
@@ -441,7 +437,7 @@ public class TextureRenderer {
         }
 
         // Create output directory if it doesn't exist
-        File outputFile = new File(outputRootDir, path);
+        File outputFile = loader.getOutputDir().resolve(path).toFile();
         FileUtils.createParentDirectories(outputFile);
 
         // Save as GIF

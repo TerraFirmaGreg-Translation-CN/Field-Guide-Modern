@@ -24,19 +24,11 @@ public abstract class BaseRenderer {
     protected AssetLoader assetLoader;
     protected BaseModelBuilder modelBuilder;
 
-    public BaseRenderer(AssetLoader assetLoader, int width, int height) {
-        this.assetLoader = assetLoader;
+    public BaseRenderer(BaseModelBuilder modelBuilder, int width, int height) {
         this.width = width;
         this.height = height;
-        this.modelBuilder = createModelBuilder();
+        this.modelBuilder = modelBuilder;
         initializeRenderer();
-    }
-
-    /**
-     * 创建模型构建器 - 子类可以覆盖此方法以提供特定的模型构建器
-     */
-    protected BaseModelBuilder createModelBuilder() {
-        return new BaseModelBuilder(assetLoader);
     }
 
     /**

@@ -15,8 +15,8 @@ import static io.github.tfgcn.fieldguide.render.BaseModelBuilder.v3;
  */
 public class SingleBlock3DRenderer extends BaseRenderer {
 
-    public SingleBlock3DRenderer(AssetLoader assetLoader, int width, int height) {
-        super(assetLoader, width, height);
+    public SingleBlock3DRenderer(BaseModelBuilder modelBuilder, int width, int height) {
+        super(modelBuilder, width, height);
         
         // 设置平行投影摄像机
         camera.setParallel(-11 * SCALE, 11 * SCALE, -11 * SCALE, 11 * SCALE, -1000f, 1000f);

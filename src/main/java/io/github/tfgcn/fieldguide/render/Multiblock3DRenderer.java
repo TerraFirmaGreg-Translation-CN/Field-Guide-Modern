@@ -1,13 +1,10 @@
 package io.github.tfgcn.fieldguide.render;
 
-import io.github.tfgcn.fieldguide.asset.AssetLoader;
-import io.github.tfgcn.fieldguide.data.minecraft.blockmodel.BlockModel;
 import io.github.tfgcn.fieldguide.render3d.math.Vector3f;
 import io.github.tfgcn.fieldguide.render3d.scene.Node;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
-import java.util.List;
 import java.util.Map;
 
 import static io.github.tfgcn.fieldguide.render.BaseModelBuilder.v3;
@@ -18,30 +15,11 @@ import static io.github.tfgcn.fieldguide.render.BaseModelBuilder.v3;
 @Slf4j
 public class Multiblock3DRenderer extends BaseRenderer {
 
-    public Multiblock3DRenderer(AssetLoader assetLoader, int width, int height) {
-        super(assetLoader, width, height);
+    public Multiblock3DRenderer(BaseModelBuilder modelBuilder, int width, int height) {
+        super(modelBuilder, width, height);
         
         // 设置透视投影摄像机
         camera.lookAt(v3(100, 100, 100), v3(0, 0, 0), Vector3f.UNIT_Y);
-    }
-
-    @Override
-    protected BaseModelBuilder createModelBuilder() {
-        return new BaseModelBuilder(assetLoader) {
-            @Override
-            protected BlockModel loadModel(String modelId) {
-                if (modelId.startsWith("#")) {
-                    List<String> blocks = assetLoader.loadBlockTag(modelId.substring(1));
-                    modelId = blocks.get(0); // 获取第一个方块
-                }
-                BlockModel blockModel = assetLoader.loadBlockModelWithState(modelId);
-                if (!blockModel.hasElements()) {
-                    // 返回空节点
-                    return new BlockModel(); // 需要根据你的BlockModel类调整
-                }
-                return blockModel;
-            }
-        };
     }
 
     /**

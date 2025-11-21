@@ -4,7 +4,6 @@ import io.github.tfgcn.fieldguide.render3d.material.Material;
 import io.github.tfgcn.fieldguide.render3d.material.Texture;
 import io.github.tfgcn.fieldguide.render3d.math.Vector2f;
 import io.github.tfgcn.fieldguide.render3d.math.Vector3f;
-import io.github.tfgcn.fieldguide.render3d.math.Vector4f;
 import io.github.tfgcn.fieldguide.render3d.scene.Geometry;
 import io.github.tfgcn.fieldguide.render3d.scene.Mesh;
 import io.github.tfgcn.fieldguide.render3d.scene.Node;
@@ -28,13 +27,10 @@ import java.util.Map;
 @Slf4j
 public class ObjExporter {
 
-    private int vertexOffset = 1; // OBJ索引从1开始
-    private int texCoordOffset = 1;
-    private int normalOffset = 1;
+    private int vertexOffset = 1;
 
     private List<String> vertexLines = new ArrayList<>();
     private List<String> texCoordLines = new ArrayList<>();
-    private List<String> normalLines = new ArrayList<>();
     private List<String> faceLines = new ArrayList<>();
     private List<String> objectLines = new ArrayList<>();
 
@@ -70,11 +66,8 @@ public class ObjExporter {
 
     private void reset() {
         vertexOffset = 1;
-        texCoordOffset = 1;
-        normalOffset = 1;
         vertexLines.clear();
         texCoordLines.clear();
-        normalLines.clear();
         faceLines.clear();
         objectLines.clear();
         materialMap.clear();
@@ -88,19 +81,14 @@ public class ObjExporter {
         // 获取变换后的顶点数据
         Vertex[] vertexes = mesh.getVertexes();
         Vector3f[] positions = new Vector3f[vertexes.length];
-        Vector3f[] normals = new Vector3f[vertexes.length];
         Vector2f[] texCoords = new Vector2f[vertexes.length];
-        Vector4f[] colors = new Vector4f[vertexes.length];
         for (int i = 0; i < vertexes.length; i++) {
             Vertex vertex = vertexes[i];
             positions[i] = vertex.position;
-            normals[i] = vertex.normal;
             texCoords[i] = vertex.texCoord;
-            colors[i] = vertex.color;
         }
 
         positions = getTransformedPositions(geometry, positions);
-        normals = getTransformedNormals(geometry, normals);
         int[] indices = mesh.getIndexes();
 
         if (positions == null || indices == null || indices.length == 0) {
@@ -114,7 +102,7 @@ public class ObjExporter {
         // 处理材质
         Material material = geometry.getMaterial();
         if (material != null) {
-            materialMap.computeIfAbsent(material, k -> materialMap.size() + 1);
+            materialMap.computeIfAbsent(material, k -> materialMap.size());
             String materialName = String.valueOf(materialMap.get(material));
             objectLines.add("usemtl " + materialName);
         } else {
@@ -128,19 +116,9 @@ public class ObjExporter {
         }
 
         // 添加纹理坐标
-        if (texCoords != null) {
-            for (Vector2f texCoord : texCoords) {
-                texCoordLines.add(String.format("vt %.6f %.6f",
-                    texCoord.x, texCoord.y));
-            }
-        }
-
-        // 添加法线
-        if (normals != null) {
-            for (Vector3f normal : normals) {
-                normalLines.add(String.format("vn %.6f %.6f %.6f",
-                    normal.x, normal.y, normal.z));
-            }
+        for (Vector2f texCoord : texCoords) {
+            texCoordLines.add(String.format("vt %.6f %.6f",
+                texCoord.x, texCoord.y));
         }
 
         // 添加面
@@ -152,40 +130,17 @@ public class ObjExporter {
             int idx3 = indices[i + 2] + vertexOffset;
 
             String faceLine;
-            if (texCoords != null && normals != null) {
-                // v/vt/vn 格式
-                faceLine = String.format("f %d/%d/%d %d/%d/%d %d/%d/%d",
-                    idx1, idx1, idx1,
-                    idx2, idx2, idx2,
-                    idx3, idx3, idx3);
-            } else if (texCoords != null) {
-                // v/vt 格式
-                faceLine = String.format("f %d/%d %d/%d %d/%d",
-                    idx1, idx1,
-                    idx2, idx2,
-                    idx3, idx3);
-            } else if (normals != null) {
-                // v//vn 格式
-                faceLine = String.format("f %d//%d %d//%d %d//%d",
-                    idx1, idx1,
-                    idx2, idx2,
-                    idx3, idx3);
-            } else {
-                // 只有顶点
-                faceLine = String.format("f %d %d %d", idx1, idx2, idx3);
-            }
+            // v/vt 格式
+            faceLine = String.format("f %d/%d %d/%d %d/%d",
+                idx1, idx1,
+                idx2, idx2,
+                idx3, idx3);
 
             faceLines.add(faceLine);
         }
 
         // 更新偏移量
         vertexOffset += positions.length;
-        if (texCoords != null) {
-            texCoordOffset += texCoords.length;
-        }
-        if (normals != null) {
-            normalOffset += normals.length;
-        }
     }
 
     /**
@@ -220,18 +175,6 @@ public class ObjExporter {
         return transformed;
     }
 
-    private Vector3f[] getTransformedNormals(Geometry geometry, Vector3f[] normals) {
-        if (normals == null) return null;
-
-        // 应用几何体的变换（只旋转，不缩放平移）
-        Vector3f[] transformed = new Vector3f[normals.length];
-        for (int i = 0; i < normals.length; i++) {
-            transformed[i] = geometry.getWorldTransform().transformVector(normals[i], new Vector3f());
-            transformed[i].normalize();
-        }
-        return transformed;
-    }
-
     private void writeObjFile(String filePath, String modelName) throws IOException {
         Path path = Paths.get(filePath);
         Files.createDirectories(path.getParent());
@@ -241,6 +184,11 @@ public class ObjExporter {
             writer.println("# Exported Minecraft Block Model");
             writer.println("# OBJ File Generated by FieldGuide");
             writer.println("# Model: " + modelName);
+            writer.println();
+
+            // 写入材质库引用
+            writer.println("# Material Library");
+            writer.println("mtllib " + path.getFileName().toString().replace(".obj", ".mtl"));
             writer.println();
 
             // 写入顶点
@@ -255,20 +203,6 @@ public class ObjExporter {
                 writer.println();
             }
 
-            // 写入法线
-            if (!normalLines.isEmpty()) {
-                writer.println("# Normals");
-                normalLines.forEach(writer::println);
-                writer.println();
-            }
-
-            // 写入材质库引用（如果有材质）
-            if (!materialMap.isEmpty()) {
-                writer.println("# Material Library");
-                writer.println("mtllib " + modelName + ".mtl");
-                writer.println();
-            }
-
             // 写入对象和面
             writer.println("# Objects and Faces");
             for (String objectLine : objectLines) {
@@ -277,10 +211,8 @@ public class ObjExporter {
             faceLines.forEach(writer::println);
         }
 
-        // 如果有材质，写入MTL文件
-        if (!materialMap.isEmpty()) {
-            writeMtlFile(filePath.replace(".obj", ".mtl"), modelName);
-        }
+        // 写入MTL文件
+        writeMtlFile(filePath.replace(".obj", ".mtl"), modelName);
     }
 
     private void writeMtlFile(String mtlFilePath, String modelName) throws IOException {
@@ -303,7 +235,7 @@ public class ObjExporter {
             for (Map.Entry<Material, Integer> entry : materialMap.entrySet()) {
                 writer.println("newmtl " + entry.getValue());
                 writer.println("Ka 1.000 1.000 1.000"); // 环境光
-                writer.println("Kd 1.000 1.000 1.000"); // 漫反射
+                writer.println("Kd 0.000 0.000 0.000"); // 漫反射
                 writer.println("Ks 0.000 0.000 0.000"); // 高光
                 writer.println("Ns 0.000");             // 高光指数
                 writer.println("d 1.0");                // 不透明度

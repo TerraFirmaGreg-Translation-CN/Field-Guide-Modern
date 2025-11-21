@@ -70,7 +70,7 @@ public class Context {
         this.debugI18n = debugI18n;
 
         this.localizationManager = new LazyLocalizationManager(loader);
-        this.textureRenderer = new TextureRenderer(loader, localizationManager, outputRootDir);
+        this.textureRenderer = new TextureRenderer(loader, localizationManager);
 
         this.htmlRenderer = new HtmlRenderer(localizationManager, outputRootDir);
 

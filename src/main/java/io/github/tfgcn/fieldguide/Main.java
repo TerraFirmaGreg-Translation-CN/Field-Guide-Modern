@@ -60,12 +60,13 @@ public class Main implements Callable<Integer>  {
 
         // The TerraFirmaGreg modpack directory
         String modpackPath = inputDir.replace("\\", "/");
+        String outputRootPath = outputDir.replace("\\", "/");
 
-        AssetLoader assetLoader = new AssetLoader(Paths.get(modpackPath));
+        AssetLoader assetLoader = new AssetLoader(Paths.get(modpackPath), Paths.get(outputRootPath));
 
         LocalizationManager localizationManager = new LazyLocalizationManager(assetLoader);
 
-        TextureRenderer textureRenderer = new TextureRenderer(assetLoader, localizationManager, outputDir);
+        TextureRenderer textureRenderer = new TextureRenderer(assetLoader, localizationManager);
 
         PageRenderer pageRenderer = new PageRenderer(assetLoader, localizationManager, textureRenderer);
 
