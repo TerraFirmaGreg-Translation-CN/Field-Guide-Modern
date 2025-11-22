@@ -340,15 +340,15 @@ class GLBViewerUtils {
      * 扫描 data-glb-viewer 和 data-glb-viewers 属性并自动初始化
      */
     static autoInitViewers() {
-        // 处理单模型查看器
-        const singleElements = document.querySelectorAll('[data-glb-viewer]');
+        // 处理单模型查看器（排除已初始化的）
+        const singleElements = document.querySelectorAll('[data-glb-viewer]:not([data-viewer-instance="true"])');
         
         singleElements.forEach(element => {
             this._initSingleViewer(element);
         });
         
-        // 处理多模型查看器
-        const multiElements = document.querySelectorAll('[data-glb-viewers]');
+        // 处理多模型查看器（排除已初始化的）
+        const multiElements = document.querySelectorAll('[data-glb-viewers]:not([data-viewer-instance="true"])');
         
         multiElements.forEach(element => {
             this._initMultiViewer(element);

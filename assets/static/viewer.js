@@ -17,6 +17,15 @@ class GLBViewer {
             return;
         }
         
+        // 检查是否已经初始化过
+        if (this.container.dataset.viewerInstance === 'true') {
+            console.warn(`Viewer for container '${containerId}' already initialized`);
+            return;
+        }
+        
+        // 标记为已初始化
+        this.container.dataset.viewerInstance = 'true';
+        
         // 获取容器的实际尺寸，如果容器没有设置尺寸则使用默认值
         const containerWidth = this.container.clientWidth || 400;
         const containerHeight = this.container.clientHeight || 300;
@@ -58,6 +67,13 @@ class GLBViewer {
         this.isLoaded = false;
         this.isLoading = false;
         
+        // 渲染状态控制
+        this.isRendering = true;
+        this.animationId = null;
+        
+        // IntersectionObserver 用于检测可见性
+        this.intersectionObserver = null;
+        
         // 确保容器有相对定位，以便控制渲染器位置
         if (window.getComputedStyle(this.container).position === 'static') {
             this.container.style.position = 'relative';
@@ -74,7 +90,7 @@ class GLBViewer {
         this.animationActions = [];
         
         this.init();
-        this.initDragAndDrop();
+        this.initIntersectionObserver();
     }
     
     /**
@@ -309,9 +325,7 @@ class GLBViewer {
         
         // 点击加载模型
         playButton.addEventListener('click', (e) => {
-            console.log('Play button clicked', e);
-            e.preventDefault();
-            e.stopPropagation();
+            console.log('Play button clicked');
             
             // 防止重复点击
             if (this.isLoading) {
@@ -320,12 +334,6 @@ class GLBViewer {
             }
             
             this.loadModel();
-        });
-        
-        // 防止双击
-        playButton.addEventListener('dblclick', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
         });
         
         this.container.appendChild(playButton);
@@ -451,130 +459,11 @@ class GLBViewer {
         this.container.appendChild(retryButton);
     }
     
-    /**
-     * 初始化拖拽功能
-     */
-    initDragAndDrop() {
-        const dropZone = this.container;
-        const dropOverlay = this.createDropOverlay();
-        
-        // 防止默认的拖拽行为
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        // 高亮拖拽区域
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-        
-        // 处理拖拽的文件
-        dropZone.addEventListener('drop', handleDrop, false);
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        function highlight(e) {
-            dropZone.classList.add('drag-over');
-            dropOverlay.style.display = 'flex';
-        }
-        
-        function unhighlight(e) {
-            dropZone.classList.remove('drag-over');
-            dropOverlay.style.display = 'none';
-        }
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            
-            if (files.length > 0) {
-                handleFiles(files);
-            }
-        }
-        
-        function handleFiles(files) {
-            ([...files]).forEach(uploadFile);
-        }
-        
-        const self = this;
-        function uploadFile(file) {
-            if (!file.name.match(/\.(glb|gltf)$/i)) {
-                alert('请选择 .glb 或 .gltf 文件');
-                return;
-            }
-            
-            console.log('Processing file:', file.name);
-            self.loadGLBFromFile(file);
-        }
-    }
+
     
-    /**
-     * 创建拖拽覆盖层
-     */
-    createDropOverlay() {
-        const overlay = document.createElement('div');
-        overlay.id = 'drop-overlay';
-        overlay.innerHTML = `
-            <div style="text-align: center; color: #007bff;">
-                <i class="bi bi-cloud-upload" style="font-size: 48px;"></i>
-                <h4>释放以加载 GLB 文件</h4>
-                <p>支持 .glb 和 .gltf 格式</p>
-            </div>
-        `;
-        overlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 123, 255, 0.1);
-            border: 3px dashed #007bff;
-            border-radius: 8px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            pointer-events: none;
-        `;
-        
-        this.container.appendChild(overlay);
-        return overlay;
-    }
+
     
-    /**
-     * 从文件加载 GLB
-     */
-    async loadGLBFromFile(file) {
-        try {
-            console.log(`Loading GLB from file: ${file.name}`);
-            
-            // 创建文件 URL
-            const url = URL.createObjectURL(file);
-            
-            // 加载模型
-            await this.loadGLB(url, {
-                position: [0, 0, 0],
-                scale: [1, 1, 1]
-            }, true);
-            
-            // 清理 URL 对象
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            
-            console.log('GLB file loaded successfully');
-            
-        } catch (error) {
-            console.error('Failed to load GLB file:', error);
-            this.showError(`加载模型失败: ${error.message}`);
-        }
-    }
+
     
     /**
      * 加载 GLB 模型
@@ -698,10 +587,7 @@ class GLBViewer {
         
         try {
             // 计算下一个模型索引
-            const nextIndex = (this.currentModelIndex + 1) % this.preloadedModels.length;
-            
-            console.log(`Cycling to preloaded model ${nextIndex + 1}/${this.preloadedModels.length}`);
-            
+            const nextIndex = (this.currentModelIndex + 1) % this.preloadedModels.length;            
             // 使用预加载的模型，不调整摄像机
             this.showPreloadedModel(nextIndex, this.preloadedModelOptions || {}, false);
             
@@ -864,15 +750,13 @@ class GLBViewer {
      * @param {boolean} fitCamera - 是否调整摄像机以适应模型（默认false）
      */
     showPreloadedModel(index, options = {}, fitCamera = false) {
-        console.log(`showPreloadedModel called: index=${index}, fitCamera=${fitCamera}`);
         
         if (!this.preloadedModels || !this.preloadedModels[index]) {
             console.error(`Preloaded model at index ${index} not available`);
             console.log('Available models:', this.preloadedModels?.map((m, i) => ({ index: i, available: m !== null })));
             return;
         }
-        
-        console.log(`Showing preloaded model ${index}, fitCamera: ${fitCamera}`);
+    
         
         // 清除当前模型
         this.clearModel();
@@ -897,8 +781,6 @@ class GLBViewer {
         
         // 更新当前模型索引
         this.currentModelIndex = index;
-        
-        console.log(`Preloaded model ${index} displayed successfully, currentModelIndex is now ${this.currentModelIndex}`);
     }
     
     /**
@@ -1071,6 +953,40 @@ class GLBViewer {
     }
     
     /**
+     * 初始化 Intersection Observer 用于检测可见性
+     */
+    initIntersectionObserver() {
+        if (!this.renderer || !this.renderer.domElement) {
+            return;
+        }
+        
+        // 检查浏览器支持
+        if (!('IntersectionObserver' in window)) {
+            console.log('IntersectionObserver not supported, rendering will continue');
+            return;
+        }
+        
+        // 创建观察器
+        this.intersectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const containerId = this.container?.id || 'unknown';
+                if (entry.isIntersecting) {
+                    // canvas 进入视口
+                    this.resumeRendering();
+                } else {
+                    // canvas 离开视口
+                    this.stopRendering();
+                }
+            });
+        }, {
+            threshold: 0.1 // 10% 可见时就认为可见
+        });
+        
+        // 开始观察 canvas 元素
+        this.intersectionObserver.observe(this.renderer.domElement);
+    }
+    
+    /**
      * 处理窗口大小变化和容器大小变化
      */
     handleResize() {
@@ -1081,6 +997,26 @@ class GLBViewer {
         
         // 初始更新尺寸
         this.updateRendererSize();
+    }
+    
+    /**
+     * 更新渲染器尺寸并检查渲染状态
+     */
+    updateRendererSize() {
+        const width = this.container.clientWidth || this.options.width;
+        const height = this.container.clientHeight || this.options.height;
+        
+        // 设置渲染器尺寸
+        this.renderer.setSize(width, height);
+        
+        // 更新相机宽高比
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        
+        // 只有在渲染状态下才立即渲染一帧
+        if (this.isRendering) {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
     
     /**
@@ -1096,15 +1032,17 @@ class GLBViewer {
         // 更新相机宽高比
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        
-        console.log(`Updated renderer size: ${width}x${height}`);
     }
     
     /**
      * 渲染循环
      */
     animate() {
-        requestAnimationFrame(() => this.animate());
+        if (!this.isRendering) {
+            return; // 如果停止渲染，直接返回
+        }
+        
+        this.animationId = requestAnimationFrame(() => this.animate());
         
         if (this.controls) {
             this.controls.update();
@@ -1118,10 +1056,41 @@ class GLBViewer {
     }
     
     /**
+     * 停止渲染
+     */
+    stopRendering() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.isRendering = false;
+    }
+    
+    /**
+     * 恢复渲染
+     */
+    resumeRendering() {
+        if (this.isRendering) {
+            return; // 已经在渲染中
+        }
+        this.isRendering = true;
+        this.animate();
+    }
+    
+    /**
      * 销毁查看器
      */
     dispose() {
         this.clearModel();
+        
+        // 停止渲染
+        this.stopRendering();
+        
+        // 清理 IntersectionObserver
+        if (this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
+            this.intersectionObserver = null;
+        }
         
         if (this.renderer) {
             this.renderer.dispose();
@@ -1134,6 +1103,8 @@ class GLBViewer {
         if (this.container) {
             this.container.innerHTML = '';
         }
+        
+        console.log('Viewer disposed completely');
     }
     
     /**

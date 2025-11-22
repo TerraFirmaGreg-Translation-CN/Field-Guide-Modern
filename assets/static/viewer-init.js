@@ -17,13 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('GLBViewerUtils not available, using manual initialization');
     
     // 初始化所有带有 data-glb-viewer 属性的单模型查看器
-    const singleViewerElements = document.querySelectorAll('[data-glb-viewer]');
+    const singleViewerElements = document.querySelectorAll('[data-glb-viewer]:not([data-viewer-instance="true"])');
     singleViewerElements.forEach((element, index) => {
         initSingleGLBViewer(element, index);
     });
     
     // 初始化所有带有 data-glb-viewers 属性的多模型查看器
-    const multiViewerElements = document.querySelectorAll('[data-glb-viewers]');
+    const multiViewerElements = document.querySelectorAll('[data-glb-viewers]:not([data-viewer-instance="true"])');
     multiViewerElements.forEach((element, index) => {
         initMultiGLBViewer(element, index);
     });
