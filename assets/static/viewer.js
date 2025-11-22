@@ -343,12 +343,7 @@ class GLBViewer {
         
         console.log('loadModel called, options:', this.options);
         console.log('modelUrl:', this.options.modelUrl);
-        
-        if (!this.options.modelUrl) {
-            this.showError('没有指定模型URL');
-            console.error('modelUrl is empty, options:', this.options);
-            return;
-        }
+        console.log('modelUrls:', this.modelUrls);
         
         this.isLoading = true;
         
@@ -372,7 +367,26 @@ class GLBViewer {
         }
         
         try {
-            await this.loadGLB(this.options.modelUrl);
+            // 检查是否是多模型模式
+            if (this.modelUrls && this.modelUrls.length > 0) {
+                // 多模型模式：使用工具类开始循环
+                if (this.modelUrls.length > 1) {
+                    window.GLBViewerUtils.startModelCycle(this, this.modelUrls, 1000, {
+                        scale: [1, 1, 1]
+                    });
+                } else {
+                    // 单个模型
+                    await this.loadGLB(this.modelUrls[0], {
+                        scale: [1, 1, 1]
+                    });
+                }
+            } else if (this.options.modelUrl) {
+                // 单模型模式
+                await this.loadGLB(this.options.modelUrl);
+            } else {
+                throw new Error('没有指定模型URL');
+            }
+            
             this.isLoaded = true;
         } catch (error) {
             console.error('Failed to load model:', error);

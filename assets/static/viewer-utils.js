@@ -167,14 +167,27 @@ class GLBViewerUtils {
      * @param {Object} modelOptions - 模型加载选项
      */
     static startModelCycle(viewer, modelUrls, interval = 1000, modelOptions = {}) {
+        console.log(`GLBViewerUtils.startModelCycle called with ${modelUrls.length} models, interval: ${interval}ms`);
+        
         let currentIndex = 0;
         
         // 先加载第一个模型
-        viewer.loadGLB(modelUrls[currentIndex], modelOptions);
+        console.log(`Loading first model: ${modelUrls[0]}`);
+        viewer.loadGLB(modelUrls[currentIndex], modelOptions).catch(error => {
+            console.error(`Failed to load first model:`, error);
+        });
+        
+        // 如果只有一个模型，不需要循环
+        if (modelUrls.length <= 1) {
+            console.log('Only one model provided, no cycle needed');
+            return;
+        }
         
         // 设置循环计时器
         viewer._modelCycleTimer = setInterval(() => {
             currentIndex = (currentIndex + 1) % modelUrls.length;
+            console.log(`Switching to model ${currentIndex}: ${modelUrls[currentIndex]}`);
+            
             viewer.loadGLB(modelUrls[currentIndex], modelOptions).catch(error => {
                 console.error(`Failed to load model at index ${currentIndex}:`, error);
                 // 继续尝试下一个模型
@@ -182,11 +195,14 @@ class GLBViewerUtils {
             });
         }, interval);
         
+        console.log(`Model cycle started with interval: ${interval}ms`);
+        
         // 为查看器添加停止循环的方法
         viewer.stopModelCycle = function() {
             if (this._modelCycleTimer) {
                 clearInterval(this._modelCycleTimer);
                 this._modelCycleTimer = null;
+                console.log('Model cycle stopped');
             }
         };
     }
@@ -263,54 +279,138 @@ class GLBViewerUtils {
     
     /**
      * 批量初始化页面中的所有查看器
-     * 扫描 data-glb-viewer 属性并自动初始化
+     * 扫描 data-glb-viewer 和 data-glb-viewers 属性并自动初始化
      */
     static autoInitViewers() {
-        const elements = document.querySelectorAll('[data-glb-viewer]');
+        // 处理单模型查看器
+        const singleElements = document.querySelectorAll('[data-glb-viewer]');
         
-        elements.forEach(element => {
-            // 确保元素有ID
-            if (!element.id) {
-                element.id = `glb-viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            }
-            
-            const containerId = element.id;
-            const modelUrl = element.dataset.glbViewer;
-            const type = element.dataset.viewerType || 'default';
-            const autoRotate = element.dataset.autoRotate === 'true';
-            const autoLoad = element.dataset.autoLoad === 'true'; // 读取data-auto-load属性
-            
-            // 根据类型创建不同的查看器
-            let viewer = null;
-            const options = {
-                autoRotate: autoRotate,
-                autoLoad: autoLoad // 使用实际的属性值
-            };
-            
-            switch (type) {
-                case 'multiblock':
-                    viewer = this.createMultiblockViewer(containerId, modelUrl, options);
-                    break;
-                case 'block':
-                    viewer = this.createBlockViewer(containerId, modelUrl, options);
-                    break;
-                default:
-                    viewer = this.createEmbeddedViewer(containerId, modelUrl, options);
-                    break;
-            }
-            
-            // 存储查看器实例
-            if (viewer) {
-                element.dataset.viewerInstance = 'true';
-                console.log(`Auto-initialized GLB viewer: ${containerId}, autoLoad: ${autoLoad}`);
-            } else {
-                // 如果查看器创建失败，手动隐藏loading
-                const loadingIndicator = element.querySelector('.glb-viewer-loading');
-                if (loadingIndicator) {
-                    loadingIndicator.style.display = 'none';
-                }
-            }
+        singleElements.forEach(element => {
+            this._initSingleViewer(element);
         });
+        
+        // 处理多模型查看器
+        const multiElements = document.querySelectorAll('[data-glb-viewers]');
+        
+        multiElements.forEach(element => {
+            this._initMultiViewer(element);
+        });
+    }
+    
+    /**
+     * 初始化单模型查看器
+     */
+    static _initSingleViewer(element) {
+        // 确保元素有ID
+        if (!element.id) {
+            element.id = `glb-viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        const containerId = element.id;
+        const modelUrl = element.dataset.glbViewer;
+        const type = element.dataset.viewerType || 'default';
+        const autoRotate = element.dataset.autoRotate === 'true';
+        const autoLoad = element.dataset.autoLoad === 'true';
+        
+        // 根据类型创建不同的查看器
+        let viewer = null;
+        const options = {
+            autoRotate: autoRotate,
+            autoLoad: autoLoad
+        };
+        
+        switch (type) {
+            case 'multiblock':
+                viewer = this.createMultiblockViewer(containerId, modelUrl, options);
+                break;
+            case 'block':
+                viewer = this.createBlockViewer(containerId, modelUrl, options);
+                break;
+            default:
+                viewer = this.createEmbeddedViewer(containerId, modelUrl, options);
+                break;
+        }
+        
+        // 存储查看器实例
+        if (viewer) {
+            element.dataset.viewerInstance = 'true';
+            console.log(`Auto-initialized single GLB viewer: ${containerId}, autoLoad: ${autoLoad}`);
+        } else {
+            // 如果查看器创建失败，手动隐藏loading
+            const loadingIndicator = element.querySelector('.glb-viewer-loading');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+    }
+    
+    /**
+     * 初始化多模型查看器
+     */
+    static _initMultiViewer(element) {
+        // 确保元素有ID
+        if (!element.id) {
+            element.id = `multi-glb-viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        const containerId = element.id;
+        const glbPathsJson = element.dataset.glbViewers;
+        const type = element.dataset.viewerType || 'multiblock';
+        const autoRotate = element.dataset.autoRotate === 'true';
+        const autoLoad = element.dataset.autoLoad === 'true';
+        
+        // 解析GLB路径JSON数组
+        let glbPaths = [];
+        try {
+            glbPaths = JSON.parse(glbPathsJson);
+            if (!Array.isArray(glbPaths)) {
+                console.error('data-glb-viewers must be a valid JSON array');
+                return;
+            }
+        } catch (e) {
+            console.error('Failed to parse data-glb-viewers JSON:', e);
+            return;
+        }
+        
+        // 创建查看器选项
+        const options = {
+            autoRotate: autoRotate,
+            autoLoad: autoLoad
+        };
+        
+        // 创建查看器实例（不传递modelUrl，让播放按钮逻辑处理）
+        const viewer = new GLBViewer(containerId, options);
+        
+        // 保存多模型数据到查看器实例
+        viewer.modelUrls = glbPaths;
+        viewer.currentModelIndex = -1;
+        
+        // 根据autoLoad决定是否立即加载
+        if (autoLoad && glbPaths.length > 0) {
+            // 自动加载模式：直接开始循环
+            setTimeout(() => {
+                if (glbPaths.length > 1) {
+                    this.startModelCycle(viewer, glbPaths, 1000, { scale: [1, 1, 1] });
+                } else {
+                    viewer.loadGLB(glbPaths[0], { scale: [1, 1, 1] });
+                }
+            }, 100);
+        } else {
+            // 非自动加载模式：显示播放按钮，等待用户点击
+            console.log(`Multi-GLB viewer ${containerId} in manual mode, showing play button`);
+        }
+        
+        // 存储查看器实例
+        if (viewer) {
+            element.dataset.viewerInstance = 'true';
+            console.log(`Auto-initialized multi GLB viewer: ${containerId}, models: ${glbPaths.length}, autoLoad: ${autoLoad}`);
+        } else {
+            // 如果查看器创建失败，手动隐藏loading
+            const loadingIndicator = element.querySelector('.glb-viewer-loading');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        }
     }
     
     /**
