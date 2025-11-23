@@ -155,6 +155,7 @@ public class PageRenderer {
             }
             case PageBarrel pageBarrel: {// tfc:instant_barrel_recipe, tfc:sealed_barrel_recipe
                 parseBarrelRecipe(buffer, pageBarrel, pageType);
+                formatText(entry, buffer, pageBarrel.getText());
                 break;
             }
             case PageWelding pageWelding: {// tfc:welding_recipe
@@ -175,6 +176,7 @@ public class PageRenderer {
             }
             case PageTable pageTable: {// tfc:table, tfc:table_small
                 parseTablePage(entry, buffer, pageTable);
+                formatText(entry, buffer, pageTable.getText());
                 break;
             }
             default: {

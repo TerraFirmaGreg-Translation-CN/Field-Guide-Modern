@@ -14,7 +14,7 @@ public class BlockModel {
     private String credit;// Blockbench
     private String parent;
     private Boolean ambientOcclusion;
-    private Map<String, String> textures;
+    private Map<String, String> textures = new HashMap<>();
     private List<ModelElement> elements;
     private Map<String, DisplayTransform> display;
     private String guiLight;// side, face
