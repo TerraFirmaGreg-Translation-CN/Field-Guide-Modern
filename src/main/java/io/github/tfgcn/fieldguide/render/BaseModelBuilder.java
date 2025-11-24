@@ -451,17 +451,17 @@ public class BaseModelBuilder {
     private Material createSingleAnimatedMaterial(AnimatedTexture baseAnimated, AnimatedTexture overlayAnimated) {
         AnimatedMaterial material = new AnimatedMaterial(baseAnimated);
         
-        // 设置材质属性
-        material.getRenderState().setAlphaTest(true);
-        material.getRenderState().setAlphaFalloff(0.1f);
-        
         // 检测是否为玻璃材质，设置相应的混合模式
         boolean isGlassTexture = isGlassTexture(baseAnimated.getTexturePath()) || 
                                  (overlayAnimated != null && isGlassTexture(overlayAnimated.getTexturePath()));
         if (isGlassTexture) {
+            // 玻璃材质使用ALPHA_BLEND模式，不使用Alpha测试
             material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
             log.debug("Detected glass animated texture: {}, using ALPHA_BLEND", baseAnimated.getTexturePath());
         } else {
+            // 非玻璃材质使用Alpha测试和MASK模式
+            material.getRenderState().setAlphaTest(true);
+            material.getRenderState().setAlphaFalloff(0.1f);
             material.getRenderState().setBlendMode(RenderState.BlendMode.OFF);
         }
         
@@ -558,15 +558,17 @@ public class BaseModelBuilder {
         diffuseMap.setMagFilter(Texture.MagFilter.NEAREST);
 
         Material material = new Material();
-        material.getRenderState().setAlphaTest(true);
-        material.getRenderState().setAlphaFalloff(0.1f);
         
         // 检测是否为玻璃材质，设置相应的混合模式
         boolean isGlassTexture = isGlassTexture(texture) || (overlayTexture != null && isGlassTexture(overlayTexture));
         if (isGlassTexture) {
+            // 玻璃材质使用ALPHA_BLEND模式，不使用Alpha测试
             material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
             log.debug("Detected glass texture: {}, using ALPHA_BLEND", texture);
         } else {
+            // 非玻璃材质使用Alpha测试和MASK模式
+            material.getRenderState().setAlphaTest(true);
+            material.getRenderState().setAlphaFalloff(0.1f);
             material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
         }
         
