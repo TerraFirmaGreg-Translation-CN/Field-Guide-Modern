@@ -3,6 +3,8 @@ package io.github.tfgcn.fieldguide.render;
 import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import io.github.tfgcn.fieldguide.Pair;
 import io.github.tfgcn.fieldguide.asset.*;
+import io.github.tfgcn.fieldguide.data.agedalcohol.AgedAlcohol;
+import io.github.tfgcn.fieldguide.data.minecraft.DyeColor;
 import io.github.tfgcn.fieldguide.data.minecraft.blockmodel.BlockModel;
 import io.github.tfgcn.fieldguide.data.minecraft.blockstate.BlockVariant;
 import io.github.tfgcn.fieldguide.data.patchouli.page.PageMultiblock;
@@ -63,32 +65,7 @@ public class TextureRenderer {
     private final Map<String, ItemImageResult> FLUID_CACHE = new HashMap<>();
 
     // 流体颜色映射
-    private final static Map<String, String> FLUID_COLORS = Map.ofEntries(
-            Map.entry("brine", "#DCD3C9"),
-            Map.entry("curdled_milk", "#FFFBE8"),
-            Map.entry("limewater", "#B4B4B4"),
-            Map.entry("lye", "#feffde"),
-            Map.entry("milk_vinegar", "#FFFBE8"),
-            Map.entry("olive_oil", "#6A7537"),
-            Map.entry("olive_oil_water", "#4A4702"),
-            Map.entry("tannin", "#63594E"),
-            Map.entry("tallow", "#EDE9CF"),
-            Map.entry("vinegar", "#C7C2AA"),
-            Map.entry("beer", "#C39E37"),
-            Map.entry("cider", "#B0AE32"),
-            Map.entry("rum", "#6E0123"),
-            Map.entry("sake", "#B7D9BC"),
-            Map.entry("vodka", "#DCDCDC"),
-            Map.entry("whiskey", "#583719"),
-            Map.entry("corn_whiskey", "#D9C7B7"),
-            Map.entry("rye_whiskey", "#C77D51"),
-            Map.entry("water", "#2245CB"),
-            Map.entry("salt_water", "#4E63B9"),
-            Map.entry("spring_water", "#8AA3FF"),
-            Map.entry("yak_milk", "#E8E8E8"),
-            Map.entry("goat_milk", "#E8E8E8"),
-            Map.entry("chocolate", "#756745")
-    );
+    private final static Map<String, String> FLUID_COLORS = new HashMap<>();
 
     private final AssetLoader loader;
     private final LocalizationManager localizationManager;
@@ -117,6 +94,39 @@ public class TextureRenderer {
         lastUid.put("block", 0);
         lastUid.put("model", 0);
         lastUid.put("fluid", 0);
+
+        FLUID_COLORS.put("brine", "#DCD3C9");
+        FLUID_COLORS.put("curdled_milk", "#FFFBE8");
+        FLUID_COLORS.put("limewater", "#B4B4B4");
+        FLUID_COLORS.put("lye", "#feffde");
+        FLUID_COLORS.put("milk_vinegar", "#FFFBE8");
+        FLUID_COLORS.put("olive_oil", "#6A7537");
+        FLUID_COLORS.put("olive_oil_water", "#4A4702");
+        FLUID_COLORS.put("tannin", "#63594E");
+        FLUID_COLORS.put("tallow", "#EDE9CF");
+        FLUID_COLORS.put("vinegar", "#C7C2AA");
+        FLUID_COLORS.put("beer", "#C39E37");
+        FLUID_COLORS.put("cider", "#B0AE32");
+        FLUID_COLORS.put("rum", "#6E0123");
+        FLUID_COLORS.put("sake", "#B7D9BC");
+        FLUID_COLORS.put("vodka", "#DCDCDC");
+        FLUID_COLORS.put("whiskey", "#583719");
+        FLUID_COLORS.put("corn_whiskey", "#D9C7B7");
+        FLUID_COLORS.put("rye_whiskey", "#C77D51");
+        FLUID_COLORS.put("water", "#2245CB");
+        FLUID_COLORS.put("salt_water", "#4E63B9");
+        FLUID_COLORS.put("spring_water", "#8AA3FF");
+        FLUID_COLORS.put("yak_milk", "#E8E8E8");
+        FLUID_COLORS.put("goat_milk", "#E8E8E8");
+        FLUID_COLORS.put("chocolate", "#756745");
+
+        for (DyeColor color : DyeColor.values()) {
+            String name = color.name().toLowerCase(Locale.ROOT);
+            FLUID_COLORS.put(name + "_dye", "#" + Integer.toHexString(color.getColor()));
+        }
+        for (AgedAlcohol alcohol : AgedAlcohol.values()) {
+            FLUID_COLORS.put(alcohol.getId(), "#" + Integer.toHexString(alcohol.getColor()));
+        }
     }
 
     public String nextId(String prefix) {
@@ -185,6 +195,9 @@ public class TextureRenderer {
             int index = item.indexOf(':');
             if (index > 0) {
                 String namespace = item.substring(0, index);
+                if (namespace.startsWith("#")) {
+                    namespace = namespace.substring(1);
+                }
                 localizationManager.lazyLoadNamespace(namespace);
             }
             key = items.getFirst().replace('/', '.').replace(':', '.');
@@ -284,6 +297,8 @@ public class TextureRenderer {
                 return getTfcItemTrimLoader(model, itemId);
             } else if ("forge:separate_transforms".equals(loader)) {
                 return getForgeSeparateTransformsLoader(model, itemId);
+            } else if ("forge:fluid_container".equals(loader)) {
+                return getForgeFluidContainerLoader(model, itemId);
             } else {
                 log.error("Unknown loader: {} @ {}", loader, itemId);
             }
@@ -336,6 +351,37 @@ public class TextureRenderer {
             log.error("Unknown Parent {} @ {}, model: {}", parent, itemId, model);
             throw new InternalException("Unknown Parent " + parent + " @ " + itemId);
         }
+    }
+
+    private BufferedImage getForgeFluidContainerLoader(BlockModel model, String itemId) {
+        String base = model.getTextures().get("base");
+        String fluid = model.getTextures().get("fluid");
+        String fluids = model.getFluid();
+
+        String fluidColor;
+        int index = fluids.indexOf(':');
+        if (index > 0) {
+            fluidColor = fluids.substring(index + 1);
+        } else {
+            fluidColor = fluids;
+        }
+
+        String color = FLUID_COLORS.get(fluidColor);
+        if (color == null) {
+            log.warn("Unknown fluid color: {} @ {}", fluidColor, itemId);
+            missingImages.add(itemId);
+            throw new InternalException("Unknown fluid color: " + fluidColor + " @ " + itemId);
+        }
+        BufferedImage fluidMaskImg = loader.loadTexture(fluid);
+        BufferedImage colorImage = multiplyImageByColor(fluidMaskImg, parseColor(color));
+
+        BufferedImage baseImage = loader.loadTexture(base);
+        BufferedImage combined = new BufferedImage(baseImage.getWidth(), baseImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = combined.createGraphics();
+        g.drawImage(baseImage, 0, 0, null);
+        g.drawImage(colorImage, 0, 0, null);
+        g.dispose();
+        return combined;
     }
 
     private BufferedImage getForgeSeparateTransformsLoader(BlockModel model, String itemId) {

@@ -21,7 +21,8 @@ public class BlockModel {
     private List<ModelOverride> overrides;
 
     private String loader;
-    private Map<String, BlockModel> perspectives;
+    private Map<String, BlockModel> perspectives;// forge:separate_transforms
+    private String fluid;// forge:fluid_container
 
     private transient BlockModel parentModel;
     private transient Set<String> inherits = new TreeSet<>();

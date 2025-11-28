@@ -101,11 +101,11 @@ public class AssetLoader {
         blockModelCache.put("minecraft:builtin/entity", new BlockModel());
         blockModelCache.put("minecraft:builtin/generated", builtinGenerated);
         blockModelCache.put("minecraft:item/generated", itemGenerated);
-        blockModelCache.put("forge:item/bucket", new BlockModel());
+        //blockModelCache.put("forge:item/bucket", new BlockModel());
 
         itemModelCache.put("minecraft:item/generated", itemGenerated);
         itemModelCache.put("minecraft:builtin/generated", builtinGenerated);
-        itemModelCache.put("forge:item/bucket", new BlockModel());
+        //itemModelCache.put("forge:item/bucket", new BlockModel());
     }
 
     private void initGtceuIngots() {
