@@ -329,8 +329,21 @@ public class TextureRenderer {
 
         // FIXME 甚至干脆修改渲染方法，实现真正的继承层次 3D 渲染。
         if ("item".equals(type)) {
-            // single-layer item model
-            return defaultItemLoader(model, itemId);
+            try {
+                // single-layer item model
+                return defaultItemLoader(model, itemId);
+            } catch (Exception e) {
+                try {
+                    BufferedImage img = createBlockModelImage(itemId, model);
+                    img = resizeImage(img, 64, 64);
+                    return img;
+                } catch (Exception ex) {
+                    // TODO add e later
+                    missingImages.add(itemId);
+                    log.error("Failed load model {} @ {}, message: {}", parent, itemId, e.getMessage());
+                    throw new InternalException("Failed load item " + parent + " @ " + itemId);
+                }
+            }
         } else if ("block".equals(type)) {
             // Block model
             // TODO remove the try-catch
