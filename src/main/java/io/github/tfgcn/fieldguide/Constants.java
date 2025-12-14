@@ -38,7 +38,18 @@ public final class Constants {
             "mechanics/pumps",
             "the_world/ores_and_minerals",
             "sns/lunchbox",
-            "sns/mob_net"
+            "sns/mob_net",
+            // tfg_gurman does not put them in right place, ignore them for now
+            "gurman_beverages.json",
+            "gurman_borscht.json",
+            "gurman_cheese_making.json",
+            "gurman_croissants.json",
+            "gurman_intro.json",
+            "gurman_kvass.json",
+            "gurman_milking.json",
+            "gurman_pelmeni.json",
+            "gurman_pizza.json",
+            "gurman_ramen.json"
     );
 
     public static String getBookPath() {
