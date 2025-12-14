@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group = 'io.github.tfgcn'
+group = 'su.terrafirmgreg'
 version = '1.0.0'
 
 java {
@@ -76,7 +76,7 @@ jar {
 
     manifest {
         attributes(
-                'Main-Class': 'io.github.tfgcn.fieldguide.Main'
+                'Main-Class': 'su.terrafirmgreg.fieldguide.Main'
         )
     }
 
