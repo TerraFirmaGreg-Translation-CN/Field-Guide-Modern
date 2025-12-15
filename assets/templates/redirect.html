@@ -7,17 +7,8 @@
     <script type="text/javascript">
         (function() {
             const currentPath = window.location.pathname;
-            let targetPath;
-
-            if (currentPath.endsWith('/')) {
-                targetPath = currentPath + 'en_us/';
-            } else if (currentPath.endsWith('index.html')) {
-                const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-                targetPath = basePath + 'en_us/index.html';
-            } else {
-                targetPath = 'en_us/';
-            }
-
+            log.console('currentPath: ' + currentPath);
+            const targetUrl = './en_us/index.html';
             const search = window.location.search;
             const hash = window.location.hash;
             window.location.replace(targetPath + search + hash);
