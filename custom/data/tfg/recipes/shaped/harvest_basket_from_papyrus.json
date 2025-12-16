@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BDB",
+    "ACA",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "tfc:soaked_papyrus_strip"
+    },
+    "B": {
+      "item": "gtceu:sterling_silver_bolt"
+    },
+    "C": {
+      "item": "tfc:glue"
+    },
+    "D": {
+      "item": "gtceu:long_treated_wood_rod"
+    }
+  },
+  "result": {
+    "item": "tfg:harvest_basket"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "type": "tfc:advanced_shaped_crafting",
+  "pattern": [
+    "ABA",
+    "CDC"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "B": {
+      "item": "tfc:metal/helmet/blue_steel"
+    },
+    "C": {
+      "item": "firmalife:reinforced_glass"
+    },
+    "D": {
+      "item": "beneath:cursed_hide"
+    }
+  },
+  "result": {
+    "stack": {
+      "item": "create:netherite_diving_helmet"
+    },
+    "modifiers": [
+      "tfc:copy_forging_bonus"
+    ]
+  },
+  "input_row": 0,
+  "input_column": 0
+}

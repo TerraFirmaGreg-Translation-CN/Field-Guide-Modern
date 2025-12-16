@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    "CDC"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "B": {
+      "item": "create:copper_diving_helmet"
+    },
+    "C": {
+      "item": "firmalife:reinforced_glass"
+    },
+    "D": {
+      "item": "beneath:cursed_hide"
+    }
+  },
+  "result": {
+    "item": "create:netherite_diving_helmet"
+  }
+}

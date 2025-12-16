@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ACA",
+    "CCC",
+    "EDE"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:screws/blue_steel"
+    },
+    "C": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "D": {
+      "item": "create:copper_backtank"
+    },
+    "E": {
+      "item": "beneath:cursed_hide"
+    }
+  },
+  "result": {
+    "item": "create:netherite_backtank"
+  }
+}

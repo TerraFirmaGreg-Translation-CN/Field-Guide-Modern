@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DBC",
+    "AA ",
+    "   "
+  ],
+  "key": {
+    "A": {
+      "item": "gtcen:invar_plate"
+    },
+    "B": {
+      "tag": "forge:screws"
+    },
+    "C": {
+      "tag": "tfc:lumber"
+    },
+    "D": {
+      "tag": "forge:tools/screwdrivers"
+    }
+  },
+  "result": {
+    "item": "tfg:trowel"
+  }
+}

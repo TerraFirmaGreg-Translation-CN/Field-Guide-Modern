@@ -1,0 +1,9 @@
+{
+  "type": "firmalife:drying",
+  "ingredient": {
+    "item": "tfg:soaked_unrefined_paper"
+  },
+  "result": {
+    "item": "tfc:unrefined_paper"
+  }
+}

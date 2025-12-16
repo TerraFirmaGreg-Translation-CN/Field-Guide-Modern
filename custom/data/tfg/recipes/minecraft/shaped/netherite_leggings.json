@@ -1,0 +1,31 @@
+{
+  "type": "tfc:advanced_shaped_crafting",
+  "pattern": [
+    "ABA",
+    "CDC"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:screws/blue_steel"
+    },
+    "B": {
+      "item": "tfc:metal/greaves/blue_steel"
+    },
+    "C": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "D": {
+      "item": "beneath:cursed_hide"
+    }
+  },
+  "result": {
+    "stack": {
+      "item": "minecraft:netherite_leggings"
+    },
+    "modifiers": [
+      "tfc:copy_forging_bonus"
+    ]
+  },
+  "input_row": 0,
+  "input_column": 0
+}

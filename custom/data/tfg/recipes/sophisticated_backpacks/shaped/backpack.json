@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AED",
+    "BCB",
+    "BBB"
+  ],
+  "key": {
+    "A": {
+      "item": "sns:reinforced_fiber"
+    },
+    "B": {
+      "item": "sns:bound_leather_strip"
+    },
+    "C": {
+      "item": "sns:pack_frame"
+    },
+    "D": {
+      "item": "minecraft:name_tag"
+    },
+    "E": {
+      "item": "sns:reinforced_fabric"
+    }
+  },
+  "result": {
+    "item": "sophisticatedbackpacks:backpack"
+  }
+}

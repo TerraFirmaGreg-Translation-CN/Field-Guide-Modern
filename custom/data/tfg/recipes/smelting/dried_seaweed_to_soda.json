@@ -1,0 +1,10 @@
+{
+  "type": "smelting",
+  "ingredient": {
+    "item": "tfc:food/dried_seaweed"
+  },
+  "result": {
+    "item": "tfc:powder/soda_ash",
+    "count": 3
+  }
+}

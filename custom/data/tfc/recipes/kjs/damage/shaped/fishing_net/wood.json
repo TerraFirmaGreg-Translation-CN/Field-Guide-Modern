@@ -1,0 +1,35 @@
+{
+  "type": "tfc:damage_inputs_shapeless_crafting",
+  "recipe": {
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+      " DC",
+      "GBE",
+      "AF "
+    ],
+    "key": {
+      "A": {
+        "item": "gtceu:long_wood_rod"
+      },
+      "B": {
+        "item": "gtceu:wood_rod"
+      },
+      "C": {
+        "item": "tfc:jute_net"
+      },
+      "D": {
+        "item": "tfc:glue"
+      },
+      "E": {
+        "tag": "forge:tools/knives"
+      },
+      "F": {
+        "tag": "tfc:sewing_needles"
+      }
+    },
+    "result": {
+      "item": "tfg:fishing_net/wood",
+      "count": 1
+    }
+  }
+}

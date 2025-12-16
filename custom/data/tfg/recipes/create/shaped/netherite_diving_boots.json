@@ -1,0 +1,34 @@
+{
+  "type": "tfc:advanced_shaped_crafting",
+  "pattern": [
+    "ABC",
+    "EDE"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:screws/blue_steel"
+    },
+    "B": {
+      "item": "tfc:metal/boots/blue_steel"
+    },
+    "C": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "D": {
+      "item": "beneath:cursed_hide"
+    },
+    "E": {
+      "tag": "forge:ingots/lead"
+    }
+  },
+  "result": {
+    "stack": {
+      "item": "create:netherite_diving_boots"
+    },
+    "modifiers": [
+      "tfc:copy_forging_bonus"
+    ]
+  },
+  "input_row": 0,
+  "input_column": 0
+}

@@ -1,0 +1,38 @@
+{
+  "type": "tfc:advanced_shaped_crafting",
+  "pattern": [
+    "ABA",
+    "CDC",
+    "EFE"
+  ],
+  "key": {
+    "A": {
+      "tag": "forge:screws/blue_steel"
+    },
+    "B": {
+      "item": "greate:steel_shaft"
+    },
+    "C": {
+      "tag": "forge:plates/blue_steel"
+    },
+    "D": {
+      "item": "gtceu:steel_drum"
+    },
+    "E": {
+      "item": "beneath:cursed_hide"
+    },
+    "F": {
+      "item": "tfc:metal/chestplate/blue_steel"
+    }
+  },
+  "result": {
+    "stack": {
+      "item": "create:netherite_backtank"
+    },
+    "modifiers": [
+      "tfc:copy_forging_bonus"
+    ]
+  },
+  "input_row": 0,
+  "input_column": 0
+}
