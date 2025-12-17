@@ -531,8 +531,16 @@ public class PageRenderer {
                         return formatIngredient(mapData.get("ingredient"));
                     case "tfc:fluid_item":
                         Map<String, Object> fluidIngredient = (Map<String, Object>) mapData.get("fluid_ingredient");
-                        Map<String, Object> ingredient = (Map<String, Object>) fluidIngredient.get("ingredient");
-                        if (!"minecraft:water".equals(ingredient.get("ingredient"))) {
+                        Object val = fluidIngredient.get("ingredient");
+                        String ingredient;
+                        if (val instanceof String) {
+                            ingredient = (String) val;
+                        } else if (val instanceof Map) {
+                            ingredient = (String) ((Map<String, Object>) val).get("ingredient");
+                        } else {
+                            throw new RuntimeException("Unknown `tfc:fluid_item` ingredient: '" + data + "'");
+                        }
+                        if (!"minecraft:water".equals(ingredient)) {
                             throw new RuntimeException("Unknown `tfc:fluid_item` ingredient: '" + data + "'");
                         }
                         return textureRenderer.getItemImage("minecraft:water_bucket", true);
