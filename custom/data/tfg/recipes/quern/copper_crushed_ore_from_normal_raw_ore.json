@@ -1,0 +1,10 @@
+{
+  "type": "tfc:quern",
+  "ingredient": {
+    "tag": "gtceu:raw_copper_ore"
+  },
+  "result": {
+    "item": "gtceu:crushed_copper_ore",
+    "count": 1
+  }
+}

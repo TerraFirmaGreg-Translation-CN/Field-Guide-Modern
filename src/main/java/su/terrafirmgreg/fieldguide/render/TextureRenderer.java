@@ -119,9 +119,24 @@ public class TextureRenderer {
         FLUID_COLORS.put("water", "#2245CB");
         FLUID_COLORS.put("salt_water", "#4E63B9");
         FLUID_COLORS.put("spring_water", "#8AA3FF");
-        FLUID_COLORS.put("yak_milk", "#E8E8E8");
-        FLUID_COLORS.put("goat_milk", "#E8E8E8");
-        FLUID_COLORS.put("chocolate", "#756745");
+        //FLUID_COLORS.put("yak_milk", "#E8E8E8");// override by firmalife
+        //FLUID_COLORS.put("goat_milk", "#E8E8E8");// override by firmalife
+        // FLUID_COLORS.put("chocolate", "#756745");// override by firmalife
+
+        // firmalife fluids
+        FLUID_COLORS.put("yeast_starter", "#A79464");
+        FLUID_COLORS.put("coconut_milk", "#FCFAE2");
+        FLUID_COLORS.put("yak_milk", "#FCFAEC");
+        FLUID_COLORS.put("goat_milk", "#F6F6EB");
+        FLUID_COLORS.put("curdled_yak_milk", "#F9F4D6");
+        FLUID_COLORS.put("curdled_goat_milk", "#EEEED9");
+        FLUID_COLORS.put("cream", "#FCF6C7");
+        FLUID_COLORS.put("pina_colada", "#E4C06A");
+        FLUID_COLORS.put("chocolate", "#875633");
+        FLUID_COLORS.put("sugar_water", "#99EEFF");
+        FLUID_COLORS.put("fruity_fluid", "#FF6619");
+        FLUID_COLORS.put("mead", "#C79F28");
+        FLUID_COLORS.put("soybean_oil", "#DBC99A");
 
         for (DyeColor color : DyeColor.values()) {
             String name = color.name().toLowerCase(Locale.ROOT);

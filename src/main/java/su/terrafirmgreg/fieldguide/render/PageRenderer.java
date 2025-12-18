@@ -529,7 +529,7 @@ public class PageRenderer {
                     }
                     case "tfc:not_rotten":
                         return formatIngredient(mapData.get("ingredient"));
-                    case "tfc:fluid_item":
+                    case "tfc:fluid_item": {
                         Map<String, Object> fluidIngredient = (Map<String, Object>) mapData.get("fluid_ingredient");
                         Object val = fluidIngredient.get("ingredient");
                         String ingredient;
@@ -541,15 +541,29 @@ public class PageRenderer {
                             throw new RuntimeException("Unknown `tfc:fluid_item` ingredient: '" + data + "'");
                         }
                         if (!"minecraft:water".equals(ingredient)) {
-                            throw new RuntimeException("Unknown `tfc:fluid_item` ingredient: '" + data + "'");
+                            // 处理其他流体
+                            try {
+                                return textureRenderer.getFluidImage(ingredient, true);
+                            } catch (Exception e) {
+                                log.warn("Failed to load fluid bucket model: {}", ingredient, e);
+                                throw new RuntimeException("Unknown `tfc:fluid_item` ingredient: '" + data + "'");
+                            }
                         }
                         return textureRenderer.getItemImage("minecraft:water_bucket", true);
-                    case "tfc:fluid_content":
+                    }
+                    case "tfc:fluid_content": {
                         Map<String, Object> fluid = (Map<String, Object>) mapData.get("fluid");
-                        if (!"minecraft:water".equals(fluid.get("fluid"))) {
-                            throw new RuntimeException("Unknown `tfc:fluid_content` ingredient: '" + data + "'");
+                        String ingredient = (String) fluid.get("fluid");
+                        if (!"minecraft:water".equals(ingredient)) {
+                            try {
+                                return textureRenderer.getFluidImage(ingredient, true);
+                            } catch (Exception e) {
+                                log.warn("Failed to load fluid bucket model: {}", ingredient, e);
+                                throw new RuntimeException("Unknown `tfc:fluid_content` ingredient: '" + data + "'");
+                            }
                         }
                         return textureRenderer.getItemImage("minecraft:water_bucket", true);
+                    }
                     case "tfc:and":
                         List<Map<String, Object>> children = (List<Map<String, Object>>) mapData.get("children");
                         StringBuilder csvString = new StringBuilder();
@@ -1184,7 +1198,7 @@ public class PageRenderer {
         try {
             String recipeId = page.getRecipes().getFirst();
             KnappingRecipe recipe = formatKnappingRecipe(recipeId);
-            buffer.add(String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipeId));
+            buffer.add(java.lang.String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipeId));
         } catch (Exception e) {
             // TODO add e later
             log.error("Failed to load knapping page: {}, message: {}", page.getRecipes(), e.getMessage());
@@ -1196,7 +1210,7 @@ public class PageRenderer {
     private void parseKnappingRecipe(List<String> buffer, PageKnapping page) {
         try {
             KnappingRecipe recipe = formatKnappingRecipe(page.getRecipe());
-            buffer.add(String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipe.recipeId()));
+            buffer.add(java.lang.String.format(IMAGE_KNAPPING, recipe.image(), "Recipe: " + recipe.recipeId()));
         } catch (Exception e) {
             log.error("Failed to load knapping page: {}", page, e);
             formatRecipe(buffer, page.getRecipe());
@@ -1364,7 +1378,7 @@ public class PageRenderer {
                 // These are just a color square followed by a name
                 String color = it.getColor().substring(2); // Remove the "2:" prefix
                 String text = it.getText();
-                buffer.add(String.format(
+                buffer.add(java.lang.String.format(
                         """
                         <div class="item-header">
                             <span style="background-color:#%s"></span>
