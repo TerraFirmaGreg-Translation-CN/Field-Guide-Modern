@@ -20,7 +20,7 @@ function isLocal() {
 }
 
 function getBaseUrl() {
-    return isLocal() ? '' : '/Field-Guide-TFG';
+    return isLocal() ? '' : '/Field-Guide-Modern';
 }
 
 function buildUrl(path) {

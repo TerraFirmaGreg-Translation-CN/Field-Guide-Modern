@@ -6,10 +6,10 @@
     <meta name="title" content="${long_title}" />
     <meta name="description" content="${short_description}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG" />
+    <meta property="og:url" content="https://terrafirmagreg-team.github.io/Field-Guide-Modern" />
     <meta property="og:title" content="${long_title}" />
     <meta property="og:description" content="${short_description}" />
-    <meta property="og:image" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG/${preview_image}" />
+    <meta property="og:image" content="https://terrafirmagreg-team.github.io/Field-Guide-Modern/${preview_image}" />
 
     <title>${long_title}</title>
 
@@ -147,7 +147,7 @@
 
           <!-- GitHub repo -->
           <li class="nav-item">
-            <a class="nav-link px-3 text-body-secondary" href="https://github.com/TerraFirmaGreg-Translation-CN/Field-Guide-TFG">
+            <a class="nav-link px-3 text-body-secondary" href="https://github.com/TerraFirmaGreg-Team/Field-Guide-Modern">
               <i class="bi bi-github"></i> ${text_github}
             </a>
           </li>
@@ -182,11 +182,9 @@
     <script>
     // 检测是否为本地文件协议
     if (window.location.protocol === 'file:') {
-        // 本地文件协议：直接禁用 GLB 查看器功能以避免 CORS 问题
         console.warn('GLB Viewer disabled for file:// protocol due to CORS restrictions');
         window.GLBViewerUtils = { parseGLBViewer: function() {} };
     } else {
-        // HTTP/HTTPS 协议：动态加载 GLB 查看器脚本
         document.write('<script src="${root}/static/viewer-utils.js"><\/script>');
         document.write('<script type="module" src="${root}/static/viewer.js"><\/script>');
         document.write('<script src="${root}/static/glb-viewer-init.js"><\/script>');
