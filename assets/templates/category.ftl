@@ -6,10 +6,10 @@
     <meta name="title" content="${long_title}" />
     <meta name="description" content="${short_description}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG" />
+    <meta property="og:url" content="https://terrafirmagreg-team.github.io/Field-Guide-Modern" />
     <meta property="og:title" content="${long_title}" />
     <meta property="og:description" content="${short_description}" />
-    <meta property="og:image" content="https://terrafirmagreg-translation-cn.github.io/Field-Guide-TFG/_images/${preview_image}" />
+    <meta property="og:image" content="https://terrafirmagreg-team.github.io/Field-Guide-Modern/_images/${preview_image}" />
 
     <title>${long_title}</title>
 
@@ -154,7 +154,7 @@
 
           <!-- GitHub repo -->
           <li class="nav-item">
-            <a class="nav-link px-3 text-body-secondary" href="https://github.com/TerraFirmaGreg-Translation-CN/Field-Guide-TFG">
+            <a class="nav-link px-3 text-body-secondary" href="https://github.com/TerraFirmaGreg-Team/Field-Guide-Modern">
               <i class="bi bi-github"></i> ${text_github}
             </a>
           </li>
