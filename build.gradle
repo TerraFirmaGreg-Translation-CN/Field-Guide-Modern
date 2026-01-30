@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group = 'su.terrafirmgreg'
+group = 'team.terrafirmgreg'
 version = '1.0.0'
 
 java {
@@ -76,7 +76,7 @@ jar {
 
     manifest {
         attributes(
-                'Main-Class': 'su.terrafirmgreg.fieldguide.Main'
+                'Main-Class': 'team.terrafirmgreg.fieldguide.Main'
         )
     }
 
