@@ -814,18 +814,11 @@ public class PageRenderer {
                         </div>
                     </div>
                     """, 
-                    viewerId, 
-                    glbPathsJson.toString()));
+                    viewerId, glbPathsJson));
             }
         } catch (Exception e) {
             // TODO 日志太多暂时移除 log.error("tfc:multimultiblock GLB processing failed", e);
-            // FIXME for debug
-            for (TFCMultiblockData multiblock : page.getMultiblocks()) {
-                formatWithTooltip(buffer,
-                        String.format("%s: <code>%s</code>", localizationManager.translate(I18n.MULTIBLOCK), JsonUtils.toJson(multiblock)),
-                        localizationManager.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
-            }
-            // TODO formatWithTooltip(buffer, translate(I18n.MULTIBLOCK), translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
+            formatWithTooltip(buffer, localizationManager.translate(I18n.MULTIBLOCK), localizationManager.translate(I18n.MULTIBLOCK_ONLY_IN_GAME));
         }
     }
 
@@ -1202,7 +1195,9 @@ public class PageRenderer {
         } catch (Exception e) {
             // TODO add e later
             log.error("Failed to load knapping page: {}, message: {}", page.getRecipes(), e.getMessage());
-            formatRecipe(buffer, page.getRecipes().getFirst());
+            if (page.getRecipes() != null) {
+                formatRecipe(buffer, page.getRecipes().getFirst());
+            }
         }
     }
 
