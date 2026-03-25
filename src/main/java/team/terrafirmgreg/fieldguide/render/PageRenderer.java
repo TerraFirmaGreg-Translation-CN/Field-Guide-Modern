@@ -191,7 +191,7 @@ public class PageRenderer {
 
     public void formatText(BookEntry entry, List<String> buffer, String text) {
         if (text != null && !text.isEmpty()) {
-            TextFormatter.formatText(buffer, text, localizationManager.getKeybindings());
+            TextFormatter.formatText(buffer, text, localizationManager);
 
             entry.addSearchContent(TextFormatter.searchStrip(text));
         }
@@ -1313,35 +1313,74 @@ public class PageRenderer {
     private void parseTablePage(BookEntry entry, List<String> buffer, PageTable page) {
         try {
             formatTable(entry, buffer, page);
-        } catch (InternalException e) {
-            log.error("Table formatting failed", e);
+        } catch (Exception e) {
+            log.error("Table formatting failed for page '{}': {}",
+                    page.getTitle() != null ? page.getTitle() : "Unknown", e.getMessage(), e);
+
+            // 渲染一个错误提示，而不是让整个程序失败
+            buffer.add("<div class=\"table-error\" style=\"color:#800;padding:15px;border:1px solid #800;border-radius:4px;margin:10px 0;background:#fee;\">");
+            buffer.add("<strong>表格渲染错误</strong><br>");
+            buffer.add("页面的表格数据格式有误，无法正常显示。请检查相关配置文件。");
+            buffer.add("</div>");
         }
     }
 
 
     private void formatTable(BookEntry entry, List<String> buffer, PageTable data) {
         List<PageTableString> strings = data.getStrings();
-        int columns = data.getColumns() + 1;
+        int configuredColumns = data.getColumns();
+        int totalColumns = configuredColumns + 1; // +1 for the first column
         List<PageTableLegend> legend = data.getLegend();
 
-        // First, collapse 'strings' into a header and content row
-        if (strings.size() % columns != 0) {
-            throw new IllegalArgumentException(
-                    String.format("Data should divide columns, got %d len and %d columns",
-                            strings.size(), columns));
+        // 记录原始数据信息
+        log.debug("Table data: {} elements, {} configured columns, {} total columns",
+                strings.size(), configuredColumns, totalColumns);
+
+        // 检查数据完整性并处理不完整的情况
+        if (strings.size() < totalColumns) {
+            log.warn("Table data incomplete: expected at least {} elements, got {}. Filling with empty cells.",
+                    totalColumns, strings.size());
+
+            // 填充缺失的元素为空
+            List<PageTableString> paddedStrings = new ArrayList<>(strings);
+            while (paddedStrings.size() < totalColumns) {
+                paddedStrings.add(new PageTableString());
+            }
+            strings = paddedStrings;
         }
 
-        int rows = strings.size() / columns;
+        if (strings.size() % totalColumns != 0) {
+            log.warn("Table data does not perfectly divide columns: {} elements with {} columns. Trimming excess.",
+                    strings.size(), totalColumns);
+
+            // 移除多余的元素，使其能除尽（保留最接近的完整行数）
+            int maxRows = strings.size() / totalColumns;
+            if (maxRows < 2) {
+                log.error("Table has too few elements ({} rows) for proper display", maxRows);
+                buffer.add("<div class=\"table-error\" style=\"color:#888;padding:10px;border:1px solid #ddd;margin:10px 0;\">");
+                buffer.add("<strong>Table data error</strong> Table has too few elements for proper display。<br>");
+                buffer.add(String.format("expected columns:%d，actual columns：%d", totalColumns, strings.size()));
+                buffer.add("</div>");
+                return;
+            }
+
+            // 保留完整的行，丢弃不完整的行
+            int trimmedSize = maxRows * totalColumns;
+            strings = new ArrayList<>(strings.subList(0, trimmedSize));
+            log.info("Trimmed table data to {} elements ({} rows)", trimmedSize, maxRows);
+        }
+
+        int rows = strings.size() / totalColumns;
 
         if (rows <= 1) {
-            throw new IllegalArgumentException(
-                    String.format("Should have > 1 rows, got %d", rows));
+            log.warn("Table has only {} rows, skipping render", rows);
+            return;
         }
 
-        List<PageTableString> headers = strings.subList(0, columns);
+        List<PageTableString> headers = strings.subList(0, totalColumns);
         List<List<PageTableString>> body = new java.util.ArrayList<>();
         for (int i = 1; i < rows; i++) {
-            body.add(strings.subList(i * columns, (i + 1) * columns));
+            body.add(strings.subList(i * totalColumns, (i + 1) * totalColumns));
         }
 
         // Title + text

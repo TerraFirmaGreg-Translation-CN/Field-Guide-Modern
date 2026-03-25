@@ -4,8 +4,8 @@ set -e
 
 # Update Repo
 git pull
-git submodule sync
-git submodule update --force --init --depth=1 Modpack-Modern
+git submodule update --init --remote --recursive
+git submodule status
 
 # Build Project
 ./gradlew clean build || {
