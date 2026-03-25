@@ -27,7 +27,7 @@ jobs:
 
       - name: Update submodule to latest
         run: |
-          git submodule update --remote --recursive
+          git submodule update --init --remote --recursive
           git submodule status
 
       - name: Setup Java
