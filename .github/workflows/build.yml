@@ -3,6 +3,8 @@ name: Build Project
 on:
   push:
     branches: ["main"]
+  schedule:
+    - cron: "0 0 * * *"
 
 permissions:
   contents: write
@@ -22,6 +24,11 @@ jobs:
         with:
           submodules: true
           fetch-depth: 1
+
+      - name: Update submodule to latest
+        run: |
+          git submodule update --remote --recursive
+          git submodule status
 
       - name: Setup Java
         uses: actions/setup-java@v5.0.0
