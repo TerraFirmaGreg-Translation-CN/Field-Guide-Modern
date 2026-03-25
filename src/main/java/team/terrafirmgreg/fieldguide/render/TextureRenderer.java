@@ -4,6 +4,7 @@ import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import team.terrafirmgreg.fieldguide.Pair;
 import team.terrafirmgreg.fieldguide.asset.AssetKey;
 import team.terrafirmgreg.fieldguide.asset.AssetLoader;
+import team.terrafirmgreg.fieldguide.exception.AssetNotFoundException;
 import team.terrafirmgreg.fieldguide.asset.FluidResult;
 import team.terrafirmgreg.fieldguide.asset.ItemImageResult;
 import team.terrafirmgreg.fieldguide.data.agedalcohol.AgedAlcohol;
@@ -244,6 +245,7 @@ public class TextureRenderer {
                 // Fallback to using the placeholder image
                 ItemImageResult fallback = new ItemImageResult("_images/placeholder_64.png", name, null);
                 itemImageCache.put(item, fallback);
+                return fallback;
             }
 
             String path;
@@ -296,8 +298,8 @@ public class TextureRenderer {
     }
 
     public BufferedImage createItemImage(String itemId) {
-
-        BlockModel model = loader.loadItemModel(itemId);
+        try {
+            BlockModel model = loader.loadItemModel(itemId);
         if (model.getParent() == null) {
             log.warn("Item model no parent: {}", itemId);
             // TODO 支持无parent的模型
@@ -306,20 +308,28 @@ public class TextureRenderer {
         }
         // TODO
 
+        BufferedImage loaderResult = null;
         if (model.getLoader() != null) {
             String loader = model.getLoader();
             if ("tfc:contained_fluid".equals(loader)) {
                 String layer = model.getTextures().get("base");
-                return this.loader.loadTexture(layer);
+                loaderResult = this.loader.loadTexture(layer);
             } else if ("tfc:trim".equals(loader)) {
-                return getTfcItemTrimLoader(model, itemId);
+                loaderResult = getTfcItemTrimLoader(model, itemId);
             } else if ("forge:separate_transforms".equals(loader)) {
-                return getForgeSeparateTransformsLoader(model, itemId);
+                loaderResult = getForgeSeparateTransformsLoader(model, itemId);
             } else if ("forge:fluid_container".equals(loader)) {
-                return getForgeFluidContainerLoader(model, itemId);
+                loaderResult = getForgeFluidContainerLoader(model, itemId);
             } else {
                 log.error("Unknown loader: {} @ {}", loader, itemId);
             }
+        }
+
+        // 如果loader处理成功，直接返回结果
+        if (loaderResult != null) {
+            return loaderResult;
+        } else {
+            log.debug("Loader failed or returned null, trying default item loader for: {}", itemId);
         }
 
         String parent = model.getParent();
@@ -358,8 +368,8 @@ public class TextureRenderer {
                 } catch (Exception ex) {
                     // TODO add e later
                     missingImages.add(itemId);
-                    log.error("Failed load model {} @ {}, message: {}", parent, itemId, e.getMessage());
-                    throw new InternalException("Failed load item " + parent + " @ " + itemId);
+                    log.error("Failed load model {} @ {}, message: {}", parent, itemId, ex.getMessage());
+                    return null; // 返回null而不是抛出异常
                 }
             }
         } else if ("block".equals(type)) {
@@ -375,12 +385,23 @@ public class TextureRenderer {
                 // TODO add e later
                 missingImages.add(itemId);
                 log.error("Failed load model {} @ {}, message: {}", parent, itemId, e.getMessage());
-                throw new InternalException("Failed load model " + parent + " @ " + itemId);
+                return null; // 返回null而不是抛出异常
             }
         } else {
             missingImages.add(itemId);
             log.error("Unknown Parent {} @ {}, model: {}", parent, itemId, model);
-            throw new InternalException("Unknown Parent " + parent + " @ " + itemId);
+            return null; // 返回null而不是抛出异常
+        }
+        } catch (AssetNotFoundException e) {
+            // 资源未找到，可能是KubeJS动态添加的物品
+            log.warn("Resource not found for item: {}, possibly dynamic content - {}", itemId, e.getMessage());
+            missingImages.add(itemId);
+            return null;
+        } catch (Exception e) {
+            // 其他异常也返回null
+            log.error("Failed to create item image for {}: {}", itemId, e.getMessage());
+            missingImages.add(itemId);
+            return null;
         }
     }
 
@@ -416,9 +437,52 @@ public class TextureRenderer {
     }
 
     private BufferedImage getForgeSeparateTransformsLoader(BlockModel model, String itemId) {
-        BlockModel guiModel = model.getPerspectives().get("gui");
-        BlockModel realModel = loader.loadModel(guiModel.getParent());
-        return loader.loadTexture(realModel.getTextures().get("layer0"));
+        // 检查perspectives是否存在
+        Map<String, BlockModel> perspectives = model.getPerspectives();
+        if (perspectives == null) {
+            log.warn("Item model has no perspectives: {}", itemId);
+            // 尝试使用模型本身的纹理
+            String layer0 = model.getTextures().get("layer0");
+            if (layer0 != null) {
+                return this.loader.loadTexture(layer0);
+            }
+            missingImages.add(itemId);
+            return null;
+        }
+
+        BlockModel guiModel = perspectives.get("gui");
+        if (guiModel == null) {
+            log.warn("Item model has no gui perspective: {}", itemId);
+            // 尝试使用第一个可用的perspective
+            for (Map.Entry<String, BlockModel> entry : perspectives.entrySet()) {
+                log.debug("Using alternative perspective '{}' for {}", entry.getKey(), itemId);
+                guiModel = entry.getValue();
+                break;
+            }
+        }
+
+        if (guiModel == null) {
+            log.warn("No available perspectives found for item: {}", itemId);
+            missingImages.add(itemId);
+            return null;
+        }
+
+        try {
+            BlockModel realModel = loader.loadModel(guiModel.getParent());
+            if (realModel != null && realModel.getTextures() != null) {
+                String layer0 = realModel.getTextures().get("layer0");
+                if (layer0 != null) {
+                    return this.loader.loadTexture(layer0);
+                }
+            }
+            log.warn("No layer0 texture found in perspective model for: {}", itemId);
+            missingImages.add(itemId);
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to load perspective model for {}: {}", itemId, e.getMessage());
+            missingImages.add(itemId);
+            return null;
+        }
     }
 
     private BufferedImage getTfcItemTrimLoader(BlockModel model, String itemId) {
@@ -431,7 +495,7 @@ public class TextureRenderer {
         } else {
             log.warn("Item model no base: {}", itemId);
             missingImages.add(itemId);
-            throw new InternalException("Item model no base: " + itemId);
+            return null; // 返回null而不是抛出异常
         }
     }
 

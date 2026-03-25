@@ -148,7 +148,7 @@ public class Context {
     
     public void formatText(List<String> buffer, String text, Map<String, String> search) {
         if (text != null && !text.isEmpty()) {
-            TextFormatter.formatText(buffer, text, localizationManager.getKeybindings());
+            TextFormatter.formatText(buffer, text, localizationManager);
 
             if (search != null) {
                 Map<String, String> searchData = new HashMap<>(search);

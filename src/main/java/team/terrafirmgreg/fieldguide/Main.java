@@ -126,7 +126,7 @@ public class Main implements Callable<Integer>  {
 
         // format description text
         List<String> descriptionBuffer = new ArrayList<>();
-        TextFormatter.formatText(descriptionBuffer, category.getDescription(), localizationManager.getKeybindings());
+        TextFormatter.formatText(descriptionBuffer, category.getDescription(), localizationManager);
         category.setDescription(String.join("", descriptionBuffer));
     }
 

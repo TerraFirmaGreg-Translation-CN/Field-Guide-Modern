@@ -1,6 +1,7 @@
 package team.terrafirmgreg.fieldguide.render;
 
 import lombok.extern.slf4j.Slf4j;
+import team.terrafirmgreg.fieldguide.localization.LocalizationManager;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -27,24 +28,47 @@ public class TextFormatter {
         Map.entry("f", "#FFFFFF")
     );
 
-    private static final Map<String, Map<String, String>> ROOT_TAGS = Map.of(
-        "p", Map.of(
+    private static final Map<String, Map<String, String>> ROOT_TAGS = createRootTags();
+
+    private static Map<String, Map<String, String>> createRootTags() {
+        Map<String, Map<String, String>> rootTags = new HashMap<>();
+
+        // Paragraph tags
+        rootTags.put("p", Map.of(
             "", "</p>\n",
             "p", "<br/>\n",
             "li", "</p>\n<ul>\n\t<li>",
             "ol", "</p>\n<ol>\n\t<li>"
-        ),
-        "li", Map.of(
-            "", "</li>\n</ul>\n",
-            "li", "</li>\n\t<li>",
-            "p", "</li>\n</ul><p>"
-        ),
-        "ol", Map.of(
+        ));
+
+        // Ordered list tags
+        rootTags.put("ol", Map.of(
             "", "</li>\n</ol>\n",
             "ol", "</li>\n\t<li>",
             "p", "</li>\n</ol><p>"
-        )
-    );
+        ));
+
+        // List item tags - common patterns for all li levels
+        Map<String, String> liCommon = new HashMap<>();
+        liCommon.put("", "</li>\n</ul>\n");
+        liCommon.put("p", "</li>\n</ul><p>");
+
+        // Add li transitions for levels 1-9
+        for (int i = 1; i <= 9; i++) {
+            String liKey = i == 1 ? "li" : "li" + i;
+
+            Map<String, String> liMap = new HashMap<>(liCommon);
+            // Add transitions to all other li levels
+            for (int j = 1; j <= 9; j++) {
+                String targetKey = j == 1 ? "li" : "li" + j;
+                liMap.put(targetKey, "</li>\n\t<li>");
+            }
+
+            rootTags.put(liKey, liMap);
+        }
+
+        return rootTags;
+    }
 
     private static final Pattern SEARCH_STRIP_PATTERN = Pattern.compile("\\$\\([^)]*\\)");
 
@@ -55,13 +79,16 @@ public class TextFormatter {
     private final Map<String, String> keybindings;
     private String root;
     private final Stack<String> stack;
+    private LocalizationManager localizationManager;
 
-    public TextFormatter(List<String> buffer, String text, Map<String, String> keybindings) {
+    public TextFormatter(List<String> buffer, String text, LocalizationManager localizationManager) {
         this.buffer = buffer;
-        this.keybindings = keybindings;
+        this.localizationManager = localizationManager;
+        // 从LocalizationManager获取keybindings
+        this.keybindings = localizationManager != null ? localizationManager.getKeybindings() : new HashMap<>();
         this.root = "p";
         this.stack = new Stack<>();
-        
+
         this.buffer.add("<p>");
         processText(text);
     }
@@ -74,8 +101,8 @@ public class TextFormatter {
         return text.replaceAll("§.", "");
     }
 
-    public static void formatText(List<String> buffer, String text, Map<String, String> keybindings) {
-        new TextFormatter(buffer, text, keybindings);
+    public static void formatText(List<String> buffer, String text, LocalizationManager localizationManager) {
+        new TextFormatter(buffer, text, localizationManager);
     }
 
     private void processText(String text) {
@@ -130,8 +157,15 @@ public class TextFormatter {
             updateRoot("p");
         } else if (key.equals("ol")) {  // Fake formatting code
             updateRoot("ol");
-        } else if (key.equals("li")) {
-            updateRoot("li");
+        } else if (key.equals("li") || key.matches("li\\d")) {
+            // 支持li, li2, li3等格式化代码
+            int level = ListHelper.extractListLevel(key);
+
+            // 生成列表项的开始标签
+            buffer.add(ListHelper.generateListItemStart(level));
+
+            // 推送结束标签到栈中
+            stack.push("</li>");
         } else if (key.startsWith("l:http")) {
             matchingTags("<a href=\"" + key.substring(2) + "\">", "</a>");
         } else if (key.startsWith("l:")) {
@@ -159,8 +193,38 @@ public class TextFormatter {
             }
         } else if (VANILLA_COLORS.containsKey(key)) {
             colorTags(VANILLA_COLORS.get(key));
-        } else if (key.startsWith("k:") && keybindings.containsKey(key.substring(2))) {// FIXME 考虑使用LocalizationManager来判断语言
-            buffer.add(keybindings.get(key.substring(2)));
+        } else if (key.startsWith("k:")) {
+            String keybindKey = key.substring(2);
+
+            // 根据Patchouli的实现，先检查是否有实际的按键绑定
+            if (keybindings.containsKey(keybindKey)) {
+                buffer.add(keybindings.get(keybindKey));
+            } else if (localizationManager != null) {
+                // 尝试从语言文件中翻译按键绑定
+                String translated = localizationManager.translate(keybindKey);
+
+                // Patchouli的实现中，如果没有找到按键，会显示"N/A"
+                // 但对于网页版，我们显示翻译后的文本更合适
+                if (translated != null && !translated.equals(keybindKey)) {
+                    buffer.add("<span class=\"keybind\" style=\"color:#333;\">");
+                    buffer.add(translated);
+                    buffer.add("</span>");
+                } else {
+                    // 翻译失败，按照Patchouli的风格显示"未配置"
+                    buffer.add("<span class=\"keybind\" style=\"color:#888;font-style:italic;\" title=\"");
+                    buffer.add(keybindKey);
+                    buffer.add("\">");
+                    buffer.add("未配置");
+                    buffer.add("</span>");
+                }
+            } else {
+                // 最坏情况，显示原始键
+                buffer.add("<span class=\"keybind\" style=\"color:#666;font-style:italic;\" title=\"");
+                buffer.add(keybindKey);
+                buffer.add("\">");
+                buffer.add(keybindKey);
+                buffer.add("</span>");
+            }
         } else if (key.startsWith("t:")) {
             String tooltips = key.substring(2);
             // FIXME matchingTags("", "<span style=\"color:#888;font-style:italic;\">" + tooltips + "</span>");
