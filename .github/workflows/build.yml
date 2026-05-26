@@ -25,10 +25,12 @@ jobs:
           submodules: true
           fetch-depth: 1
 
-      - name: Update submodule to latest
-        run: |
-          git submodule update --init --remote --recursive
-          git submodule status
+      - name: Checkout Modpack-Modern at latest release tag
+        id: modpack-release
+        run: bash scripts/checkout-modpack-latest-release.sh
+
+      - name: Log modpack version
+        run: echo "Modpack-Modern @ ${{ steps.modpack-release.outputs.modpack_tag }}"
 
       - name: Setup Java
         uses: actions/setup-java@v5.0.0
@@ -50,13 +52,18 @@ jobs:
           cd Modpack-Modern
           java -jar pakku.jar fetch
 
-      - name: Build jar
-        run: ./gradlew clean build
+      - name: Build CLI jar
+        run: ./gradlew clean :cli:jar --no-daemon
 
       - name: Build Website
         run: |
           rm -rf output
-          java -jar build/libs/field-guide-*.jar -i Modpack-Modern -o output
+          CLI_JAR=$(ls -t cli/build/libs/field-guide-tfg-*.jar cli/build/libs/field-guide-*.jar 2>/dev/null | head -1)
+          if [ -z "$CLI_JAR" ]; then
+            echo "CLI jar not found under cli/build/libs/"
+            exit 1
+          fi
+          java -jar "$CLI_JAR" -i Modpack-Modern -o output
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

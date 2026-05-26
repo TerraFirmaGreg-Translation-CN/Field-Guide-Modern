@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+}
+
+group = 'team.terrafirmgreg'
+version = project.findProperty('cli_version') ?: '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.blamejared.com' }
+}
+
+dependencies {
+    implementation project(':core')
+
+    implementation 'info.picocli:picocli:4.7.1'
+
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+
+    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'commons-codec:commons-codec:1.19.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+    implementation 'net.vieiro:toml-java:13.4.2'
+    implementation 'org.jgrapht:jgrapht-core:1.5.2'
+
+    implementation 'gov.nist.math:jama:1.0.3'
+    implementation 'com.madgag:animated-gif-lib:1.4'
+    implementation 'org.freemarker:freemarker:2.3.32'
+
+    implementation 'ch.qos.logback:logback-classic:1.5.13'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    workingDir = rootProject.projectDir
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showExceptions = true
+        exceptionFormat = 'full'
+        showCauses = true
+        showStackTraces = true
+    }
+    reports.html.required = false
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+}
+
+jar {
+    archiveBaseName = 'field-guide-tfg'
+    manifest {
+        attributes('Main-Class': 'team.terrafirmgreg.fieldguide.Main')
+    }
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

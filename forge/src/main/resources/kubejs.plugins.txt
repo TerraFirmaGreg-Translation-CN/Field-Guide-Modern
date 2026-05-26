@@ -1,0 +1,1 @@
+team.terrafirmgreg.fieldguide.integration.kubejs.FieldGuideKubeJsPlugin

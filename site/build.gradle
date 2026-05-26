@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+}
+
+group = 'team.terrafirmgreg'
+version = project.findProperty('site_version') ?: '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':core')
+
+    implementation 'info.picocli:picocli:4.7.1'
+    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'gov.nist.math:jama:1.0.3'
+    implementation 'com.madgag:animated-gif-lib:1.4'
+    implementation 'org.freemarker:freemarker:2.3.32'
+    implementation 'ch.qos.logback:logback-classic:1.5.13'
+
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    workingDir = rootProject.projectDir
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showExceptions = true
+        exceptionFormat = 'full'
+    }
+    reports.html.required = false
+}

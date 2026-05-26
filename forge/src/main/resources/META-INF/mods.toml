@@ -1,0 +1,24 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "LGPL-3.0"
+
+[[mods]]
+modId = "fieldguide"
+version = "0.1.0"
+displayName = "TFG Field Guide (dev)"
+description = "Development harness for exporting field guide data from a loaded Minecraft client."
+authors = "TerraFirmaGreg Team"
+
+[[dependencies.fieldguide]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.fieldguide]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"

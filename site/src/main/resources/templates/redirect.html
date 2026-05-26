@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" style="width:100%; height:100%; padding:0px; margin:0px;">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta charset="UTF-8">
+    <title>Field Guide</title>
+    <script type="text/javascript">
+        (function() {
+            const currentPath = window.location.pathname;
+            const targetUrl = './en_us/';
+            const search = window.location.search;
+            const hash = window.location.hash;
+
+            console.log('currentPath: ' + currentPath);
+            console.log('Redirecting to: ' + targetUrl + search + hash);
+            window.location.replace(targetUrl + search + hash);
+        })();
+    </script>
+</head>
+<body>
+</body>

@@ -1,0 +1,18 @@
+# Copied into Modpack-Modern/config/fml.toml for headless CI and for :forge:runGenBookExport.
+# Disables the early GLFW window so ModLauncher is not touched from a background thread (CME).
+earlyWindowControl = false
+maxThreads = 1
+
+earlyWindowHeight = 480
+earlyWindowFBScale = 1
+# (CI) Skip Forge mod update pings (fewer outbound requests; avoids bad JSON from mirrors).
+versionCheck = false
+earlyWindowProvider = "fmlearlywindow"
+earlyWindowWidth = 854
+earlyWindowMaximized = false
+defaultConfigPath = "defaultconfigs"
+disableOptimizedDFU = true
+earlyWindowSkipGLVersions = []
+earlyWindowSquir = false
+earlyWindowShowCPU = false
+earlyWindowLogHelpMessage = false

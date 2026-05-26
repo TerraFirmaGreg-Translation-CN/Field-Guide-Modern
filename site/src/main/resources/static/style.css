@@ -1,0 +1,414 @@
+:root {
+    --table-bg-dark-color: #dfe2e5;
+    --table-bg-light-color: #f8f8f8;
+}
+
+#nav-primary {
+    background-color: var(--bs-gray-800);
+}
+
+.card-body > *:last-child {
+    margin-bottom: 0;
+}
+
+.carousel-inner img {
+    margin: auto;
+}
+
+img.icon-title {
+    height: 48px;
+    image-rendering: pixelated;
+}
+
+img.entry-card-icon {
+    height: 32px;
+    image-rendering: pixelated;
+}
+
+.recipe-preview-wrap {
+    margin: 0.5rem auto;
+}
+
+img.recipe-preview {
+    max-width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+/* Export atlas sprites (see generated/*/.*-icons.css) */
+.icon-carousel {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.icon-carousel > span {
+    display: none;
+}
+
+.icon-carousel > span.icon-carousel-active,
+.icon-carousel > .icon-slot-32 > span.icon-carousel-active,
+.icon-carousel > .icon-slot-48 > span.icon-carousel-active,
+.icon-carousel > .icon-slot-64 > span.icon-carousel-active {
+    display: inline-block;
+}
+
+/* Category cards: uniform 32×32 */
+.icon-slot-32 {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    overflow: hidden;
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.icon-slot-32 > .icon-atlas {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.icon-slot-32 > .item-icon-atlas,
+.icon-slot-32 > .fluid-icon-atlas {
+    width: 16px !important;
+    height: 16px !important;
+    transform: scale(2);
+    transform-origin: top left;
+}
+
+.icon-slot-32 > .block-item-icon-atlas {
+    width: 64px !important;
+    height: 64px !important;
+    transform: scale(0.5);
+    transform-origin: top left;
+}
+
+.icon-carousel.entry-card-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* Entry header: 48×48 */
+.icon-slot-48 {
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.icon-slot-48 > .icon-atlas {
+    width: 32px !important;
+    height: 32px !important;
+    transform: scale(1.5);
+    transform-origin: top left;
+}
+
+.icon-slot-48 > .item-icon-atlas,
+.icon-slot-48 > .fluid-icon-atlas {
+    width: 16px !important;
+    height: 16px !important;
+    transform: scale(3);
+    transform-origin: top left;
+}
+
+.icon-slot-48 > .block-item-icon-atlas {
+    width: 64px !important;
+    height: 64px !important;
+    transform: scale(0.75);
+    transform-origin: top left;
+}
+
+/* Recipe slots: 64×64 */
+.icon-slot-64 {
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.icon-slot-64 > .icon-atlas {
+    width: 32px !important;
+    height: 32px !important;
+    transform: scale(2);
+    transform-origin: top left;
+}
+
+.icon-slot-64 > .item-icon-atlas,
+.icon-slot-64 > .fluid-icon-atlas {
+    width: 16px !important;
+    height: 16px !important;
+    transform: scale(4);
+    transform-origin: top left;
+}
+
+.icon-slot-64 > .block-item-icon-atlas {
+    width: 64px !important;
+    height: 64px !important;
+}
+
+.crafting-recipe-item .icon-carousel {
+    width: 64px;
+    height: 64px;
+}
+
+@media only screen and (min-width: 500px) {
+    .carousel-control-next,
+    .carousel-control-prev {
+        filter: invert(100%);
+    }
+}
+
+/* Item Tooltips - used for patchouli:item_spotlight pages */
+
+.item-header img {
+    float: left;
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+}
+
+.item-header a, .item-header h4, .item-header h5, .item-header p {
+    position: relative;
+    top: 2px;
+    left: 42px;
+}
+
+.item-header span {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+}
+
+/* Crafting / Other Recipes */
+
+.knapping-recipe {
+    position: relative;
+    margin: 1rem 0;
+}
+
+.knapping-recipe-overlay {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 270px;
+    height: 270px;
+}
+
+.knapping-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 54px);
+    grid-template-rows: repeat(5, 54px);
+    width: 270px;
+    height: 270px;
+    image-rendering: pixelated;
+}
+
+.knapping-cell {
+    width: 54px;
+    height: 54px;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.knapping-rock-low { background-color: #5a5a5a; }
+.knapping-rock-hi { background-color: #9a9a9a; }
+.knapping-clay-low { background-color: #8b6914; }
+.knapping-clay-hi { background-color: #c4a035; }
+.knapping-fire_clay-low { background-color: #a0522d; }
+.knapping-fire_clay-hi { background-color: #d2691e; }
+.knapping-leather-low { background-color: #6b4423; }
+.knapping-leather-hi { background-color: #a66b3f; }
+.knapping-bone-low { background-color: #d4c4a8; }
+.knapping-bone-hi { background-color: #f5ecd7; }
+.knapping-sherd-low { background-color: #b8a080; }
+.knapping-sherd-hi { background-color: #e8d8c0; }
+
+.knapping-recipe-img {
+    image-rendering: pixelated;
+    width: 270px;
+    height: 270px;
+}
+
+html[data-bs-theme="dark"] .knapping-recipe > img:first-child {
+    filter: invert(100%);
+}
+
+.crafting-recipe {
+    position: relative;
+    margin: 1rem 0;
+}
+
+html[data-bs-theme="dark"] .crafting-recipe > img:first-child {
+    filter: invert(100%);
+}
+
+img.recipe-item {
+    image-rendering: pixelated;
+    width: 64px;
+    height: 64px;
+}
+
+.crafting-recipe-item-tooltip {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+}
+
+.crafting-recipe-item-count {
+    position: absolute;
+    left: 48px;
+    top: 36px;
+    font-family: Minecraft;
+    font-size: 30px;
+    color: black;
+    text-shadow: 2px 2px #D0D0D0, -1px -1px #D0D0D0;
+    pointer-events: none;
+}
+
+html[data-bs-theme="dark"] .crafting-recipe-item-count {
+    color: white;
+    text-shadow: none;
+}
+
+.crafting-recipe-pos-0-0 { position: absolute; left: 20px;  top: 20px;  }
+.crafting-recipe-pos-0-1 { position: absolute; left: 20px;  top: 96px;  }
+.crafting-recipe-pos-0-2 { position: absolute; left: 20px;  top: 172px; }
+.crafting-recipe-pos-1-0 { position: absolute; left: 96px;  top: 20px;  }
+.crafting-recipe-pos-1-1 { position: absolute; left: 96px;  top: 96px;  }
+.crafting-recipe-pos-1-2 { position: absolute; left: 96px;  top: 172px; }
+.crafting-recipe-pos-2-0 { position: absolute; left: 172px; top: 20px;  }
+.crafting-recipe-pos-2-1 { position: absolute; left: 172px; top: 96px;  }
+.crafting-recipe-pos-2-2 { position: absolute; left: 172px; top: 172px; }
+.crafting-recipe-pos-out { position: absolute; left: 324px; top: 96px;  }
+
+.misc-recipe-pos-in  { position: absolute; left: 20px;  top: 24px; }
+.misc-recipe-pos-out { position: absolute; left: 308px; top: 24px; }
+
+.two-recipe-pos-1 { position: absolute; left: 24px; top: 24px; }
+.two-recipe-pos-2 { position: absolute; left: 122px; top: 24px; }
+.two-recipe-pos-3 { position: absolute; left: 412px; top: 24px; }
+.two-recipe-pos-4 { position: absolute; left: 510px; top: 24px; }
+
+/* Text formatting for temperatures in heat recipes and other tooltips */
+
+.minecraft-text {
+    font-family: Minecraft;
+    font-size: 30px;
+}
+
+.minecraft-gray     { color: #AAAAAA; }
+.minecraft-dark-red { color: #AA0000; }
+.minecraft-red      { color: #FF5555; }
+.minecraft-gold     { color: #FFAA00; }
+.minecraft-yellow   { color: #FFFF55; text-shadow: 0px 0px 4px #444; }
+.minecraft-white    { color: #FFFFFF; text-shadow: 0px 0px 4px #444; }
+
+html[data-bs-theme="dark"] .minecraft-yellow,
+html[data-bs-theme="dark"] .minecraft-white {
+    text-shadow: none;
+}
+
+/* Minecraft Font, for count/amount labels on items */
+
+@font-face {
+    font-family: Minecraft;
+    src: url("font.otf") format("opentype");
+}
+
+/* Tables */
+figure {
+    overflow-x: auto;
+    margin: 1.2em 0;
+    max-width: calc(100% + 16px);
+    padding: 0;
+}
+figure > table {
+    margin: 0;
+}
+
+table {
+    padding: 0;
+    word-break: initial;
+    margin: 0.8em 0;
+
+    border-collapse: collapse;
+    border-spacing: 0;
+
+    text-align: left;
+}
+table tr {
+    border: 1px solid #cccccc;
+    margin: 0;
+    padding: 0;
+}
+table thead, table tr:nth-child(2n) {
+    background-color: #eeeeee;
+}
+table thead, table tr {
+    break-inside: avoid;
+    break-after: auto;
+}
+table th {
+    font-weight: bold;
+    border: 1px solid #cccccc;
+    border-bottom: 0;
+    margin: 0;
+    padding: 2px 4px;
+}
+table td {
+    border: 1px solid #cccccc;
+    margin: 0;
+    padding: 2px 4px;
+}
+table th:first-child, table td:first-child { margin-top: 0; }
+table th:last-child, table td:last-child { margin-bottom: 0; }
+table tr th { border-bottom: 0; }
+
+
+.glb-viewer-container {
+    margin: 20px auto;
+    background: transparent;
+    height: 400px;
+    position: relative;
+    transition: all 0.3s ease;
+    width: 80%;
+    max-width: 600px;
+}
+
+.glb-viewer-container .glb-viewer {
+    width: 100%;
+    height: 100%;
+}
+
+.glb-viewer-container.drag-over {
+    border-color: #007bff;
+    background: #e3f2fd;
+    transform: scale(1.02);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .glb-viewer-container {
+        height: 300px;
+        width: 95%;
+    }
+}
+
+/* 深色主题支持 */
+[data-bs-theme="dark"] .glb-viewer-container {
+    background: transparent;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .glb-viewer-container.drag-over {
+    background: #1e3a5f;
+    border-color: #0d6efd;
+}

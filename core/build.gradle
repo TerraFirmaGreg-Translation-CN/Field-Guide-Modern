@@ -1,0 +1,58 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'team.terrafirmgreg'
+version = project.findProperty('core_version') ?: '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Shared schema POJOs use Gson annotations + custom TypeAdapters; consumers (cli, forge)
+    // need the same Gson API to deserialize, so expose it transitively via `api`.
+    api 'com.google.code.gson:gson:2.13.1'
+
+    // Guava is required by data/gtceu helpers if they ever land here; safe transitive for callers.
+    api 'com.google.guava:guava:32.1.2-jre'
+
+    // Used by data.minecraft.ResourceLocation for StringUtils helpers.
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+    // Lombok is compile-time only; consumers may use their own version.
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+
+    // Slf4j-only — logback / log4j is the caller's choice (cli uses logback, forge uses log4j2).
+    api 'org.slf4j:slf4j-api:1.7.36'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showExceptions = true
+        exceptionFormat = 'full'
+    }
+    reports.html.required = false
+}
+
+jar {
+    archiveBaseName = 'field-guide-core'
+}
