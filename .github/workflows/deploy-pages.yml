@@ -1,0 +1,119 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "site/**"
+      - "core/**"
+      - "scripts/**"
+      - "ci/**"
+      - "gradle.properties"
+      - "settings.gradle"
+      - "build.gradle"
+      - "gradle/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: Export bundle id (empty = fg-<latest modpack tag> / export-meta)
+        required: false
+        default: ""
+      modpack_tag:
+        description: Modpack-Modern tag when resolving bundle id (empty = latest release)
+        required: false
+        default: ""
+  workflow_run:
+    workflows: ["Export handbook bundle"]
+    types: [completed]
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Field Guide
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Load CI config
+        run: bash scripts/ci-load-config.sh
+
+      - name: Download export metadata
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: export-meta
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Resolve bundle id
+        id: metadata
+        env:
+          BUNDLE_ID_INPUT: ${{ github.event.inputs.bundle_id }}
+          MODPACK_TAG: ${{ github.event.inputs.modpack_tag }}
+        run: bash scripts/ci-resolve-bundle-id.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+
+      - name: Download export bundle from triggering Export
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: guide-export-${{ steps.metadata.outputs.bundle_id }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Extract export bundle (workflow_run artifact)
+        if: github.event_name == 'workflow_run'
+        env:
+          BUNDLE_ID: ${{ steps.metadata.outputs.bundle_id }}
+        run: bash scripts/ci-extract-export-bundle.sh
+
+      - name: Download export bundle from latest Export (push / manual)
+        if: github.event_name != 'workflow_run'
+        env:
+          BUNDLE_ID: ${{ steps.metadata.outputs.bundle_id }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: bash scripts/ci-fetch-export-bundle.sh
+
+      - name: Grant execute permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Build static site
+        run: bash scripts/ci-build-site.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ env.SITE_OUTPUT_DIR }}
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

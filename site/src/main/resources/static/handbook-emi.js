@@ -13,32 +13,54 @@
     return new URL('../../emi/', window.location.href).href;
   }
 
-  function init() {
+  function pageLocale() {
+    var match = window.location.pathname.match(/\/([a-z]{2}_[a-z]{2})\//i);
+    return match ? match[1].toLowerCase() : 'en_us';
+  }
+
+  async function init() {
     var Renderer = globalThis.EmiRecipeRenderer;
-    if (!Renderer) {
-      console.warn('handbook-emi: EmiRecipeRenderer not loaded');
+    if (!Renderer || typeof Renderer.mountAll !== 'function') {
+      console.warn('handbook-emi: EmiRecipeRenderer.mountAll not available');
       return;
     }
-    var renderer = new Renderer({
-      baseUrl: emiBundleBaseUrl(),
-      injectIconStylesheets: true,
-    });
-    renderer.mountAll({ root: document });
 
+    var baseUrl = emiBundleBaseUrl();
+    var rendererOpts = {
+      baseUrl: baseUrl,
+      injectIconStylesheets: true,
+      locale: pageLocale(),
+    };
+
+    try {
+      await Renderer.mountAll({
+        baseUrl: rendererOpts.baseUrl,
+        injectIconStylesheets: rendererOpts.injectIconStylesheets,
+        locale: rendererOpts.locale,
+        root: document,
+      });
+    } catch (err) {
+      console.error('handbook-emi: mountAll failed', err);
+      return;
+    }
+
+    var tagRenderer = new Renderer(rendererOpts);
     document.querySelectorAll('.emi-handbook-tag[data-tag-id]').forEach(function (el) {
       el.addEventListener('click', function (event) {
         event.preventDefault();
         event.stopPropagation();
         var tagId = el.getAttribute('data-tag-id');
         if (tagId && typeof globalThis.showEmiTagPopover === 'function') {
-          globalThis.showEmiTagPopover(tagId, el, renderer);
+          globalThis.showEmiTagPopover(tagId, el, tagRenderer);
         }
       });
     });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function () {
+      init();
+    });
   } else {
     init();
   }
