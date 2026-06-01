@@ -8,7 +8,8 @@ cd "$ROOT"
 HMC_VER="${HMC_VERSION:?HMC_VERSION required}"
 MC_VER="${MC_VERSION:?MC_VERSION required}"
 FORGE="${FORGE_BUILD:?FORGE_BUILD required}"
-MP="${MODPACK_DIR:-$ROOT/Modpack-Modern}"
+MP="${MODPACK_DIR:-Modpack-Modern}"
+MP_ABS="$(cd "$ROOT/$MP" && pwd)"
 launcher="headlessmc-launcher-${HMC_VER}.jar"
 
 if [[ ! -f "$launcher" ]]; then
@@ -21,7 +22,7 @@ fi
 mkdir -p HeadlessMC
 cat > HeadlessMC/config.properties <<EOF
 hmc.java.versions=$JAVA_HOME/bin/java
-hmc.gamedir=$GITHUB_WORKSPACE/$MP
+hmc.gamedir=$MP_ABS
 hmc.offline=true
 hmc.rethrow.launch.exceptions=true
 hmc.exit.on.failed.command=true
