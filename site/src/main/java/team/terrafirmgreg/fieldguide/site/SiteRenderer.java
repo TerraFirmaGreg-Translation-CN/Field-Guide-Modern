@@ -13,10 +13,13 @@ import team.terrafirmgreg.fieldguide.localization.Language;
 import team.terrafirmgreg.fieldguide.localization.LocalizationManager;
 
 import java.io.*;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -78,10 +81,9 @@ public class SiteRenderer {
         copyResourceDir("static", staticOut);
         copyRecipeUiImages();
 
-        Path redirectSrc = resourcePath("templates/redirect.html");
-        if (redirectSrc != null) {
-            Files.createDirectories(Paths.get(outputRootDir));
-            Files.copy(redirectSrc, Paths.get(outputRootDir, "index.html"), StandardCopyOption.REPLACE_EXISTING);
+        Path redirectDest = Paths.get(outputRootDir, "index.html");
+        if (copyClasspathResource("templates/redirect.html", redirectDest)) {
+            log.debug("Wrote root redirect from classpath to {}", redirectDest);
         }
     }
 
@@ -120,25 +122,62 @@ public class SiteRenderer {
     }
 
     private void copyResourceDir(String resourceName, Path dest) throws IOException {
-        Path src = resourcePath(resourceName);
-        if (src == null) {
+        URL url = getClass().getClassLoader().getResource(resourceName);
+        if (url == null) {
             log.warn("Missing classpath resource: {}", resourceName);
             return;
         }
-        if (Files.isDirectory(src)) {
-            FileUtils.copyDirectory(src.toFile(), dest.toFile());
+        if ("file".equals(url.getProtocol())) {
+            try {
+                Path src = Paths.get(url.toURI());
+                if (Files.isDirectory(src)) {
+                    FileUtils.copyDirectory(src.toFile(), dest.toFile());
+                }
+            } catch (java.net.URISyntaxException e) {
+                throw new IOException("Bad file resource URL for " + resourceName, e);
+            }
+            return;
+        }
+        if ("jar".equals(url.getProtocol())) {
+            copyResourceTreeFromJar(url, resourceName, dest);
+            return;
+        }
+        log.warn("Unsupported classpath URL for {}: {}", resourceName, url);
+    }
+
+    /** Copies a single classpath file (works inside fat jars). */
+    private boolean copyClasspathResource(String resourceName, Path dest) throws IOException {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(resourceName)) {
+            if (in == null) {
+                return false;
+            }
+            Files.createDirectories(dest.getParent());
+            Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
+            return true;
         }
     }
 
-    private Path resourcePath(String resourceName) {
-        URL url = getClass().getClassLoader().getResource(resourceName);
-        if (url == null) {
-            return null;
+    private static void copyResourceTreeFromJar(URL jarResourceUrl, String resourcePrefix, Path dest)
+            throws IOException {
+        if (!(jarResourceUrl.openConnection() instanceof JarURLConnection connection)) {
+            throw new IOException("Not a jar resource URL: " + jarResourceUrl);
         }
-        try {
-            return Paths.get(url.toURI());
-        } catch (java.net.URISyntaxException e) {
-            return null;
+        String prefix = resourcePrefix.endsWith("/") ? resourcePrefix : resourcePrefix + "/";
+        try (JarFile jar = connection.getJarFile()) {
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                String name = entry.getName();
+                if (!name.startsWith(prefix) || entry.isDirectory()) {
+                    continue;
+                }
+                String relative = name.substring(prefix.length());
+                Path target = dest.resolve(relative);
+                Files.createDirectories(target.getParent());
+                try (InputStream in = jar.getInputStream(entry)) {
+                    Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
         }
     }
 
