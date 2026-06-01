@@ -255,11 +255,13 @@ public class PageRenderer {
         if (recipeId == null || recipeId.isEmpty()) {
             return;
         }
-        if (tryAppendRecipePreview(buffer, recipeId)) {
-            return;
-        }
-        String text = String.format("%s: <code>%s</code>", localizationManager.translate(I18n.RECIPE), recipeId);
-        formatWithTooltip(buffer, text, localizationManager.translate(I18n.RECIPE_ONLY_IN_GAME));
+        buffer.add(String.format(
+                "<div class=\"emi-recipe my-2\" data-recipe-id=\"%s\"></div>",
+                escapeHtmlAttr(recipeId)));
+    }
+
+    private static String escapeHtmlAttr(String value) {
+        return value.replace("&", "&amp;").replace("\"", "&quot;");
     }
 
     private boolean tryAppendRecipePreview(List<String> buffer, String recipeId) {
@@ -316,27 +318,11 @@ public class PageRenderer {
     /// crafting recipe
 
     private void parseCraftingRecipe(List<String> buffer, PageCrafting page) {
-        // 处理主要配方
         if (page.getRecipe() != null) {
-            if (!tryAppendRecipePreview(buffer, page.getRecipe())) {
-                try {
-                    formatCraftingRecipe(buffer, page.getRecipe());
-                } catch (Exception e) {
-                    log.error("Recipe processing craft failed: {}. e: {}", page.getRecipe(), e.getMessage());
-                    formatRecipe(buffer, page.getRecipe());
-                }
-            }
+            formatRecipe(buffer, page.getRecipe());
         }
-
         if (page.getRecipe2() != null) {
-            if (!tryAppendRecipePreview(buffer, page.getRecipe2())) {
-                try {
-                    formatCraftingRecipe(buffer, page.getRecipe2());
-                } catch (Exception e) {
-                    log.error("Recipe2 processing failed: {}, message: {}", page.getRecipe2(), e.getMessage());
-                    formatRecipe(buffer, page.getRecipe2());
-                }
-            }
+            formatRecipe(buffer, page.getRecipe2());
         }
     }
 
@@ -521,7 +507,10 @@ public class PageRenderer {
             if (mapData.containsKey("item")) {
                 return textureRenderer.getItemImage((String) mapData.get("item"), true);
             } else if (mapData.containsKey("tag")) {
-                return textureRenderer.getItemImage("#" + mapData.get("tag"), true);
+                String tagId = String.valueOf(mapData.get("tag"));
+                return ItemImageResult.emiTag(
+                        tagId,
+                        localizationManager.translateWithArgs(I18n.TAG, "#" + tagId));
             } else if (mapData.containsKey("type")) {
                 String type = (String) mapData.get("type");
                 switch (type) {

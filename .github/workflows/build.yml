@@ -119,14 +119,14 @@ jobs:
             hmc-${{ env.MC_VERSION }}-forge-
             hmc-${{ env.MC_VERSION }}-
 
-      - name: Restore guide-export world save
+      - name: Restore emi-export world save
         id: world-restore
         uses: actions/cache/restore@v4
         with:
-          path: ${{ env.MODPACK_DIR }}/saves/guide-export
-          key: guide-export-${{ env.MC_VERSION }}-${{ hashFiles(format('{0}/pakku-lock.json', env.MODPACK_DIR)) }}
+          path: ${{ env.MODPACK_DIR }}/saves/emi-export
+          key: emi-export-${{ env.MC_VERSION }}-${{ hashFiles(format('{0}/pakku-lock.json', env.MODPACK_DIR)) }}
           restore-keys: |
-            guide-export-${{ env.MC_VERSION }}-
+            emi-export-${{ env.MC_VERSION }}-
 
       - name: Setup HeadlessMC
         run: bash scripts/ci-setup-hmc.sh
@@ -145,18 +145,18 @@ jobs:
             -DminecraftWebExport.runExportAndExit=true
             -DminecraftWebExport.export.outputDir=${{ env.EXPORT_ROOT }}
             -DminecraftWebExport.exportMode=scoped
-            -DminecraftWebExport.exportWorldName=guide-export
+            -DminecraftWebExport.exportWorldName=emi-export
             -DminecraftWebExport.exportWarmupTicks=${{ env.EXPORT_WARMUP }}
             -DminecraftWebExport.exportWorldDelayTicks=${{ env.EXPORT_WORLD_DELAY_TICKS }}
             -DminecraftWebExport.exportTimeoutSeconds=${{ env.EXPORT_TIMEOUT_SECONDS }}
             -Dfieldguide.exportMode=${{ env.FIELDGUIDE_EXPORT_MODE }}
         run: bash scripts/ci-launch-mc-export.sh
 
-      - name: Save guide-export world cache
+      - name: Save emi-export world cache
         if: success() && steps.world-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ${{ env.MODPACK_DIR }}/saves/guide-export
+          path: ${{ env.MODPACK_DIR }}/saves/emi-export
           key: ${{ steps.world-restore.outputs.cache-primary-key }}
 
       - name: Save HeadlessMC .minecraft
@@ -169,18 +169,8 @@ jobs:
       - name: Grant execute permission for Gradlew
         run: chmod +x gradlew
 
-      - name: Build CLI jar
-        run: ./gradlew :cli:jar --no-daemon
-
       - name: Build static site
-        run: |
-          rm -rf "${{ env.SITE_OUTPUT_DIR }}"
-          CLI_JAR=$(ls -t cli/build/libs/field-guide-tfg-*.jar cli/build/libs/field-guide-*.jar 2>/dev/null | head -1)
-          if [[ -z "$CLI_JAR" ]]; then
-            echo "::error::CLI jar not found under cli/build/libs/"
-            exit 1
-          fi
-          java -jar "$CLI_JAR" -i "${{ env.EXPORT_GUIDE }}" -o "${{ env.SITE_OUTPUT_DIR }}"
+        run: bash scripts/ci-build-site.sh
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

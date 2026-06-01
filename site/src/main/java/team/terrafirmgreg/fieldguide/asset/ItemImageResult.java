@@ -16,27 +16,39 @@ public class ItemImageResult {
     /** Export atlas sprites via {@code *-icons.css}; single icon or carousel frames. */
     private final List<IconRef> atlasIcons;
 
+    /** EMI tag slot ({@code data-tag-id}) when set. */
+    private final String emiTagId;
+
     public ItemImageResult(String path, String name, String key) {
-        this(path, name, key, null);
+        this(path, name, key, null, null);
     }
 
-    private ItemImageResult(String path, String name, String key, List<IconRef> atlasIcons) {
+    private ItemImageResult(String path, String name, String key, List<IconRef> atlasIcons, String emiTagId) {
         this.path = path;
         this.name = name;
         this.key = key;
         this.atlasIcons = atlasIcons;
+        this.emiTagId = emiTagId;
     }
 
     public static ItemImageResult legacy(String path, String name, String key) {
-        return new ItemImageResult(path, name, key, null);
+        return new ItemImageResult(path, name, key, null, null);
     }
 
     public static ItemImageResult atlas(IconRef ref, String name, String key) {
-        return new ItemImageResult(null, name, key, List.of(ref));
+        return new ItemImageResult(null, name, key, List.of(ref), null);
     }
 
     public static ItemImageResult atlasCarousel(List<IconRef> refs, String name, String key) {
-        return new ItemImageResult(null, name, key, List.copyOf(refs));
+        return new ItemImageResult(null, name, key, List.copyOf(refs), null);
+    }
+
+    public static ItemImageResult emiTag(String tagId, String name) {
+        return new ItemImageResult(null, name, null, null, tagId);
+    }
+
+    public boolean isEmiTag() {
+        return emiTagId != null && !emiTagId.isBlank();
     }
 
     public boolean isAtlas() {

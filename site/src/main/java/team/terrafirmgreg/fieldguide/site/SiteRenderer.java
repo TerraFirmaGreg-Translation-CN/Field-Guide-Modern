@@ -104,16 +104,19 @@ public class SiteRenderer {
     }
 
     public void copyGeneratedIcons(Path exportRoot) throws IOException {
-        Path generated = exportRoot.resolve("generated");
-        if (!Files.isDirectory(generated)) {
-            log.warn("No generated/ icons under {}", exportRoot);
+        Path assetsIcons = exportRoot.resolve("assets/icons");
+        Path legacyGenerated = exportRoot.resolve("generated");
+        Path srcIcons = Files.isDirectory(assetsIcons) ? assetsIcons : legacyGenerated.resolve("icons");
+        if (!Files.isDirectory(srcIcons)) {
+            log.warn("No handbook icons under {} (expected assets/icons or generated/icons)", exportRoot);
             return;
         }
-        Path dest = Paths.get(outputRootDir, "generated");
-        if (Files.exists(dest)) {
-            FileUtils.deleteDirectory(dest.toFile());
+        Path destIcons = Paths.get(outputRootDir, "generated", "icons");
+        if (Files.exists(destIcons)) {
+            FileUtils.deleteDirectory(destIcons.toFile());
         }
-        FileUtils.copyDirectory(generated.toFile(), dest.toFile());
+        FileUtils.copyDirectory(srcIcons.toFile(), destIcons.toFile());
+        log.info("Copied handbook icons to {}", destIcons);
     }
 
     private void copyResourceDir(String resourceName, Path dest) throws IOException {

@@ -18,6 +18,7 @@ gh release download "$FGE_TAG" \
 mkdir -p "$MP/mods"
 find "$MP/mods" -maxdepth 1 -name 'field-guide-export*.jar' -delete
 find "$MP/mods" -maxdepth 1 -name 'field-guide-forge*.jar' -delete
+find "$MP/mods" -maxdepth 1 -name 'fieldguide*.jar' -delete
 
 jar=$(ls field-guide-export-*.jar | head -1)
 if [[ -z "$jar" ]]; then

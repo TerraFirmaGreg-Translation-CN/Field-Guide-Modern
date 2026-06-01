@@ -27,6 +27,13 @@ public final class IconMarkup {
         if (icon == null) {
             return "";
         }
+        if (icon.isEmiTag()) {
+            String title = icon.getName() != null ? icon.getName() : icon.getEmiTagId();
+            return String.format(
+                    "<span class=\"emi-slot emi-handbook-tag\" data-tag-id=\"%s\" title=\"%s\"></span>",
+                    escapeAttr(icon.getEmiTagId()),
+                    escapeAttr(title));
+        }
         if (icon.isAtlas()) {
             return atlasHtml(icon, extraClass);
         }

@@ -1,0 +1,469 @@
+@font-face {
+  font-family: Minecraftia;
+  font-style: normal;
+  font-weight: 400;
+  src: local('Minecraftia'), url('https://fonts.cdnfonts.com/s/31977/Minecraftia.woff') format('woff');
+}
+
+
+:root {
+  --border: #3a3a44;
+  --panel: #25252b;
+  --text: #e8e8ec;
+  --muted: #9a9aa8;
+  --slot-hover: #6cb6ff;
+}
+
+.emi-recipe {
+  display: block;
+  box-sizing: border-box;
+}
+
+.emi-recipe-pending {
+  min-width: 120px;
+  min-height: 88px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border, #3a3a44);
+  border-radius: 4px;
+}
+
+.emi-recipe-error {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  color: #f88;
+  text-align: center;
+}
+
+.emi-recipe-stage {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.emi-recipe-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform: scale(var(--emi-scale, 2));
+  transform-origin: top left;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-nine-patch {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.emi-nine-patch-cell {
+  position: absolute;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-recipe-content {
+  position: absolute;
+  pointer-events: none;
+}
+
+.emi-layer,
+.emi-slot,
+.emi-text {
+  position: absolute;
+  pointer-events: none;
+}
+
+.emi-slot {
+  pointer-events: auto;
+}
+
+.emi-layer-chrome img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.emi-layer-texture {
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.emi-slot {
+  cursor: default;
+  box-sizing: border-box;
+}
+
+.emi-slot-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-slot-icon {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.emi-slot-count {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  font-size: 8px;
+  line-height: 1;
+  font-family: Minecraftia, Minecraft, monospace;
+  font-weight: normal;
+  color: #fff;
+  text-shadow: 1px 1px 0 #3f3f3f;
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.emi-slot-count-fluid {
+  right: 0;
+  bottom: 1px;
+  font-size: 5px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* EMI widgets.png (0, 252) 4×4 — tag inputs with multiple variants */
+.emi-slot-tag-mark {
+  position: absolute;
+  left: 1px;
+  top: 13px;
+  width: 4px;
+  height: 4px;
+  background-repeat: no-repeat;
+  background-size: 256px 256px;
+  background-position: 0 -252px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* EMI widgets.png remainder / catalyst marks (top-right of slot) */
+.emi-slot-remainder-mark {
+  position: absolute;
+  left: 13px;
+  top: 1px;
+  width: 4px;
+  height: 4px;
+  background-repeat: no-repeat;
+  background-size: 256px 256px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.emi-slot-remainder-mark-other {
+  background-position: -4px -252px;
+}
+
+.emi-slot-remainder-mark-self {
+  background-position: -12px -252px;
+}
+
+.emi-slot-icon .icon-atlas {
+  width: 32px;
+  height: 32px;
+  display: block;
+  transform: scale(0.5);
+  transform-origin: top left;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-slot-icon .item-icon-atlas,
+.emi-slot-icon .fluid-icon-atlas {
+  width: 16px;
+  height: 16px;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-slot-icon .block-item-icon-atlas {
+  width: 64px;
+  height: 64px;
+  display: block;
+  transform: scale(0.25);
+  transform-origin: top left;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emi-slot-carousel.icon-carousel {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.emi-slot-carousel.icon-carousel > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.icon-carousel > span {
+  display: none;
+}
+
+.icon-carousel > span.icon-carousel-active {
+  display: block;
+}
+
+.icon-carousel > .icon-atlas,
+.icon-carousel > .item-icon-atlas,
+.icon-carousel > .fluid-icon-atlas,
+.icon-carousel > .block-item-icon-atlas {
+  display: none;
+}
+
+.icon-carousel > .icon-atlas.icon-carousel-active,
+.icon-carousel > .item-icon-atlas.icon-carousel-active,
+.icon-carousel > .fluid-icon-atlas.icon-carousel-active,
+.icon-carousel > .block-item-icon-atlas.icon-carousel-active {
+  display: block;
+}
+
+.emi-layer-chrome {
+  z-index: 0;
+}
+
+.emi-slot,
+.emi-tank {
+  z-index: 2;
+}
+
+.emi-tank-inner {
+  overflow: hidden;
+}
+
+.emi-tank-fluid {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.emi-tank-fluid .emi-tank-fluid-tile.icon-atlas {
+  width: 32px;
+  height: 32px;
+  transform: scale(0.5);
+  transform-origin: top left;
+  display: block;
+}
+
+.emi-slot-empty {
+  pointer-events: none;
+  cursor: default;
+}
+
+.emi-slot:not(.emi-slot-empty):hover,
+.emi-slot:not(.emi-slot-empty):focus-visible {
+  outline: 2px solid var(--slot-hover);
+  outline-offset: -1px;
+  z-index: 10;
+}
+
+.emi-text {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 #333;
+}
+
+#tooltip {
+  position: fixed;
+  z-index: 1200;
+  max-width: 320px;
+  padding: 8px 10px;
+  background: rgba(16, 16, 20, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  pointer-events: none;
+  display: none;
+  line-height: 1.4;
+}
+
+.emi-slot-tag-input {
+  cursor: pointer;
+}
+
+/* EMI tag recipe popover (EmiTagRecipe / EmiIngredientRecipe layout) */
+.tag-popover {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.tag-popover[hidden] {
+  display: none !important;
+}
+
+.tag-popover-panel {
+  margin-top: min(10vh, 48px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  max-width: min(calc(100vw - 32px), calc(16 * 36px + 28px));
+}
+
+.tag-popover-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tag-popover-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.tag-popover-emi-id {
+  margin-top: 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.tag-popover-stage-wrap {
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  background: #1e1e24;
+}
+
+.tag-popover-stage {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tag-popover-root {
+  position: relative;
+  transform: scale(var(--emi-scale, 2));
+  transform-origin: top left;
+  image-rendering: pixelated;
+}
+
+.tag-popover-body {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.tag-popover-root .emi-nine-patch {
+  z-index: 0;
+}
+
+.tag-popover-featured-slot {
+  position: absolute;
+  left: 63px;
+  top: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.tag-popover-grid {
+  position: absolute;
+  left: 0;
+  top: 24px;
+  width: 144px;
+}
+
+.tag-popover-grid .tag-popover-slot {
+  position: absolute;
+}
+
+.tag-popover-slot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.tag-popover-slot .emi-slot-inner {
+  width: 18px;
+  height: 18px;
+}
+
+.tag-popover-slot .emi-slot-icon {
+  left: 1px;
+  top: 1px;
+}
+
+.tag-popover-slot .emi-slot-icon .icon-atlas {
+  width: 32px;
+  height: 32px;
+  display: block;
+  transform: scale(0.5);
+  transform-origin: top left;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.tag-popover-grid-slot {
+  cursor: default;
+}
+
+.tag-popover-grid-slot:hover,
+.tag-popover-grid-slot:focus-visible {
+  outline: 2px solid var(--slot-hover);
+  outline-offset: -1px;
+  z-index: 2;
+}
+
+.tag-popover-empty {
+  margin: 32px 8px 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.tag-popover-footer {
+  padding: 10px 14px 12px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  word-break: break-all;
+  background: #1a1a1e;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 720px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 40vh 1fr;
+  }
+
+  #list-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}

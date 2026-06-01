@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Reads {@code generated/icons/index.json} (unified 32×32 atlas). Falls back to legacy
- * {@code items/}, {@code block-items/}, {@code fluids/} directories when present.
+ * Reads {@code assets/icons/index.json} (handbook atlas) or legacy {@code generated/icons/}.
+ * Falls back to per-kind {@code items/}, {@code block-items/}, {@code fluids/} when present.
  */
 @Slf4j
 public class IconCatalog implements IconLookup {
@@ -24,6 +24,7 @@ public class IconCatalog implements IconLookup {
     private static final String UNIFIED_KIND = "icons";
 
     private final Path exportRoot;
+    private final Path iconsRoot;
     private final Map<String, SpritePlacement> unified;
     private final Map<String, SpritePlacement> legacyItems;
     private final Map<String, SpritePlacement> legacyBlockItems;
@@ -34,12 +35,14 @@ public class IconCatalog implements IconLookup {
 
     private IconCatalog(
             Path exportRoot,
+            Path iconsRoot,
             Map<String, SpritePlacement> unified,
             Map<String, SpritePlacement> legacyItems,
             Map<String, SpritePlacement> legacyBlockItems,
             Map<String, SpritePlacement> legacyFluids,
             MissingIconReport missingReport) {
         this.exportRoot = exportRoot;
+        this.iconsRoot = iconsRoot;
         this.unified = unified;
         this.legacyItems = legacyItems;
         this.legacyBlockItems = legacyBlockItems;
@@ -52,10 +55,12 @@ public class IconCatalog implements IconLookup {
     }
 
     public static IconCatalog load(Path exportRoot, MissingIconReport missingReport) {
-        Map<String, SpritePlacement> unified = loadAtlas(exportRoot, UNIFIED_KIND);
+        Path iconsRoot = resolveIconsRoot(exportRoot);
+        Map<String, SpritePlacement> unified = loadAtlasIndex(iconsRoot);
         boolean useLegacy = unified.isEmpty();
         return new IconCatalog(
                 exportRoot,
+                iconsRoot,
                 unified,
                 useLegacy ? loadAtlas(exportRoot, "items") : Map.of(),
                 useLegacy ? loadAtlas(exportRoot, "block-items") : Map.of(),
@@ -63,11 +68,31 @@ public class IconCatalog implements IconLookup {
                 missingReport);
     }
 
+    private static Path resolveIconsRoot(Path exportRoot) {
+        Path assetsIcons = exportRoot.resolve("assets/icons");
+        if (Files.isRegularFile(assetsIcons.resolve("index.json"))) {
+            return assetsIcons;
+        }
+        return exportRoot.resolve("generated").resolve(UNIFIED_KIND);
+    }
+
+    private static Map<String, SpritePlacement> loadAtlasIndex(Path iconsRoot) {
+        Path indexFile = iconsRoot.resolve("index.json");
+        if (!Files.isRegularFile(indexFile)) {
+            return Map.of();
+        }
+        return readIndexFile(indexFile);
+    }
+
     private static Map<String, SpritePlacement> loadAtlas(Path exportRoot, String kind) {
         Path indexFile = exportRoot.resolve("generated").resolve(kind).resolve("index.json");
         if (!Files.isRegularFile(indexFile)) {
             return Map.of();
         }
+        return readIndexFile(indexFile);
+    }
+
+    private static Map<String, SpritePlacement> readIndexFile(Path indexFile) {
         try {
             String json = Files.readString(indexFile);
             Map<String, Object> root = JsonUtils.GSON.fromJson(json, INDEX_TYPE.getType());
@@ -131,7 +156,7 @@ public class IconCatalog implements IconLookup {
     }
 
     public BufferedImage cropSprite(IconRef ref) throws IOException {
-        Path atlas = exportRoot.resolve("generated").resolve(ref.atlasKind()).resolve(ref.atlasFileName());
+        Path atlas = iconsRoot.resolve(ref.atlasFileName());
         BufferedImage sheet = ImageIO.read(atlas.toFile());
         int size = ref.cellSize();
         BufferedImage out = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);

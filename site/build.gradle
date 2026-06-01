@@ -49,3 +49,27 @@ test {
     }
     reports.html.required = false
 }
+
+jar {
+    archiveBaseName = 'field-guide-site'
+    manifest {
+        attributes('Main-Class': 'team.terrafirmgreg.fieldguide.site.SiteGenerator')
+    }
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+jar {
+    archiveBaseName = 'field-guide-site'
+    manifest {
+        attributes('Main-Class': 'team.terrafirmgreg.fieldguide.site.SiteGenerator')
+    }
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

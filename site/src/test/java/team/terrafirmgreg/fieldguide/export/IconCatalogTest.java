@@ -12,7 +12,7 @@ class IconCatalogTest {
 
     @Test
     void resolvesUnifiedIcon(@TempDir Path root) throws Exception {
-        Path iconsDir = root.resolve("generated/icons");
+        Path iconsDir = root.resolve("assets/icons");
         Files.createDirectories(iconsDir);
         Files.writeString(iconsDir.resolve("index.json"), """
                 {
@@ -35,7 +35,7 @@ class IconCatalogTest {
 
     @Test
     void recordsMissingIcons(@TempDir Path root) throws Exception {
-        Path iconsDir = root.resolve("generated/icons");
+        Path iconsDir = root.resolve("assets/icons");
         Files.createDirectories(iconsDir);
         Files.writeString(iconsDir.resolve("index.json"), """
                 {
