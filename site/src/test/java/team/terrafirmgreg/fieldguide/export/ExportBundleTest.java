@@ -35,6 +35,9 @@ class ExportBundleTest {
         Path export = Path.of(System.getProperty("guide.export.dir"));
         ExportBundle bundle = ExportBundle.open(export);
         assertTrue(bundle.getRecipes().size() > 0, "expected recipes in real export");
-        assertTrue(Files.isDirectory(bundle.getExportRoot().resolve("generated")));
+        assertTrue(
+                Files.isDirectory(bundle.getExportRoot().resolve("assets/icons"))
+                        || Files.isDirectory(bundle.getExportRoot().resolve("generated/icons")),
+                "expected handbook icon atlas under assets/icons or legacy generated/icons");
     }
 }

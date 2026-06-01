@@ -192,8 +192,8 @@ public class IconCatalog implements IconLookup {
         return missingReport;
     }
 
-    public Path generatedDir() {
-        return exportRoot.resolve("generated");
+    public Path handbookIconsDir() {
+        return resolveIconsRoot(exportRoot);
     }
 
     private record SpritePlacement(int cellSize, int page, int x, int y) {

@@ -67,7 +67,7 @@ public class ItemImageResult {
         return getAtlasIcons().get(0);
     }
 
-    /** Path for og:image / preview (site-root relative, e.g. {@code generated/items/atlas-000.png}). */
+    /** Path for og:image / preview (site-root relative, e.g. {@code assets/icons/atlas-000.png}). */
     public String previewPath() {
         if (isAtlas()) {
             return primaryAtlas().relativeAtlasPath();

@@ -1,0 +1,8 @@
+{
+  "name": "field-guide-site",
+  "private": true,
+  "description": "Static handbook site; emi-recipe-renderer is loaded from CDN at runtime (version pin below).",
+  "dependencies": {
+    "emi-recipe-renderer": "^0.5.5"
+  }
+}

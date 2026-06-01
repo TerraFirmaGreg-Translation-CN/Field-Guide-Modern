@@ -8,9 +8,12 @@ import team.terrafirmgreg.fieldguide.data.patchouli.Book;
 import team.terrafirmgreg.fieldguide.data.patchouli.BookCategory;
 import team.terrafirmgreg.fieldguide.data.patchouli.BookEntry;
 import team.terrafirmgreg.fieldguide.gson.JsonUtils;
+import team.terrafirmgreg.fieldguide.asset.ItemImageResult;
 import team.terrafirmgreg.fieldguide.localization.I18n;
 import team.terrafirmgreg.fieldguide.localization.Language;
 import team.terrafirmgreg.fieldguide.localization.LocalizationManager;
+import team.terrafirmgreg.fieldguide.render.IconMarkup;
+import team.terrafirmgreg.fieldguide.render.TextureRenderer;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -24,6 +27,10 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class SiteRenderer {
+
+    /** Keep in sync with {@code site/package.json} → {@code emi-recipe-renderer}. */
+    public static final String EMI_RENDERER_VERSION = "0.5.5";
+
     private static final Pattern SEARCH_STRIP_PATTERN = Pattern.compile("\\$\\([^)]*\\)");
 
     private final Configuration cfg;
@@ -44,13 +51,13 @@ public class SiteRenderer {
         cfg.setFallbackOnNullLoopVariable(false);
     }
 
-    public void generate(Book book) throws Exception {
+    public void generate(Book book, TextureRenderer textureRenderer) throws Exception {
         buildHomePage(book.getCategories());
         buildSearchPage(book.getCategories());
         saveSearchData(collectSearchTree(book.getCategories()));
 
         for (BookCategory category : book.getCategories()) {
-            buildCategoryPage(category, book.getCategories());
+            buildCategoryPage(category, book.getCategories(), textureRenderer);
         }
         log.info("Static site generated under {}", outputRootDir);
     }
@@ -105,15 +112,16 @@ public class SiteRenderer {
         log.info("Copied recipe UI images to {}/_images", outputRootDir);
     }
 
-    public void copyGeneratedIcons(Path exportRoot) throws IOException {
+    /** Copies {@code guide-export/assets/icons/} to site {@code assets/icons/}. */
+    public void copyHandbookIcons(Path exportRoot) throws IOException {
         Path assetsIcons = exportRoot.resolve("assets/icons");
-        Path legacyGenerated = exportRoot.resolve("generated");
-        Path srcIcons = Files.isDirectory(assetsIcons) ? assetsIcons : legacyGenerated.resolve("icons");
+        Path legacyGenerated = exportRoot.resolve("generated/icons");
+        Path srcIcons = Files.isDirectory(assetsIcons) ? assetsIcons : legacyGenerated;
         if (!Files.isDirectory(srcIcons)) {
-            log.warn("No handbook icons under {} (expected assets/icons or generated/icons)", exportRoot);
+            log.warn("No handbook icons under {} (expected assets/icons)", exportRoot);
             return;
         }
-        Path destIcons = Paths.get(outputRootDir, "generated", "icons");
+        Path destIcons = Paths.get(outputRootDir, "assets", "icons");
         if (Files.exists(destIcons)) {
             FileUtils.deleteDirectory(destIcons.toFile());
         }
@@ -214,7 +222,11 @@ public class SiteRenderer {
                 searchTree);
     }
 
-    public void buildCategoryPage(BookCategory cat, List<BookCategory> categories) throws IOException, TemplateException {
+    public void buildCategoryPage(BookCategory cat, List<BookCategory> categories, TextureRenderer textureRenderer)
+            throws IOException, TemplateException {
+        for (BookEntry entry : cat.getEntries()) {
+            refreshCategoryCardIcon(entry, textureRenderer);
+        }
         Map<String, Object> data = basePageData("..");
         data.put("long_title", cat.getName() + " | " + localizationManager.translate(I18n.SHORT_TITLE));
         data.put("short_description", cat.getName());
@@ -223,6 +235,18 @@ public class SiteRenderer {
         data.put("current_category", cat);
         generatePage("category.ftl", cat.getId() + ".html", data);
         buildEntryPages(cat, categories);
+    }
+
+    /** Category pages live one level shallower than entry pages; card icons need {@code ../} not {@code ../../}. */
+    private void refreshCategoryCardIcon(BookEntry entry, TextureRenderer textureRenderer) {
+        try {
+            ItemImageResult itemSrc = textureRenderer.getItemImage(entry.getIcon(), false);
+            if (itemSrc != null) {
+                entry.setIconCardHtml(IconMarkup.img(itemSrc, "entry-card-icon me-2", "../"));
+            }
+        } catch (Exception e) {
+            log.warn("Category card icon skipped for {}: {}", entry.getId(), e.getMessage());
+        }
     }
 
     private void buildEntryPages(BookCategory cat, List<BookCategory> categories) throws IOException, TemplateException {
@@ -241,7 +265,9 @@ public class SiteRenderer {
 
     private Map<String, Object> basePageData(String root) {
         Map<String, Object> data = new HashMap<>();
-        data.put("generatedRoot", generatedRoot(root));
+        data.put("handbookIconsRoot", handbookIconsRoot(root));
+        data.put("emiRendererVersion", EMI_RENDERER_VERSION);
+        data.put("emiBundleRoot", root + "/emi");
         data.put("title", localizationManager.translate(I18n.TITLE));
         data.put("long_title", localizationManager.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
         data.put("short_description", localizationManager.translate(I18n.HOME));
@@ -260,8 +286,9 @@ public class SiteRenderer {
         return SEARCH_STRIP_PATTERN.matcher(input).replaceAll("");
     }
 
-    private static String generatedRoot(String root) {
-        return root + "/../generated";
+    /** {@code root} is the path from the page back to the site root (e.g. {@code ..} or {@code ../..}). */
+    private static String handbookIconsRoot(String root) {
+        return root + "/assets/icons";
     }
 
     private static String cleanImagePath(String iconPath) {

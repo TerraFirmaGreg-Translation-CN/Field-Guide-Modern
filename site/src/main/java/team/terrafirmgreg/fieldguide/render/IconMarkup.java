@@ -4,7 +4,7 @@ import team.terrafirmgreg.fieldguide.asset.ItemImageResult;
 import team.terrafirmgreg.fieldguide.export.IconRef;
 
 /**
- * HTML for export {@code *-icon-atlas} sprites (CSS under {@code generated/}).
+ * HTML for handbook {@code *-icon-atlas} sprites (CSS under {@code assets/icons/}).
  */
 public final class IconMarkup {
 
@@ -24,22 +24,40 @@ public final class IconMarkup {
     }
 
     public static String img(ItemImageResult icon, String extraClass) {
+        return img(icon, extraClass, ASSET_ROOT);
+    }
+
+    /**
+     * @param assetRoot path from the HTML file to the site root (e.g. {@code ../} on category pages,
+     *                  {@code ../../} on entry pages)
+     */
+    public static String img(ItemImageResult icon, String extraClass, String assetRoot) {
         if (icon == null) {
             return "";
         }
         if (icon.isEmiTag()) {
             String title = icon.getName() != null ? icon.getName() : icon.getEmiTagId();
-            return String.format(
-                    "<span class=\"emi-slot emi-handbook-tag\" data-tag-id=\"%s\" title=\"%s\"></span>",
+            String classes = "emi-slot emi-handbook-tag";
+            if (extraClass != null && !extraClass.isEmpty()) {
+                classes += " " + extraClass;
+            }
+            String slot = slotClass(scaleContext(extraClass));
+            String inner = String.format(
+                    "<span class=\"%s\" data-tag-id=\"%s\" title=\"%s\"></span>",
+                    classes,
                     escapeAttr(icon.getEmiTagId()),
                     escapeAttr(title));
+            if (!slot.isEmpty()) {
+                return "<span class=\"" + slot + "\">" + inner + "</span>";
+            }
+            return inner;
         }
         if (icon.isAtlas()) {
             return atlasHtml(icon, extraClass);
         }
         String classes = extraClass != null && !extraClass.isEmpty() ? extraClass : "";
         String classAttr = classes.isEmpty() ? "" : " class=\"" + classes + "\"";
-        return String.format("<img%s src=\"%s%s\" alt=\"\" />", classAttr, ASSET_ROOT, icon.getPath());
+        return String.format("<img%s src=\"%s%s\" alt=\"\" />", classAttr, assetRoot, icon.getPath());
     }
 
     private static String atlasHtml(ItemImageResult icon, String extraClass) {

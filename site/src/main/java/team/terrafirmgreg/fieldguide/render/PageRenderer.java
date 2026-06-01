@@ -639,7 +639,10 @@ public class PageRenderer {
         try {
             for (PageSpotlightItem item : items) {
                 if ("tag".equals(item.getType())) {
-                    ItemImageResult itemResult = textureRenderer.getItemImage("#" + item.getText(), false);
+                    String tagId = item.getText();
+                    ItemImageResult itemResult = ItemImageResult.emiTag(
+                            tagId,
+                            localizationManager.translateWithArgs(I18n.TAG, "#" + tagId));
                     formatTitleWithIcon(entry, buffer, itemResult, page.getTitle());
                 } else {
                     ItemImageResult itemResult = textureRenderer.getItemImage(item.getText(), false);

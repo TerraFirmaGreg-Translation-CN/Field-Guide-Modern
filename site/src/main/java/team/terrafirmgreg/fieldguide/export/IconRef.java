@@ -20,9 +20,9 @@ public record IconRef(
         return "atlas-%03d.png".formatted(page);
     }
 
-    /** Path relative to each language directory, e.g. {@code generated/icons/atlas-000.png}. */
+    /** Path relative to site root, e.g. {@code assets/icons/atlas-000.png}. */
     public String relativeAtlasPath() {
-        return "generated/" + atlasKind + "/" + atlasFileName();
+        return "assets/icons/" + atlasFileName();
     }
 
     /** CSS for {@code <img src="...atlas.png" style="...">} sprite slice. */

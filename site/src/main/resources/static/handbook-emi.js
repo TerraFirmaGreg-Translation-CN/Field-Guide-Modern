@@ -1,11 +1,15 @@
 /**
- * Mount EMI recipe cards and tag popovers on handbook pages.
- * Requires {@code ../../emi/} bundle copied next to the static site root.
+ * Mounts {@code .emi-recipe} placeholders using emi-recipe-renderer (CDN).
+ * Expects {@code <meta name="emi-bundle-root">} from entry.ftl and export {@code emi/} beside the site root.
  */
 (function () {
   'use strict';
 
-  function emiBaseUrl() {
+  function emiBundleBaseUrl() {
+    var meta = document.querySelector('meta[name="emi-bundle-root"]');
+    if (meta && meta.content) {
+      return new URL(meta.content, window.location.href).href;
+    }
     return new URL('../../emi/', window.location.href).href;
   }
 
@@ -16,7 +20,7 @@
       return;
     }
     var renderer = new Renderer({
-      baseUrl: emiBaseUrl(),
+      baseUrl: emiBundleBaseUrl(),
       injectIconStylesheets: true,
     });
     renderer.mountAll({ root: document });

@@ -35,7 +35,7 @@ img.recipe-preview {
     image-rendering: pixelated;
 }
 
-/* Export atlas sprites (see generated/*/.*-icons.css) */
+/* Handbook icon atlas sprites (see assets/icons/icons.css) */
 .icon-carousel {
     position: relative;
     display: inline-block;

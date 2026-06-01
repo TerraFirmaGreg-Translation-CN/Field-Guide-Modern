@@ -19,7 +19,10 @@ import team.terrafirmgreg.fieldguide.render.PageRenderer;
 import team.terrafirmgreg.fieldguide.render.TextFormatter;
 import team.terrafirmgreg.fieldguide.render.TextureRenderer;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -73,7 +76,8 @@ public class SiteGenerator implements Callable<Integer> {
         SiteRenderer siteRenderer = new SiteRenderer(l10n, output.toString());
 
         siteRenderer.copyStaticFiles();
-        siteRenderer.copyGeneratedIcons(export);
+        copyExportAssets(export, output);
+        siteRenderer.copyHandbookIcons(export);
 
         Book fallback = bundle.getBooks().loadBook(FIELD_GUIDE);
         List<Language> languages = resolveLanguages(bundle);
@@ -82,7 +86,7 @@ public class SiteGenerator implements Callable<Integer> {
                     ? fallback
                     : bundle.getBooks().loadBook(FIELD_GUIDE, lang, fallback);
             prepare(book, l10n, textureRenderer, pageRenderer);
-            siteRenderer.generate(book);
+            siteRenderer.generate(book, textureRenderer);
         }
 
         log.info("Site generation complete: {}", output);
@@ -142,6 +146,17 @@ public class SiteGenerator implements Callable<Integer> {
         List<String> descriptionBuffer = new ArrayList<>();
         TextFormatter.formatText(descriptionBuffer, category.getDescription(), localizationManager);
         category.setDescription(String.join("", descriptionBuffer));
+    }
+
+    private static void copyExportAssets(Path exportRoot, Path outputRoot) throws IOException {
+        Path src = exportRoot.resolve("assets");
+        if (!Files.isDirectory(src)) {
+            log.warn("No assets/ under export — book textures may 404");
+            return;
+        }
+        Path dest = outputRoot.resolve("assets");
+        FileUtils.copyDirectory(src.toFile(), dest.toFile());
+        log.info("Copied export assets/ to {}", dest);
     }
 
     private void prepareEntry(BookEntry entry, TextureRenderer textureRenderer) {
