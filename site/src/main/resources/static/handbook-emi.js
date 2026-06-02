@@ -14,6 +14,10 @@
   }
 
   function pageLocale() {
+    var meta = document.querySelector('meta[name="emi-locale"]');
+    if (meta && meta.content) {
+      return meta.content.trim().toLowerCase().replace(/-/g, '_');
+    }
     var match = window.location.pathname.match(/\/([a-z]{2}_[a-z]{2})\//i);
     return match ? match[1].toLowerCase() : 'en_us';
   }
@@ -33,19 +37,36 @@
       locale: pageLocale(),
     };
 
+    var renderer;
+    var bundleIndex;
     try {
-      await Renderer.mountAll({
-        baseUrl: rendererOpts.baseUrl,
-        injectIconStylesheets: rendererOpts.injectIconStylesheets,
-        locale: rendererOpts.locale,
-        root: document,
-      });
+      renderer = new Renderer(rendererOpts);
+      bundleIndex = await renderer.loadIndex();
+      if (typeof renderer.ensureRegistryLabels === 'function') {
+        await renderer.ensureRegistryLabels();
+      }
+      if (typeof renderer.ensureItemNameKeys === 'function') {
+        await renderer.ensureItemNameKeys();
+      }
+      var recipeEls = document.querySelectorAll('.emi-recipe[data-recipe-id]');
+      for (var i = 0; i < recipeEls.length; i++) {
+        var el = recipeEls[i];
+        var recipeId = (el.dataset.recipeId || '').trim();
+        if (!recipeId) {
+          continue;
+        }
+        try {
+          await Renderer._mountOne(renderer, bundleIndex, el, recipeId);
+        } catch (mountErr) {
+          console.warn('handbook-emi: recipe mount failed', recipeId, mountErr);
+        }
+      }
     } catch (err) {
-      console.error('handbook-emi: mountAll failed', err);
+      console.error('handbook-emi: EMI init failed', err);
       return;
     }
 
-    var tagRenderer = new Renderer(rendererOpts);
+    var tagRenderer = renderer || new Renderer(rendererOpts);
     document.querySelectorAll('.emi-handbook-tag[data-tag-id]').forEach(function (el) {
       el.addEventListener('click', function (event) {
         event.preventDefault();
