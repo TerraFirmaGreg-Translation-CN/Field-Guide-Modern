@@ -1,12 +1,19 @@
+# Build :site from export artifacts and publish GitHub Pages.
+# dev: Deploy only after a successful Export on the same branch (workflow_run).
+# main: same, plus push below for site-only hotfixes without re-export.
 name: Deploy Pages
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main"]
     paths:
       - "site/**"
       - "core/**"
-      - "scripts/**"
+      - "scripts/ci-build-site.sh"
+      - "scripts/ci-fetch-export-bundle.sh"
+      - "scripts/ci-extract-export-bundle.sh"
+      - "scripts/ci-resolve-bundle-id.sh"
+      - "scripts/ci-verify-guide-export.sh"
       - "ci/**"
       - "gradle.properties"
       - "settings.gradle"
@@ -35,8 +42,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:

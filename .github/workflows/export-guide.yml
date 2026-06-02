@@ -1,16 +1,13 @@
+# Game export (FGE + MWE) → artifacts for :site. Typical run ~5–8 min on warm cache.
+# dev/main push (except docs) → Export; success triggers Deploy Pages via workflow_run.
 name: Export handbook bundle
 
 on:
   push:
-    branches: ["dev"]
-    paths:
-      - "scripts/**"
-      - "ci/**"
-      - "gradle.properties"
-      - "settings.gradle"
-      - "build.gradle"
-      - "gradle/**"
-      - ".github/workflows/export-guide.yml"
+    branches: ["dev", "main"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
   workflow_dispatch:
     inputs:
       modpack_tag:
@@ -36,8 +33,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: export-handbook-bundle
-  cancel-in-progress: false
+  group: export-handbook-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   export:
