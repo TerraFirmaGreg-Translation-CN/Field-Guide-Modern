@@ -2,7 +2,7 @@ name: Deploy Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
     paths:
       - "site/**"
       - "core/**"
@@ -26,7 +26,7 @@ on:
   workflow_run:
     workflows: ["Export handbook bundle"]
     types: [completed]
-    branches: ["main"]
+    branches: ["main", "dev"]
 
 permissions:
   contents: read

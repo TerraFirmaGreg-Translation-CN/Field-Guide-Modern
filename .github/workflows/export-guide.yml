@@ -1,6 +1,16 @@
 name: Export handbook bundle
 
 on:
+  push:
+    branches: ["dev"]
+    paths:
+      - "scripts/**"
+      - "ci/**"
+      - "gradle.properties"
+      - "settings.gradle"
+      - "build.gradle"
+      - "gradle/**"
+      - ".github/workflows/export-guide.yml"
   workflow_dispatch:
     inputs:
       modpack_tag:

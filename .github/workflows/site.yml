@@ -1,8 +1,8 @@
-name: Build Field Guide Site
+# Legacy: in-game export via forge mod (closure mode). Superseded by export-guide.yml + deploy-pages.yml.
+name: Build Field Guide Site (legacy forge)
 
 on:
-  push:
-    branches: ["dev"]
+  workflow_dispatch:
 
 env:
   # GHA ${{ env.HOME }} is empty unless set here; shell $HOME is /home/runner on ubuntu-latest.
