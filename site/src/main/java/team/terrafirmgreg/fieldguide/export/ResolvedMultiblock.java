@@ -9,12 +9,30 @@ import java.util.Map;
 public record ResolvedMultiblock(
         String id,
         String source,
-        List<String> pattern,
+        List<List<String>> pattern,
         Map<String, String> mapping,
+        Map<String, Map<String, Object>> exportMapping,
         List<Map<String, Object>> blockstates,
         String error) {
 
     public boolean isOk() {
-        return error == null && pattern != null && !pattern.isEmpty();
+        return error == null
+                && (!exportMapping().isEmpty() || (mapping != null && !mapping.isEmpty()));
+    }
+
+    public boolean hasPattern() {
+        return pattern != null && !pattern.isEmpty();
+    }
+
+    public String[][] toPatternArray() {
+        if (pattern == null || pattern.isEmpty()) {
+            return new String[0][];
+        }
+        String[][] out = new String[pattern.size()][];
+        for (int i = 0; i < pattern.size(); i++) {
+            List<String> layer = pattern.get(i);
+            out[i] = layer != null ? layer.toArray(String[]::new) : new String[0];
+        }
+        return out;
     }
 }

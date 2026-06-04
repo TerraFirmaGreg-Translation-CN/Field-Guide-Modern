@@ -69,39 +69,68 @@ public class MultiblockRegistry {
         String id = stringVal(entry.get("id"));
         String source = stringVal(entry.get("source"));
         String error = stringVal(entry.get("error"));
-        List<String> pattern = patternFromEntry(entry);
-        Map<String, String> mapping = mappingFromEntry(entry.get("mapping"));
+        List<List<String>> pattern = patternFromEntry(entry.get("pattern"));
+        Map<String, Map<String, Object>> exportMapping = exportMappingFromEntry(entry.get("mapping"));
+        Map<String, String> flatMapping = flatMappingFromExport(exportMapping);
         List<Map<String, Object>> blockstates = blockstatesFromEntry(entry.get("blockstates"));
-        return new ResolvedMultiblock(id, source, pattern, mapping, blockstates, error);
+        return new ResolvedMultiblock(id, source, pattern, flatMapping, exportMapping, blockstates, error);
     }
 
     @SuppressWarnings("unchecked")
-    private static List<String> patternFromEntry(Map<String, Object> entry) {
-        Object pattern = entry.get("pattern");
-        if (pattern instanceof List<?> list) {
-            List<String> lines = new ArrayList<>();
-            for (Object line : list) {
-                if (line != null) {
-                    lines.add(line.toString());
-                }
-            }
-            return List.copyOf(lines);
+    private static List<List<String>> patternFromEntry(Object patternObj) {
+        if (!(patternObj instanceof List<?> layers)) {
+            return List.of();
         }
-        return List.of();
+        List<List<String>> out = new ArrayList<>();
+        for (Object layer : layers) {
+            if (layer instanceof List<?> rows) {
+                List<String> zRows = new ArrayList<>();
+                for (Object row : rows) {
+                    if (row != null) {
+                        zRows.add(row.toString());
+                    }
+                }
+                out.add(List.copyOf(zRows));
+            } else if (layer != null) {
+                out.add(List.of(layer.toString()));
+            }
+        }
+        return List.copyOf(out);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, String> mappingFromEntry(Object mappingObj) {
+    private static Map<String, Map<String, Object>> exportMappingFromEntry(Object mappingObj) {
         if (!(mappingObj instanceof Map<?, ?> raw)) {
             return Map.of();
         }
-        Map<String, String> mapping = new LinkedHashMap<>();
+        Map<String, Map<String, Object>> mapping = new LinkedHashMap<>();
         for (Map.Entry<?, ?> e : raw.entrySet()) {
-            if (e.getKey() != null && e.getValue() != null) {
-                mapping.put(e.getKey().toString(), e.getValue().toString());
+            if (e.getKey() == null || e.getValue() == null) {
+                continue;
+            }
+            String key = e.getKey().toString();
+            if (e.getValue() instanceof Map<?, ?> valueMap) {
+                Map<String, Object> copy = new LinkedHashMap<>();
+                valueMap.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                mapping.put(key, Map.copyOf(copy));
+            } else {
+                Map<String, Object> refOnly = new LinkedHashMap<>();
+                refOnly.put("ref", e.getValue().toString());
+                mapping.put(key, Map.copyOf(refOnly));
             }
         }
         return Map.copyOf(mapping);
+    }
+
+    private static Map<String, String> flatMappingFromExport(Map<String, Map<String, Object>> exportMapping) {
+        Map<String, String> flat = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Object>> e : exportMapping.entrySet()) {
+            Object ref = e.getValue().get("ref");
+            if (ref != null) {
+                flat.put(e.getKey(), ref.toString());
+            }
+        }
+        return Map.copyOf(flat);
     }
 
     @SuppressWarnings("unchecked")
@@ -138,11 +167,13 @@ public class MultiblockRegistry {
         if (pattern == null || pattern.isEmpty()) {
             return Optional.empty();
         }
+        List<List<String>> layers = List.of(List.copyOf(pattern));
         return Optional.of(new ResolvedMultiblock(
                 id,
                 "page_embedded",
-                List.copyOf(pattern),
+                layers,
                 mapping != null ? Map.copyOf(mapping) : Map.of(),
+                Map.of(),
                 List.of(),
                 null));
     }

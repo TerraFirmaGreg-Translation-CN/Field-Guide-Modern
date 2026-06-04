@@ -10,8 +10,10 @@ import team.terrafirmgreg.fieldguide.data.patchouli.BookCategory;
 import team.terrafirmgreg.fieldguide.data.patchouli.BookEntry;
 import team.terrafirmgreg.fieldguide.data.patchouli.BookPage;
 import team.terrafirmgreg.fieldguide.exception.InternalException;
+import team.terrafirmgreg.fieldguide.export.BlockstateRefResolver;
 import team.terrafirmgreg.fieldguide.export.ExportBundle;
 import team.terrafirmgreg.fieldguide.export.ExportModelLoader;
+import team.terrafirmgreg.fieldguide.export.MultiblockRenderResolver;
 import team.terrafirmgreg.fieldguide.localization.Language;
 import team.terrafirmgreg.fieldguide.localization.LocalizationManager;
 import team.terrafirmgreg.fieldguide.render.IconMarkup;
@@ -88,7 +90,12 @@ public class SiteGenerator implements Callable<Integer> {
         EmiRecipeIndex emiIndex = EmiRecipeIndex.load(emiRoot);
 
         ExportLocalizationManager l10n = new ExportLocalizationManager(bundle.getLangs());
-        TextureRenderer textureRenderer = new TextureRenderer(models, l10n, bundle.getIcons());
+        BlockstateRefResolver blockstateRefs =
+                new BlockstateRefResolver(bundle.getAssets(), bundle.getTagMembers());
+        MultiblockRenderResolver multiblockResolver =
+                new MultiblockRenderResolver(bundle.getMultiblocks(), blockstateRefs);
+        TextureRenderer textureRenderer =
+                new TextureRenderer(models, l10n, bundle.getIcons(), multiblockResolver);
         PageRenderer pageRenderer = new PageRenderer(
                 models, l10n, textureRenderer, bundle.getRecipeImages(), emiIndex, bundle.getRecipeMountIds());
         SiteRenderer siteRenderer = new SiteRenderer(l10n, output.toString(), recipeBookBaseUrl);

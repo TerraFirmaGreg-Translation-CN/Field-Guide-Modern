@@ -20,8 +20,8 @@ class MultiblockRegistryTest {
                     {
                       "id": "tfc:blast_furnace",
                       "source": "patchouli_registry",
-                      "pattern": ["AAA"],
-                      "mapping": { "A": "tfc:blast_furnace" }
+                      "pattern": [["AAA"]],
+                      "mapping": { "A": { "ref": "tfc:blast_furnace" } }
                     }
                   ]
                 }
@@ -31,7 +31,8 @@ class MultiblockRegistryTest {
         ResolvedMultiblock mb = registry.resolve("tfc:blast_furnace").orElseThrow();
         assertTrue(mb.isOk());
         assertEquals("patchouli_registry", mb.source());
-        assertEquals(List.of("AAA"), mb.pattern());
+        assertEquals(1, mb.toPatternArray().length);
+        assertEquals("tfc:blast_furnace", mb.exportMapping().get("A").get("ref"));
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.madgag.gif.fmsware.AnimatedGifEncoder;
 import team.terrafirmgreg.fieldguide.Pair;
 import team.terrafirmgreg.fieldguide.export.ExportAssetKey;
 import team.terrafirmgreg.fieldguide.export.ExportModelLoader;
+import team.terrafirmgreg.fieldguide.export.MultiblockRenderResolver;
 import team.terrafirmgreg.fieldguide.exception.AssetNotFoundException;
 import team.terrafirmgreg.fieldguide.asset.FluidResult;
 import team.terrafirmgreg.fieldguide.asset.ItemImageResult;
@@ -79,6 +80,7 @@ public class TextureRenderer {
     private final SingleBlock3DRenderer singleBlock3DRenderer;
     private final Multiblock3DRenderer multiblock3DRenderer;
     private final BlockStateModelBuilder blockStateModelBuilder;
+    private final MultiblockRenderResolver multiblockResolver;
 
     // Cache
     private final Map<String, String> IMAGE_CACHE = new HashMap<>();
@@ -89,9 +91,18 @@ public class TextureRenderer {
     private final Map<String, Integer> lastUid = new HashMap<>();
 
     public TextureRenderer(ExportModelLoader loader, LocalizationManager localizationManager, IconCatalog iconCatalog) {
+        this(loader, localizationManager, iconCatalog, null);
+    }
+
+    public TextureRenderer(
+            ExportModelLoader loader,
+            LocalizationManager localizationManager,
+            IconCatalog iconCatalog,
+            MultiblockRenderResolver multiblockResolver) {
         this.loader = loader;
         this.iconCatalog = iconCatalog;
         this.localizationManager = localizationManager;
+        this.multiblockResolver = multiblockResolver;
         this.blockStateModelBuilder = new BlockStateModelBuilder(loader);
         this.singleBlock3DRenderer = new SingleBlock3DRenderer(new BaseModelBuilder(loader), 256, 256);
         this.multiblock3DRenderer = new Multiblock3DRenderer(blockStateModelBuilder, 256, 256);
@@ -786,6 +797,16 @@ public class TextureRenderer {
      * @return GLB文件路径列表
      */
     public List<String> generateMultiMultiblockGLB(PageMultiMultiblock data) throws Exception {
+        if (multiblockResolver != null) {
+            List<String> paths = new ArrayList<>();
+            for (PageMultiblockData resolved : multiblockResolver.resolve(data)) {
+                paths.add(generateMultiblockGLB(resolved));
+            }
+            if (!paths.isEmpty()) {
+                return paths;
+            }
+        }
+
         List<String> glbPaths = new ArrayList<>();
 
         // 检查是否有TFC多方块数据
@@ -936,6 +957,12 @@ public class TextureRenderer {
      * @return GLB文件路径
      */
     public String generateMultiblockGLB(PageMultiblock data) throws Exception {
+        if (multiblockResolver != null) {
+            Optional<PageMultiblockData> resolved = multiblockResolver.resolve(data);
+            if (resolved.isPresent()) {
+                return generateMultiblockGLB(resolved.get());
+            }
+        }
         if (data.getMultiblock() != null) {
             PageMultiblockData multiblock = data.getMultiblock();
             
@@ -972,6 +999,23 @@ public class TextureRenderer {
             throw new RuntimeException("Multiblock : Custom Multiblock '" + data.getMultiblockId() + "'");
         }
     }
+
+    public String generateMultiblockGLB(PageMultiblockData multiblock) throws Exception {
+        String cacheKey = generateCacheKey(multiblock.getPattern(), multiblock.getMapping());
+        if (GLB_CACHE.containsKey(cacheKey)) {
+            return GLB_CACHE.get(cacheKey);
+        }
+        Node node = multiblock3DRenderer.buildMultiblock(multiblock.getPattern(), multiblock.getMapping());
+        String blockId = "block_" + cacheKey;
+        GlTFExporter exporter = new GlTFExporter();
+        String glbPath = "assets/generated/" + blockId + ".glb";
+        Path outputPath = loader.getOutputDir().resolve(glbPath);
+        if (!Files.exists(outputPath)) {
+            exporter.export(node, outputPath.toString());
+        }
+        GLB_CACHE.put(cacheKey, glbPath);
+        return glbPath;
+    }
     
     /**
      * 生成多方块缓存键
@@ -998,20 +1042,24 @@ public class TextureRenderer {
     }
 
     public String getMultiBlockImage(PageMultiblock data) throws Exception {
-        String key;
-        List<BufferedImage> images;
-
-        Node node = null;
-        if (data.getMultiblock() != null) {
-            PageMultiblockData multiblock = data.getMultiblock();
-
-            node = multiblock3DRenderer.buildMultiblock(multiblock.getPattern(), multiblock.getMapping());
-            Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
-            key = result.getKey();
-            images = result.getValue();
+        PageMultiblockData multiblock;
+        if (multiblockResolver != null) {
+            multiblock = multiblockResolver.resolve(data).orElse(null);
+        } else if (data.getMultiblock() != null) {
+            multiblock = data.getMultiblock();
         } else {
+            multiblock = null;
+        }
+        if (multiblock == null) {
             throw new RuntimeException("Multiblock : Custom Multiblock '" + data.getMultiblockId() + "'");
         }
+
+        String key;
+        List<BufferedImage> images;
+        Node node = multiblock3DRenderer.buildMultiblock(multiblock.getPattern(), multiblock.getMapping());
+        Pair<String, List<BufferedImage>> result = getMultiBlockImages(multiblock);
+        key = result.getKey();
+        images = result.getValue();
 
         if (CACHE.containsKey(key)) {
             return CACHE.get(key);
@@ -1026,8 +1074,6 @@ public class TextureRenderer {
         }
 
         if (node != null) {
-            // 生成缓存键
-            PageMultiblockData multiblock = data.getMultiblock();
             String cacheKey = generateCacheKey(multiblock.getPattern(), multiblock.getMapping());
             
             // 检查缓存
@@ -1069,7 +1115,12 @@ public class TextureRenderer {
                     BufferedImage image = multiblock3DRenderer.render(node);
                     return new Pair<>(Arrays.deepToString(pattern), List.of(image));
                 } catch (Exception e) {
-                    log.error("Failed loading multiblock image: {}, mapping: {}, message: {}", Arrays.deepToString(pattern), data.getMapping(), e.getMessage(), e);
+                    log.error(
+                            "Failed loading multiblock image: {}, mapping: {}, message: {}",
+                            Arrays.deepToString(pattern),
+                            data.getMapping(),
+                            e.getMessage(),
+                            e);
                 }
                 throw new RuntimeException("Multiblock : Complex Pattern '" + Arrays.deepToString(pattern) + "'");
             } else {
