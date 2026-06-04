@@ -18,11 +18,14 @@ if [[ -z "$SITE_JAR" ]]; then
 fi
 
 rm -rf "$SITE_OUTPUT_DIR"
-emi_args=()
+site_args=()
 if [[ -d "${EXPORT_ROOT}/emi" ]]; then
-  emi_args=(--emi-dir "${EXPORT_ROOT}/emi")
+  site_args+=(--emi-dir "${EXPORT_ROOT}/emi")
 fi
-java -jar "$SITE_JAR" -e "$EXPORT_GUIDE" -o "$SITE_OUTPUT_DIR" "${emi_args[@]}"
+if [[ -n "${RECIPE_BOOK_BASE_URL:-}" ]]; then
+  site_args+=(--recipe-book-base-url "${RECIPE_BOOK_BASE_URL}")
+fi
+java -jar "$SITE_JAR" -e "$EXPORT_GUIDE" -o "$SITE_OUTPUT_DIR" "${site_args[@]}"
 
 if [[ -d "${EXPORT_ROOT}/emi" ]]; then
   rm -rf "${SITE_OUTPUT_DIR}/emi"

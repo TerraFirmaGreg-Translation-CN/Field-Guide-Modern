@@ -29,17 +29,33 @@ import java.util.regex.Pattern;
 public class SiteRenderer {
 
     /** Keep in sync with {@code site/package.json} → {@code emi-recipe-renderer}. */
-    public static final String EMI_RENDERER_VERSION = "0.6.4";
+    public static final String EMI_RENDERER_VERSION = "0.6.5";
+
+    /**
+     * External recipe viewer base (path + trailing slash). EMI item/tag clicks open
+     * {@code ?lang=<locale>&item=<id>} or {@code &tag=<id>} here. Override via
+     * {@code --recipe-book-base-url} or {@code RECIPE_BOOK_BASE_URL} in CI.
+     */
+    public static final String DEFAULT_RECIPE_BOOK_BASE_URL = "https://www.jmecn.net/TFG-Recipe-Viewer/";
 
     private static final Pattern SEARCH_STRIP_PATTERN = Pattern.compile("\\$\\([^)]*\\)");
 
     private final Configuration cfg;
     private final LocalizationManager localizationManager;
     private final String outputRootDir;
+    private final String recipeBookBaseUrl;
 
     public SiteRenderer(LocalizationManager localizationManager, String outputRootDir) throws IOException {
+        this(localizationManager, outputRootDir, DEFAULT_RECIPE_BOOK_BASE_URL);
+    }
+
+    public SiteRenderer(
+            LocalizationManager localizationManager,
+            String outputRootDir,
+            String recipeBookBaseUrl) throws IOException {
         this.localizationManager = localizationManager;
         this.outputRootDir = outputRootDir;
+        this.recipeBookBaseUrl = recipeBookBaseUrl == null ? "" : recipeBookBaseUrl.trim();
 
         cfg = new Configuration(Configuration.VERSION_2_3_32);
         cfg.setClassLoaderForTemplateLoading(getClass().getClassLoader(), "templates");
@@ -268,6 +284,7 @@ public class SiteRenderer {
         data.put("handbookIconsRoot", handbookIconsRoot(root));
         data.put("emiRendererVersion", EMI_RENDERER_VERSION);
         data.put("emiBundleRoot", root + "/emi");
+        data.put("recipeBookBaseUrl", recipeBookBaseUrl);
         data.put("title", localizationManager.translate(I18n.TITLE));
         data.put("long_title", localizationManager.translate(I18n.TITLE) + " | " + Constants.MC_VERSION);
         data.put("short_description", localizationManager.translate(I18n.HOME));

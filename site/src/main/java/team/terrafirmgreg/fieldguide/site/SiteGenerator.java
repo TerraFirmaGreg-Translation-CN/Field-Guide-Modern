@@ -62,6 +62,13 @@ public class SiteGenerator implements Callable<Integer> {
     )
     String emiDir;
 
+    @CommandLine.Option(
+            names = {"--recipe-book-base-url"},
+            description = "External recipe viewer base URL for EMI item/tag links (empty = disable)",
+            defaultValue = SiteRenderer.DEFAULT_RECIPE_BOOK_BASE_URL
+    )
+    String recipeBookBaseUrl;
+
     public static void main(String[] args) {
         int code = new CommandLine(new SiteGenerator()).execute(args);
         System.exit(code);
@@ -84,7 +91,7 @@ public class SiteGenerator implements Callable<Integer> {
         TextureRenderer textureRenderer = new TextureRenderer(models, l10n, bundle.getIcons());
         PageRenderer pageRenderer = new PageRenderer(
                 models, l10n, textureRenderer, bundle.getRecipeImages(), emiIndex);
-        SiteRenderer siteRenderer = new SiteRenderer(l10n, output.toString());
+        SiteRenderer siteRenderer = new SiteRenderer(l10n, output.toString(), recipeBookBaseUrl);
 
         siteRenderer.copyStaticFiles();
         copyExportAssets(export, output);

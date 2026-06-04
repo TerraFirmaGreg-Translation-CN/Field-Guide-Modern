@@ -2,6 +2,7 @@
  * Mounts {@code .emi-recipe} placeholders using emi-recipe-renderer (CDN).
  * Expects {@code <meta name="emi-bundle-root">} from entry.ftl and export {@code emi/} beside the site root.
  * Theme follows Bootstrap {@code data-bs-theme} (see theme-switcher.js).
+ * Item/tag navigation uses {@code <meta name="recipe-book-base-url">} (SiteRenderer / RECIPE_BOOK_BASE_URL).
  */
 (function () {
   'use strict';
@@ -14,6 +15,14 @@
       return new URL(meta.content, window.location.href).href;
     }
     return new URL('../../emi/', window.location.href).href;
+  }
+
+  function recipeBookBaseUrl() {
+    var meta = document.querySelector('meta[name="recipe-book-base-url"]');
+    if (!meta || !meta.content) {
+      return '';
+    }
+    return meta.content.trim();
   }
 
   function pageLocale() {
@@ -35,6 +44,59 @@
       return 'dark';
     }
     return 'light';
+  }
+
+  function buildRecipeBookUrl(queryParams) {
+    var base = recipeBookBaseUrl();
+    if (!base) {
+      return null;
+    }
+    try {
+      var url = new URL(base.endsWith('/') ? base : base + '/');
+      Object.keys(queryParams).forEach(function (key) {
+        var value = queryParams[key];
+        if (value != null && value !== '') {
+          url.searchParams.set(key, value);
+        }
+      });
+      return url.href;
+    } catch (err) {
+      console.warn('handbook-emi: invalid recipe-book-base-url', base, err);
+      return null;
+    }
+  }
+
+  function openRecipeBook(queryParams) {
+    var href = buildRecipeBookUrl(queryParams);
+    if (!href) {
+      return;
+    }
+    window.open(href, '_blank', 'noopener,noreferrer');
+  }
+
+  function recipeBookNavigationHandlers(locale) {
+    if (!recipeBookBaseUrl()) {
+      return {};
+    }
+    return {
+      onItemClick: function (itemId) {
+        var id = String(itemId || '').trim();
+        if (!id) {
+          return;
+        }
+        openRecipeBook({ lang: locale, item: id.toLowerCase() });
+      },
+      onTagClick: function (tag, context) {
+        var tagId = typeof tag === 'string' ? tag.trim() : '';
+        if (!tagId && context && context.tagRef) {
+          tagId = String(context.tagRef).replace(/^#(item|block|fluid):/, '').trim();
+        }
+        if (!tagId) {
+          return;
+        }
+        openRecipeBook({ lang: locale, tag: tagId });
+      },
+    };
   }
 
   function applyEmiThemeToRenderer(renderer, theme) {
@@ -75,13 +137,17 @@
     }
 
     var baseUrl = emiBundleBaseUrl();
+    var locale = pageLocale();
+    var navHandlers = recipeBookNavigationHandlers(locale);
     var rendererOpts = {
       baseUrl: baseUrl,
       /* Handbook already loads assets/icons/icons.css; avoid EMI bundle CSS overriding page icons */
       injectIconStylesheets: false,
-      locale: pageLocale(),
+      locale: locale,
       theme: pageEmiTheme(),
       themeRoot: document.documentElement,
+      onItemClick: navHandlers.onItemClick,
+      onTagClick: navHandlers.onTagClick,
     };
 
     var renderer;
@@ -93,6 +159,8 @@
         locale: rendererOpts.locale,
         theme: rendererOpts.theme,
         themeRoot: rendererOpts.themeRoot,
+        onItemClick: rendererOpts.onItemClick,
+        onTagClick: rendererOpts.onTagClick,
         renderer: renderer,
         root: document,
       });

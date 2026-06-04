@@ -3,6 +3,6 @@
   "private": true,
   "description": "Static handbook site; emi-recipe-renderer is loaded from CDN at runtime (version pin below).",
   "dependencies": {
-    "emi-recipe-renderer": "^0.6.4"
+    "emi-recipe-renderer": "^0.6.5"
   }
 }
