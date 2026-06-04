@@ -282,6 +282,12 @@ public class PageRenderer {
         }
         String mountId = recipeMountIds.getOrDefault(recipeId, recipeId);
         if (emiRecipes != null && !emiRecipes.isEmpty() && !emiRecipes.contains(mountId)) {
+            String tmrvFallback = tmrvRecipeId(recipeId);
+            if (tmrvFallback != null && emiRecipes.contains(tmrvFallback)) {
+                mountId = tmrvFallback;
+            }
+        }
+        if (emiRecipes != null && !emiRecipes.isEmpty() && !emiRecipes.contains(mountId)) {
             log.debug("Recipe not in EMI export, using in-game-only fallback: {} (mount={})", recipeId, mountId);
             String text = String.format(
                     "%s: <code>%s</code>",
@@ -293,6 +299,14 @@ public class PageRenderer {
         buffer.add(String.format(
                 "<div class=\"emi-recipe my-2\" data-recipe-id=\"%s\"></div>",
                 escapeHtmlAttr(mountId)));
+    }
+
+    /** Same id shape as EMI export when Patchouli uses {@code mod:path/with/slashes}. */
+    private static String tmrvRecipeId(String handbookRecipeId) {
+        if (handbookRecipeId == null || handbookRecipeId.isBlank() || handbookRecipeId.indexOf(':') <= 0) {
+            return null;
+        }
+        return "toomanyrecipeviewers:/" + handbookRecipeId.replace(':', '/');
     }
 
     private static String escapeHtmlText(String value) {
