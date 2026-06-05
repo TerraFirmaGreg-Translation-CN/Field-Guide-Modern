@@ -1,7 +1,7 @@
 package team.terrafirmgreg.fieldguide.generated;
 
 /**
- * EMI recipe layout paths (under {@link EmiBundlePaths}). Shared by :forge (export) and consumers.
+ * EMI recipe layout paths (under {@link EmiBundlePaths}).
  */
 public final class RecipeLayoutPaths {
 

@@ -2,8 +2,7 @@ package team.terrafirmgreg.fieldguide.generated;
 
 /**
  * Paths for pre-rendered EMI recipe previews under {@code generated/recipes/}.
- * Shared by :forge (export) and :site (HTML). Not under {@code .export} — that package
- * is owned by the forge mod and must not appear in :core (jarJar JPMS clash).
+ * Shared by export (EMI bundle) and :site (HTML).
  */
 public final class RecipeImagePaths {
 

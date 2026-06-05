@@ -1,5 +1,4 @@
-// Root aggregator only — no application code, no export/site orchestration.
-// `./gradlew build` compiles and tests all subprojects (core, site, forge).
+// Root aggregator — `./gradlew build` compiles and tests core + site.
 
 plugins {
     id 'base'
