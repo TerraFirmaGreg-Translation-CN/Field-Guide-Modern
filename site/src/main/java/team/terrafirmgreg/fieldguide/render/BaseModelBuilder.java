@@ -203,24 +203,7 @@ public class BaseModelBuilder {
                 return null;
         }
 
-        // 处理缩放（TODO）
-        if (rotation.getRescale() != null && rotation.getRescale()) {
-            processRescale(angle);
-        }
-
         return rot;
-    }
-
-    /**
-     * 处理缩放 - 待实现
-     */
-    protected void processRescale(double angle) {
-        // TODO: 实现缩放逻辑
-        if (angle == 45.0 || angle == -45.0) {
-            // double rescale = 1.41421356237309
-        } else if (angle == 22.5 || angle == -22.5) {
-            // double rescale = 0.76536686473018
-        }
     }
 
     /**
@@ -416,7 +399,6 @@ public class BaseModelBuilder {
             material.getRenderState().setBlendMode(RenderState.BlendMode.ALPHA_BLEND);
         }
         
-        material.setUseVertexColor(true);
         material.setDiffuseMap(diffuseMap);
 
         return material;

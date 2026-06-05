@@ -42,8 +42,6 @@ public class GlTFExporter {
     private static final String ACCESSOR_TYPE_VEC2 = "VEC2";
 
     // 组件类型
-    private static final int COMPONENT_TYPE_UNSIGNED_BYTE = 5121;
-    private static final int COMPONENT_TYPE_UNSIGNED_SHORT = 5123;
     private static final int COMPONENT_TYPE_UNSIGNED_INT = 5125;
     private static final int COMPONENT_TYPE_FLOAT = 5126;
 
@@ -56,20 +54,10 @@ public class GlTFExporter {
     private static final String ALPHA_MODE_BLEND = "BLEND";
     private static final String ALPHA_MODE_MASK = "MASK";
     
-    // 纹理过滤模式
+    // 纹理过滤/包装（仅 nearest + clamp，适合 MC 像素纹理）
     private static final int MAG_FILTER_NEAREST = 9728;
-    private static final int MAG_FILTER_LINEAR = 9729;
-    private static final int MIN_FILTER_NEAREST = 9728;
-    private static final int MIN_FILTER_LINEAR = 9729;
     private static final int MIN_FILTER_NEAREST_MIPMAP_NEAREST = 9984;
-    private static final int MIN_FILTER_LINEAR_MIPMAP_NEAREST = 9985;
-    private static final int MIN_FILTER_NEAREST_MIPMAP_LINEAR = 9986;
-    private static final int MIN_FILTER_LINEAR_MIPMAP_LINEAR = 9987;
-    
-    // 纹理包装模式
-    private static final int WRAP_REPEAT = 10497;
     private static final int WRAP_CLAMP_TO_EDGE = 33071;
-    private static final int WRAP_MIRRORED_REPEAT = 33648;
 
     /**
      * GLTF数据结构
@@ -499,30 +487,6 @@ public class GlTFExporter {
         return index;
     }
     
-    /**
-     * 创建线性过滤的采样器
-     */
-    private int createLinearSampler() {
-        for (int i = 0; i < samplers.size(); i++) {
-            Map<String, Object> sampler = samplers.get(i);
-            if (MAG_FILTER_LINEAR == (Integer) sampler.get("magFilter") &&
-                MIN_FILTER_LINEAR_MIPMAP_LINEAR == (Integer) sampler.get("minFilter")) {
-                return i;
-            }
-        }
-        
-        // 创建新的线性采样器
-        Map<String, Object> sampler = new LinkedHashMap<>();
-        sampler.put("magFilter", MAG_FILTER_LINEAR);
-        sampler.put("minFilter", MIN_FILTER_LINEAR_MIPMAP_LINEAR);
-        sampler.put("wrapS", WRAP_REPEAT);
-        sampler.put("wrapT", WRAP_REPEAT);
-        
-        int index = samplers.size();
-        samplers.add(sampler);
-        return index;
-    }
-
     private void buildSceneStructure(List<Geometry> geometries, String modelName) {
         // 创建缓冲区
         Map<String, Object> buffer = new LinkedHashMap<>();
