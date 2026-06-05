@@ -1,8 +1,5 @@
 package team.terrafirmgreg.fieldguide.render3d.shader;
 
-import java.util.List;
-
-import team.terrafirmgreg.fieldguide.render3d.light.Light;
 import team.terrafirmgreg.fieldguide.render3d.material.Material;
 import team.terrafirmgreg.fieldguide.render3d.math.Matrix3f;
 import team.terrafirmgreg.fieldguide.render3d.math.Matrix4f;
@@ -30,7 +27,6 @@ public abstract class Shader {
     
     // attributes
     protected Material material;
-    protected List<Light> lights;
     
     /**
      * 顶点着色器
@@ -105,10 +101,6 @@ public abstract class Shader {
 
     public void setMaterial(Material material) {
         this.material = material;
-    }
-
-    public void setLights(List<Light> lights) {
-        this.lights = lights;
     }
     
 }

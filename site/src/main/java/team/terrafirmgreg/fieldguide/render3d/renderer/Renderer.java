@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import team.terrafirmgreg.fieldguide.render3d.light.Light;
 import team.terrafirmgreg.fieldguide.render3d.material.Material;
 import team.terrafirmgreg.fieldguide.render3d.material.RenderState.CullMode;
 import team.terrafirmgreg.fieldguide.render3d.math.ColorRGBA;
@@ -30,8 +29,6 @@ public class Renderer {
     private SoftwareRaster raster;
     // 清屏颜色
     private ColorRGBA clearColor = ColorRGBA.WHITE;
-    // 光源
-    private List<Light> lights;
     
     /**
      * 初始化渲染器
@@ -176,7 +173,6 @@ public class Renderer {
         
         // 设置着色器
         Shader shader = material.getShader();
-        shader.setLights(lights);
         raster.setShader(shader);
         
         // 设置全局变量
@@ -359,14 +355,6 @@ public class Renderer {
 
     public Material getMaterial() {
         return material;
-    }
-    
-    /**
-     * 设置光源
-     * @param lights
-     */
-    public void setLights(List<Light> lights) {
-        this.lights = lights;
     }
 
 }

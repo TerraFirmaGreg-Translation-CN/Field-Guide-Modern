@@ -38,7 +38,6 @@ public abstract class BaseRenderer {
         // 创建渲染器
         renderer = new Renderer(width, height);
         renderer.setBackgroundColor(ColorRGBA.BLACK_NO_ALPHA);
-        renderer.setLights(List.of());
 
         // 创建摄像机
         camera = new Camera(width, height);
