@@ -19,8 +19,8 @@ class ExportBundleTest {
 
         ExportBundle bundle = ExportBundle.open(root);
         assertEquals(root, bundle.getExportRoot());
-        assertNotNull(bundle.getRecipes());
         assertNotNull(bundle.getAssets());
+        assertNotNull(bundle.getRecipeMountIds());
     }
 
     @Test
@@ -34,7 +34,7 @@ class ExportBundleTest {
     void opensRealExport() throws Exception {
         Path export = Path.of(System.getProperty("guide.export.dir"));
         ExportBundle bundle = ExportBundle.open(export);
-        assertTrue(bundle.getRecipes().size() > 0, "expected recipes in real export");
+        assertFalse(bundle.getRecipeMountIds().isEmpty(), "expected recipeMountIds in real export meta");
         assertTrue(
                 Files.isDirectory(bundle.getExportRoot().resolve("assets/icons"))
                         || Files.isDirectory(bundle.getExportRoot().resolve("generated/icons")),

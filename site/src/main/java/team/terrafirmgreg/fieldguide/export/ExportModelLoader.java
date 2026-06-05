@@ -34,7 +34,6 @@ public class ExportModelLoader {
     private Path outputDir;
     private final FsAssetSource source;
     private final TagMemberIndex tagMembers;
-    private final RecipeBundleLoader recipes;
     private final ExportAssetStats assetStats = new ExportAssetStats();
 
     private final Map<String, AssetSourceCache> resourceCache = new HashMap<>();
@@ -42,14 +41,13 @@ public class ExportModelLoader {
     private final Map<String, BlockModel> itemModelCache = new TreeMap<>();
 
     public ExportModelLoader(Path exportRoot, TagMemberIndex tagMembers) {
-        this(exportRoot, tagMembers, RecipeBundleLoader.load(exportRoot), exportRoot.resolve("dist"));
+        this(exportRoot, tagMembers, exportRoot.resolve("dist"));
     }
 
-    public ExportModelLoader(Path exportRoot, TagMemberIndex tagMembers, RecipeBundleLoader recipes, Path outputDir) {
+    public ExportModelLoader(Path exportRoot, TagMemberIndex tagMembers, Path outputDir) {
         this.exportRoot = exportRoot.normalize().toAbsolutePath();
         this.outputDir = outputDir;
         this.tagMembers = tagMembers != null ? tagMembers : TagMemberIndex.load(exportRoot);
-        this.recipes = recipes != null ? recipes : RecipeBundleLoader.load(exportRoot);
         this.source = new FsAssetSource(this.exportRoot);
         initBuiltinModels();
     }
@@ -179,14 +177,6 @@ public class ExportModelLoader {
         } catch (Exception e) {
             throw new InternalException("Failed to load item model: " + itemId);
         }
-    }
-
-    public Map<String, Object> loadRecipe(String recipeId) {
-        Map<String, Object> data = recipes.get(recipeId);
-        if (data == null) {
-            throw new AssetNotFoundException("Recipe not found in export: " + recipeId);
-        }
-        return data;
     }
 
     public BlockModel loadBlockModelWithState(String modelId) {

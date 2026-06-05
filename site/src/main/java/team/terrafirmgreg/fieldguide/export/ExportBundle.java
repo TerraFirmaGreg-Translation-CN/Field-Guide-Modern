@@ -16,12 +16,10 @@ public class ExportBundle {
     private final Path exportRoot;
     private final Map<String, Object> manifest;
     private final Map<String, Object> meta;
-    private final RecipeBundleLoader recipes;
     private final TagBundleLoader tags;
     private final TagMemberIndex tagMembers;
     private final LangCatalog langs;
     private final IconCatalog icons;
-    private final RecipeImageCatalog recipeImages;
     private final MultiblockRegistry multiblocks;
     private final ExportAssetAccess assets;
     private final ExportBookLoader books;
@@ -31,12 +29,10 @@ public class ExportBundle {
             Path exportRoot,
             Map<String, Object> manifest,
             Map<String, Object> meta,
-            RecipeBundleLoader recipes,
             TagBundleLoader tags,
             TagMemberIndex tagMembers,
             LangCatalog langs,
             IconCatalog icons,
-            RecipeImageCatalog recipeImages,
             MultiblockRegistry multiblocks,
             ExportAssetAccess assets,
             ExportBookLoader books,
@@ -44,12 +40,10 @@ public class ExportBundle {
         this.exportRoot = exportRoot;
         this.manifest = manifest;
         this.meta = meta;
-        this.recipes = recipes;
         this.tags = tags;
         this.tagMembers = tagMembers;
         this.langs = langs;
         this.icons = icons;
-        this.recipeImages = recipeImages;
         this.multiblocks = multiblocks;
         this.assets = assets;
         this.books = books;
@@ -72,19 +66,16 @@ public class ExportBundle {
                 Map.class);
         Map<String, Object> meta = readMeta(root.resolve("meta.json"));
         TagMemberIndex tagMembers = TagMemberIndex.load(root);
-        RecipeBundleLoader recipeLoader = RecipeBundleLoader.load(root);
-        ExportModelLoader modelLoader = new ExportModelLoader(root, tagMembers, recipeLoader, root.resolve("dist"));
+        ExportModelLoader modelLoader = new ExportModelLoader(root, tagMembers, root.resolve("dist"));
         ExportAssetAccess assetAccess = new ExportAssetAccess(root, modelLoader);
         return new ExportBundle(
                 root,
                 manifest != null ? manifest : Map.of(),
                 meta,
-                RecipeBundleLoader.load(root),
                 TagBundleLoader.load(root),
                 tagMembers,
                 LangCatalog.load(root),
                 IconCatalog.load(root),
-                RecipeImageCatalog.load(root),
                 MultiblockRegistry.load(root),
                 assetAccess,
                 new ExportBookLoader(modelLoader),

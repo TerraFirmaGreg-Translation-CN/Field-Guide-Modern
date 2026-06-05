@@ -25,16 +25,6 @@ img.entry-card-icon {
     image-rendering: pixelated;
 }
 
-.recipe-preview-wrap {
-    margin: 0.5rem auto;
-}
-
-img.recipe-preview {
-    max-width: 100%;
-    height: auto;
-    image-rendering: pixelated;
-}
-
 /* Handbook icon atlas sprites (see assets/icons/icons.css) */
 .icon-carousel {
     position: relative;
@@ -170,11 +160,6 @@ img.recipe-preview {
     height: 64px !important;
 }
 
-.crafting-recipe-item .icon-carousel {
-    width: 64px;
-    height: 64px;
-}
-
 @media only screen and (min-width: 500px) {
     .carousel-control-next,
     .carousel-control-prev {
@@ -201,123 +186,6 @@ img.recipe-preview {
     position: absolute;
     width: 32px;
     height: 32px;
-}
-
-/* Crafting / Other Recipes */
-
-.knapping-recipe {
-    position: relative;
-    margin: 1rem 0;
-}
-
-.knapping-recipe-overlay {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    width: 270px;
-    height: 270px;
-}
-
-.knapping-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 54px);
-    grid-template-rows: repeat(5, 54px);
-    width: 270px;
-    height: 270px;
-    image-rendering: pixelated;
-}
-
-.knapping-cell {
-    width: 54px;
-    height: 54px;
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-}
-
-.knapping-rock-low { background-color: #5a5a5a; }
-.knapping-rock-hi { background-color: #9a9a9a; }
-.knapping-clay-low { background-color: #8b6914; }
-.knapping-clay-hi { background-color: #c4a035; }
-.knapping-fire_clay-low { background-color: #a0522d; }
-.knapping-fire_clay-hi { background-color: #d2691e; }
-.knapping-leather-low { background-color: #6b4423; }
-.knapping-leather-hi { background-color: #a66b3f; }
-.knapping-bone-low { background-color: #d4c4a8; }
-.knapping-bone-hi { background-color: #f5ecd7; }
-.knapping-sherd-low { background-color: #b8a080; }
-.knapping-sherd-hi { background-color: #e8d8c0; }
-
-.knapping-recipe-img {
-    image-rendering: pixelated;
-    width: 270px;
-    height: 270px;
-}
-
-html[data-bs-theme="dark"] .knapping-recipe > img:first-child {
-    filter: invert(100%);
-}
-
-.crafting-recipe {
-    position: relative;
-    margin: 1rem 0;
-}
-
-html[data-bs-theme="dark"] .crafting-recipe > img:first-child {
-    filter: invert(100%);
-}
-
-img.recipe-item {
-    image-rendering: pixelated;
-    width: 64px;
-    height: 64px;
-}
-
-.crafting-recipe-item-tooltip {
-    position: absolute;
-    width: 64px;
-    height: 64px;
-}
-
-.crafting-recipe-item-count {
-    position: absolute;
-    left: 48px;
-    top: 36px;
-    font-family: Minecraft;
-    font-size: 30px;
-    color: black;
-    text-shadow: 2px 2px #D0D0D0, -1px -1px #D0D0D0;
-    pointer-events: none;
-}
-
-html[data-bs-theme="dark"] .crafting-recipe-item-count {
-    color: white;
-    text-shadow: none;
-}
-
-.crafting-recipe-pos-0-0 { position: absolute; left: 20px;  top: 20px;  }
-.crafting-recipe-pos-0-1 { position: absolute; left: 20px;  top: 96px;  }
-.crafting-recipe-pos-0-2 { position: absolute; left: 20px;  top: 172px; }
-.crafting-recipe-pos-1-0 { position: absolute; left: 96px;  top: 20px;  }
-.crafting-recipe-pos-1-1 { position: absolute; left: 96px;  top: 96px;  }
-.crafting-recipe-pos-1-2 { position: absolute; left: 96px;  top: 172px; }
-.crafting-recipe-pos-2-0 { position: absolute; left: 172px; top: 20px;  }
-.crafting-recipe-pos-2-1 { position: absolute; left: 172px; top: 96px;  }
-.crafting-recipe-pos-2-2 { position: absolute; left: 172px; top: 172px; }
-.crafting-recipe-pos-out { position: absolute; left: 324px; top: 96px;  }
-
-.misc-recipe-pos-in  { position: absolute; left: 20px;  top: 24px; }
-.misc-recipe-pos-out { position: absolute; left: 308px; top: 24px; }
-
-.two-recipe-pos-1 { position: absolute; left: 24px; top: 24px; }
-.two-recipe-pos-2 { position: absolute; left: 122px; top: 24px; }
-.two-recipe-pos-3 { position: absolute; left: 412px; top: 24px; }
-.two-recipe-pos-4 { position: absolute; left: 510px; top: 24px; }
-
-/* Text formatting for temperatures in heat recipes and other tooltips */
-
-.minecraft-text {
-    font-family: Minecraft;
-    font-size: 30px;
 }
 
 .minecraft-gray     { color: #AAAAAA; }

@@ -102,7 +102,7 @@ public class SiteRenderer {
         Path staticOut = Paths.get(outputRootDir, "static");
         FileUtils.deleteDirectory(staticOut.toFile());
         copyResourceDir("static", staticOut);
-        copyRecipeUiImages();
+        copySiteImages();
 
         Path redirectDest = Paths.get(outputRootDir, "index.html");
         if (copyClasspathResource("templates/redirect.html", redirectDest)) {
@@ -110,22 +110,35 @@ public class SiteRenderer {
         }
     }
 
+    private static final List<String> SITE_IMAGES = List.of(
+            "fluid.png",
+            "placeholder_16.png",
+            "placeholder_64.png",
+            "splash.png");
+
     /**
-     * Recipe frames, placeholders, knapping overlay, etc. (same as legacy CLI:
-     * {@code assets/textures} → {@code _images/} at site root).
+     * Site UI images ({@code assets/textures} → {@code _images/}): splash, placeholders, fluid mask.
+     * Recipe frames (crafting/knapping) removed — EMI renders recipe cards.
      */
-    private void copyRecipeUiImages() throws IOException {
+    private void copySiteImages() throws IOException {
         Path textures = Paths.get("assets/textures");
         if (!Files.isDirectory(textures)) {
-            log.warn("Missing assets/textures — crafting recipe backgrounds will be broken ({})", textures.toAbsolutePath());
+            log.warn("Missing assets/textures — site placeholders/splash will be broken ({})", textures.toAbsolutePath());
             return;
         }
         Path dest = Paths.get(outputRootDir, "_images");
-        if (Files.exists(dest)) {
-            FileUtils.deleteDirectory(dest.toFile());
+        Files.createDirectories(dest);
+        int copied = 0;
+        for (String name : SITE_IMAGES) {
+            Path src = textures.resolve(name);
+            if (!Files.isRegularFile(src)) {
+                log.warn("Missing site image: {}", src.toAbsolutePath());
+                continue;
+            }
+            Files.copy(src, dest.resolve(name), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            copied++;
         }
-        FileUtils.copyDirectory(textures.toFile(), dest.toFile());
-        log.info("Copied recipe UI images to {}/_images", outputRootDir);
+        log.info("Copied {} site image(s) to {}/_images", copied, outputRootDir);
     }
 
     /** Copies {@code guide-export/assets/icons/} to site {@code assets/icons/}. */
