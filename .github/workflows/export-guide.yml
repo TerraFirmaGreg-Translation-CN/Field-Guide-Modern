@@ -173,7 +173,6 @@ jobs:
             -DminecraftWebExport.exportWarmupTicks=${{ env.EXPORT_WARMUP }}
             -DminecraftWebExport.exportWorldDelayTicks=${{ env.EXPORT_WORLD_DELAY_TICKS }}
             -DminecraftWebExport.exportTimeoutSeconds=${{ env.EXPORT_TIMEOUT_SECONDS }}
-            -Dfieldguide.exportMode=${{ env.FIELDGUIDE_EXPORT_MODE }}
             -Dfieldguide.exportLanguages=${{ steps.export_languages.outputs.export_languages }}
         run: bash scripts/ci-launch-mc-export.sh
 
