@@ -28,6 +28,7 @@ load_config() {
   export FGE_VERSION MWE_VERSION
   export EXPORT_WARMUP_TICKS EXPORT_WORLD_DELAY_TICKS EXPORT_TIMEOUT_SECONDS
   export EXPORT_ROOT EXPORT_GUIDE EXPORT_ROOT_DIR GUIDE_SUBDIR SITE_OUTPUT_DIR RECIPE_BOOK_BASE_URL
+  export EXPORT_ARTIFACT_NAME="${EXPORT_ARTIFACT_NAME:-field-guide}"
 
   if [[ -n "${GITHUB_ENV:-}" ]]; then
     {
@@ -50,6 +51,7 @@ load_config() {
       printf 'EXPORT_GUIDE=%s\n' "$EXPORT_GUIDE"
       printf 'SITE_OUTPUT_DIR=%s\n' "${SITE_OUTPUT_DIR:-output}"
       printf 'RECIPE_BOOK_BASE_URL=%s\n' "${RECIPE_BOOK_BASE_URL:-}"
+      printf 'EXPORT_ARTIFACT_NAME=%s\n' "${EXPORT_ARTIFACT_NAME:-field-guide}"
     } >> "$GITHUB_ENV"
   fi
 }
@@ -409,15 +411,18 @@ fetch_bundle() {
   fi
 
   if ! command -v gh >/dev/null 2>&1; then
-    echo "::error::gh CLI required to download artifact handbook-export" >&2
+    echo "::error::gh CLI required to download artifact ${EXPORT_ARTIFACT_NAME}" >&2
     exit 1
   fi
+
+  local artifact_name="${EXPORT_ARTIFACT_NAME:-field-guide}"
+  local workflow_name="${EXPORT_WORKFLOW_NAME:-Export field guide}"
 
   local run_id
   run_id="$(
     gh run list \
       --repo "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY required}" \
-      --workflow "Export handbook bundle" \
+      --workflow "$workflow_name" \
       --branch "${GITHUB_REF_NAME:-main}" \
       --status success \
       --limit 1 \
@@ -426,14 +431,14 @@ fetch_bundle() {
   )"
 
   if [[ -z "$run_id" ]]; then
-    echo "::error::No successful「Export handbook bundle」run on branch ${GITHUB_REF_NAME:-main}" >&2
+    echo "::error::No successful「${workflow_name}」run on branch ${GITHUB_REF_NAME:-main}" >&2
     exit 1
   fi
 
   rm -f "$FGM_ROOT/guide-export-${bundle_id}.tar.gz"
-  gh run download "$run_id" --repo "$GITHUB_REPOSITORY" -n handbook-export -D "$FGM_ROOT"
+  gh run download "$run_id" --repo "$GITHUB_REPOSITORY" -n "$artifact_name" -D "$FGM_ROOT"
   extract_bundle
-  echo "Installed export from run ${run_id} (artifact handbook-export)"
+  echo "Installed export from run ${run_id} (artifact ${artifact_name})"
 }
 
 build_site() {

@@ -1,4 +1,4 @@
-name: Export handbook bundle
+name: Export field guide
 
 on:
   push:
@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: export-handbook-${{ github.ref }}
+  group: export-field-guide-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -134,7 +134,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: handbook-export
+          name: ${{ env.EXPORT_ARTIFACT_NAME }}
           path: |
             export-meta/
             guide-export-${{ steps.metadata.outputs.bundle_id }}.tar.gz

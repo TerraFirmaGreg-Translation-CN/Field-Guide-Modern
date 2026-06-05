@@ -24,7 +24,7 @@ on:
         required: false
         default: ""
   workflow_run:
-    workflows: ["Export handbook bundle"]
+    workflows: ["Export field guide"]
     types: [completed]
     branches: ["main", "dev"]
 
@@ -53,11 +53,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Load config
+        run: bash scripts/ci.sh env
+
       - name: Download bundle
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
-          name: handbook-export
+          name: ${{ env.EXPORT_ARTIFACT_NAME }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
