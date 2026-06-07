@@ -1,14 +1,100 @@
 #!/usr/bin/env bash
-# Shared CI helpers for Field-Guide-Modern (sourced by scripts/ci.sh).
+# Field-Guide-Modern CI — config, release resolution, export, deploy, site build.
+# Usage: bash ci/run.sh <command>
 set -euo pipefail
 
-LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FGM_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-# shellcheck source=ci/lib/github-release.sh
-source "$LIB_DIR/ci/lib/github-release.sh"
+CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FGM_ROOT="$(cd "$CI_DIR/.." && pwd)"
+
+# GitHub semver release resolution (git ls-remote; empty ci/build.env pin = latest tag).
+github_repo_git_url() {
+  local spec="${1:?repo required}"
+  if [[ "$spec" == https://* ]]; then
+    echo "$spec"
+    return 0
+  fi
+  echo "https://github.com/${spec}.git"
+}
+
+_semver_strip() {
+  echo "${1#v}"
+}
+
+_semver_gt() {
+  local a b a1 a2 a3 b1 b2 b3
+  a="$(_semver_strip "$1")"
+  b="$(_semver_strip "$2")"
+  IFS=. read -r a1 a2 a3 <<< "$a"
+  IFS=. read -r b1 b2 b3 <<< "$b"
+  a1=${a1:-0}
+  a2=${a2:-0}
+  a3=${a3:-0}
+  b1=${b1:-0}
+  b2=${b2:-0}
+  b3=${b3:-0}
+  (( a1 > b1 )) && return 0
+  (( a1 < b1 )) && return 1
+  (( a2 > b2 )) && return 0
+  (( a2 < b2 )) && return 1
+  (( a3 > b3 )) && return 0
+  return 1
+}
+
+resolve_latest_semver_release_tag() {
+  local repo_spec="${1:?owner/name or git URL required}"
+  local git_url best tag
+
+  git_url="$(github_repo_git_url "$repo_spec")"
+  best=""
+  while IFS= read -r tag; do
+    [[ -z "$tag" ]] && continue
+    if [[ -z "$best" ]] || _semver_gt "$tag" "$best"; then
+      best="$tag"
+    fi
+  done < <(
+    git ls-remote --tags "$git_url" \
+      | awk -F/ '{print $NF}' \
+      | sed 's/\^{}//' \
+      | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$'
+  )
+
+  if [[ -z "$best" ]]; then
+    echo "error: no semver release tags found on ${git_url}" >&2
+    return 1
+  fi
+  echo "$best"
+}
+
+resolve_github_release_ref() {
+  local repo_spec="${1:?repo required}"
+  local pinned="${2:-}"
+  if [[ -n "$pinned" ]]; then
+    echo "$pinned"
+    return 0
+  fi
+  resolve_latest_semver_release_tag "$repo_spec"
+}
+
+resolve_modpack_tag() {
+  resolve_github_release_ref \
+    "${MODPACK_REPO:-https://github.com/TerraFirmaGreg-Team/Modpack-Modern.git}" \
+    "${MODPACK_TAG:-}"
+}
+
+resolve_fge_tag() {
+  resolve_github_release_ref \
+    "${FGE_REPO:-jmecn/field-guide-export}" \
+    "${FGE_TAG:-${FGE_VERSION:-}}"
+}
+
+resolve_mwe_tag() {
+  resolve_github_release_ref \
+    "${MWE_REPO:-jmecn/minecraft-web-export}" \
+    "${MWE_TAG:-${MWE_VERSION:-}}"
+}
 
 load_config() {
-  local env_file="${CI_BUILD_ENV:-$FGM_ROOT/ci/build.env}"
+  local env_file="${CI_BUILD_ENV:-$CI_DIR/build.env}"
   if [[ ! -f "$env_file" ]]; then
     echo "::error::Missing CI config: $env_file" >&2
     exit 1
@@ -58,10 +144,6 @@ load_config() {
       printf 'EXPORT_ARTIFACT_NAME=%s\n' "${EXPORT_ARTIFACT_NAME:-field-guide}"
     } >> "$GITHUB_ENV"
   fi
-}
-
-resolve_latest_modpack_tag() {
-  resolve_modpack_tag
 }
 
 print_versions() {
@@ -357,8 +439,8 @@ launch_export() {
   local launcher="headlessmc-launcher-${hmc_ver}.jar"
 
   mkdir -p "$mp/config" "$mp/saves" "$root"
-  cp -f "$FGM_ROOT/ci/config/export-fml.toml" "$mp/config/fml.toml"
-  cp -f "$FGM_ROOT/ci/config/export-forge-client.toml" "$mp/config/forge-client.toml"
+  cp -f "$CI_DIR/config/export-fml.toml" "$mp/config/fml.toml"
+  cp -f "$CI_DIR/config/export-forge-client.toml" "$mp/config/forge-client.toml"
   cat > "$mp/options.txt" <<EOF
 onboardAccessibility:false
 pauseOnLostFocus:false
@@ -421,7 +503,7 @@ resolve_bundle_id() {
     id="fg-${MODPACK_TAG}"
   else
     load_config
-    MODPACK_TAG="$(resolve_latest_modpack_tag)"
+    MODPACK_TAG="$(resolve_modpack_tag)"
     if [[ -z "$MODPACK_TAG" ]]; then
       echo "::error::Could not resolve modpack tag for bundle id" >&2
       exit 1
@@ -530,3 +612,57 @@ build_site() {
     echo "::warning::No ${EXPORT_ROOT}/emi — recipe cards will not render"
   fi
 }
+
+usage() {
+  cat <<'EOF'
+Usage: bash ci/run.sh <command>
+
+Workflow composites:
+  prepare-export      env + modpack checkout + bundle id + resolve FGE/MWE tags
+  prepare-game        xvfb deps + FGE/MWE jars + HeadlessMC
+  finalize-export     export-meta + tar (needs BUNDLE_ID, MODPACK_TAG)
+  prepare-deploy      env + resolve bundle id
+  install-bundle      extract or fetch (ACQUIRE=extract|fetch, BUNDLE_ID)
+
+Granular (local debugging):
+  env, print-versions, checkout-modpack, prepare-bundle-id, export-languages,
+  install-mods, setup-hmc, launch-export, write-export-meta,
+  resolve-bundle-id, extract-bundle, fetch-bundle, build-site
+EOF
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  cmd="${1:-}"
+  if [[ -z "$cmd" ]]; then
+    usage >&2
+    exit 1
+  fi
+  shift
+
+  case "$cmd" in
+    env) load_config "$@" ;;
+    print-versions) print_versions "$@" ;;
+    prepare-export) prepare_export "$@" ;;
+    prepare-game) prepare_game "$@" ;;
+    finalize-export) finalize_export "$@" ;;
+    prepare-deploy) prepare_deploy "$@" ;;
+    install-bundle) install_bundle "$@" ;;
+    checkout-modpack) checkout_modpack "$@" ;;
+    prepare-bundle-id) prepare_bundle_id "$@" ;;
+    export-languages) export_languages "$@" ;;
+    install-mods) install_export_mods "$@" ;;
+    setup-hmc) setup_hmc "$@" ;;
+    launch-export) launch_export "$@" ;;
+    write-export-meta) write_export_meta "$@" ;;
+    resolve-bundle-id) resolve_bundle_id "$@" ;;
+    extract-bundle) extract_bundle "$@" ;;
+    fetch-bundle) fetch_bundle "$@" ;;
+    build-site) build_site "$@" ;;
+    -h|--help|help) usage ;;
+    *)
+      echo "::error::Unknown command: $cmd" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+fi

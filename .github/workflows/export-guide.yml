@@ -9,19 +9,19 @@ on:
   workflow_dispatch:
     inputs:
       modpack_tag:
-        description: Modpack-Modern semver tag (empty = latest release)
+        description: Modpack-Modern release tag
         required: false
         default: ""
       fge_version:
-        description: field-guide-export release tag (empty = latest release)
+        description: field-guide-export release tag
         required: false
         default: ""
       mwe_version:
-        description: minecraft-web-export release tag (empty = latest release)
+        description: minecraft-web-export release tag
         required: false
         default: ""
       export_warmup_ticks:
-        description: Ticks after EMI ready before export (empty = ci/build.env)
+        description: Ticks after EMI ready before export
         required: false
         default: ""
   schedule:
@@ -51,7 +51,7 @@ jobs:
           MODPACK_TAG: ${{ github.event.inputs.modpack_tag }}
           FGE_TAG: ${{ github.event.inputs.fge_version }}
           MWE_TAG: ${{ github.event.inputs.mwe_version }}
-        run: bash scripts/ci.sh prepare-export
+        run: bash ci/run.sh prepare-export
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -62,7 +62,7 @@ jobs:
 
       - name: Export languages
         id: export_languages
-        run: bash scripts/ci.sh export-languages
+        run: bash ci/run.sh export-languages
 
       - name: Fetch mods
         working-directory: ${{ env.MODPACK_DIR }}
@@ -87,7 +87,7 @@ jobs:
           restore-keys: emi-export-${{ env.MC_VERSION }}-
 
       - name: Prepare game
-        run: bash scripts/ci.sh prepare-game
+        run: bash ci/run.sh prepare-game
 
       - name: Run export
         env:
@@ -108,7 +108,7 @@ jobs:
             -DminecraftWebExport.exportWorldDelayTicks=${{ env.EXPORT_WORLD_DELAY_TICKS }}
             -DminecraftWebExport.exportTimeoutSeconds=${{ env.EXPORT_TIMEOUT_SECONDS }}
             -Dfieldguide.exportLanguages=${{ steps.export_languages.outputs.export_languages }}
-        run: bash scripts/ci.sh launch-export
+        run: bash ci/run.sh launch-export
 
       - name: Save world cache
         if: success() && steps.world-restore.outputs.cache-hit != 'true'
@@ -128,7 +128,7 @@ jobs:
         env:
           BUNDLE_ID: ${{ steps.metadata.outputs.bundle_id }}
           MODPACK_TAG: ${{ steps.metadata.outputs.modpack_tag }}
-        run: bash scripts/ci.sh finalize-export
+        run: bash ci/run.sh finalize-export
 
       - name: Upload
         uses: actions/upload-artifact@v4

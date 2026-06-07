@@ -101,7 +101,7 @@ public class SiteGenerator implements Callable<Integer> {
 
         siteRenderer.copyStaticFiles();
         // Runtime assets: icons from export; GLBs + patchouli:image PNGs written during render.
-        // EMI bundle is copied separately by scripts/ci.sh build-site (not part of guide-export assets/).
+        // EMI bundle is copied separately by ci/run.sh build-site (not part of guide-export assets/).
         siteRenderer.copyHandbookIcons(export);
 
         Book fallback = bundle.getBooks().loadBook(FIELD_GUIDE);

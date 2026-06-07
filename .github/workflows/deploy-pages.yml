@@ -6,7 +6,6 @@ on:
     paths:
       - "src/**"
       - "package.json"
-      - "scripts/**"
       - "ci/**"
       - "gradle.properties"
       - "settings.gradle"
@@ -16,11 +15,11 @@ on:
   workflow_dispatch:
     inputs:
       bundle_id:
-        description: Export bundle id (empty = fg-<latest modpack tag> / export-meta)
+        description: Export bundle id
         required: false
         default: ""
       modpack_tag:
-        description: Modpack-Modern tag when resolving bundle id (empty = latest release)
+        description: Modpack-Modern release tag
         required: false
         default: ""
   workflow_run:
@@ -54,7 +53,7 @@ jobs:
           fetch-depth: 1
 
       - name: Load config
-        run: bash scripts/ci.sh env
+        run: bash ci/run.sh env
 
       - name: Download bundle
         if: github.event_name == 'workflow_run'
@@ -69,7 +68,7 @@ jobs:
         env:
           BUNDLE_ID_INPUT: ${{ github.event.inputs.bundle_id }}
           MODPACK_TAG: ${{ github.event.inputs.modpack_tag }}
-        run: bash scripts/ci.sh prepare-deploy
+        run: bash ci/run.sh prepare-deploy
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -85,10 +84,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: bash scripts/ci.sh install-bundle
+        run: bash ci/run.sh install-bundle
 
       - name: Build site
-        run: bash scripts/ci.sh build-site
+        run: bash ci/run.sh build-site
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
