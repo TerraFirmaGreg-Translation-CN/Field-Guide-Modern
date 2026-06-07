@@ -36,8 +36,7 @@ class ExportBundleTest {
         ExportBundle bundle = ExportBundle.open(export);
         assertFalse(bundle.getRecipeMountIds().isEmpty(), "expected recipeMountIds in real export meta");
         assertTrue(
-                Files.isDirectory(bundle.getExportRoot().resolve("assets/icons"))
-                        || Files.isDirectory(bundle.getExportRoot().resolve("generated/icons")),
-                "expected handbook icon atlas under assets/icons or legacy generated/icons");
+                Files.isDirectory(bundle.getExportRoot().resolve("assets/icons")),
+                "expected handbook icon atlas under assets/icons");
     }
 }

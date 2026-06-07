@@ -405,6 +405,39 @@ verify_guide_export() {
     fi
   done
 
+  if [[ ! -f "$guide/assets/icons/icons.css" ]]; then
+    echo "::error::Missing $guide/assets/icons/icons.css"
+    exit 1
+  fi
+
+  if ! grep -q '--atlas-w:' "$guide/assets/icons/icons.css"; then
+    echo "::error::icons.css missing sprite CSS variables (--atlas-w). Re-export with current minecraft-web-export."
+    exit 1
+  fi
+
+  if ! grep -q '--sprite-x:' "$guide/assets/icons/icons.css"; then
+    echo "::error::icons.css missing sprite CSS variables (--sprite-x). Re-export with current minecraft-web-export."
+    exit 1
+  fi
+
+  if [[ ! -f "$guide/assets/icons/index.json" ]]; then
+    echo "::error::Missing $guide/assets/icons/index.json"
+    exit 1
+  fi
+
+  python3 - <<'PY' "$guide/assets/icons/index.json"
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    root = json.load(f)
+pages = root.get("pages")
+if not pages or not isinstance(pages, list):
+    raise SystemExit(f"::error::index.json missing pages[] (required for icon atlas scaling)")
+for i, page in enumerate(pages):
+    if not isinstance(page, dict) or not page.get("width") or not page.get("height"):
+        raise SystemExit(f"::error::index.json pages[{i}] missing width/height")
+PY
+
   if [[ -d "$guide/emi" ]]; then
     echo "::error::guide-export must not contain emi/ (use $root/emi)"
     exit 1

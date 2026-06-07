@@ -142,12 +142,9 @@ public class SiteRenderer {
 
     /** Copies {@code guide-export/assets/icons/} to site {@code assets/icons/}. */
     public void copyHandbookIcons(Path exportRoot) throws IOException {
-        Path assetsIcons = exportRoot.resolve("assets/icons");
-        Path legacyGenerated = exportRoot.resolve("generated/icons");
-        Path srcIcons = Files.isDirectory(assetsIcons) ? assetsIcons : legacyGenerated;
+        Path srcIcons = exportRoot.resolve("assets/icons");
         if (!Files.isDirectory(srcIcons)) {
-            log.warn("No handbook icons under {} (expected assets/icons)", exportRoot);
-            return;
+            throw new IOException("Missing handbook icons at " + srcIcons.toAbsolutePath());
         }
         Path destIcons = Paths.get(outputRootDir, "assets", "icons");
         if (Files.exists(destIcons)) {

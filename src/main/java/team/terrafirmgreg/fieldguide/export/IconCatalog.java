@@ -13,8 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Reads {@code assets/icons/index.json} (handbook atlas) or legacy {@code generated/icons/}.
- * Falls back to per-kind {@code items/}, {@code block-items/}, {@code fluids/} when present.
+ * Reads {@code assets/icons/index.json} (handbook atlas from field-guide-export).
  */
 @Slf4j
 public class IconCatalog implements IconLookup {
@@ -26,9 +25,6 @@ public class IconCatalog implements IconLookup {
     private final Path exportRoot;
     private final Path iconsRoot;
     private final Map<String, SpritePlacement> unified;
-    private final Map<String, SpritePlacement> legacyItems;
-    private final Map<String, SpritePlacement> legacyBlockItems;
-    private final Map<String, SpritePlacement> legacyFluids;
     private final MissingIconReport missingReport;
 
     public static final String MISSING_ICON_ID = "fieldguide:missing_icon";
@@ -37,16 +33,10 @@ public class IconCatalog implements IconLookup {
             Path exportRoot,
             Path iconsRoot,
             Map<String, SpritePlacement> unified,
-            Map<String, SpritePlacement> legacyItems,
-            Map<String, SpritePlacement> legacyBlockItems,
-            Map<String, SpritePlacement> legacyFluids,
             MissingIconReport missingReport) {
         this.exportRoot = exportRoot;
         this.iconsRoot = iconsRoot;
         this.unified = unified;
-        this.legacyItems = legacyItems;
-        this.legacyBlockItems = legacyBlockItems;
-        this.legacyFluids = legacyFluids;
         this.missingReport = missingReport;
     }
 
@@ -57,35 +47,15 @@ public class IconCatalog implements IconLookup {
     public static IconCatalog load(Path exportRoot, MissingIconReport missingReport) {
         Path iconsRoot = resolveIconsRoot(exportRoot);
         Map<String, SpritePlacement> unified = loadAtlasIndex(iconsRoot);
-        boolean useLegacy = unified.isEmpty();
-        return new IconCatalog(
-                exportRoot,
-                iconsRoot,
-                unified,
-                useLegacy ? loadAtlas(exportRoot, "items") : Map.of(),
-                useLegacy ? loadAtlas(exportRoot, "block-items") : Map.of(),
-                useLegacy ? loadAtlas(exportRoot, "fluids") : Map.of(),
-                missingReport);
+        return new IconCatalog(exportRoot, iconsRoot, unified, missingReport);
     }
 
     private static Path resolveIconsRoot(Path exportRoot) {
-        Path assetsIcons = exportRoot.resolve("assets/icons");
-        if (Files.isRegularFile(assetsIcons.resolve("index.json"))) {
-            return assetsIcons;
-        }
-        return exportRoot.resolve("generated").resolve(UNIFIED_KIND);
+        return exportRoot.resolve("assets/icons");
     }
 
     private static Map<String, SpritePlacement> loadAtlasIndex(Path iconsRoot) {
         Path indexFile = iconsRoot.resolve("index.json");
-        if (!Files.isRegularFile(indexFile)) {
-            return Map.of();
-        }
-        return readIndexFile(indexFile);
-    }
-
-    private static Map<String, SpritePlacement> loadAtlas(Path exportRoot, String kind) {
-        Path indexFile = exportRoot.resolve("generated").resolve(kind).resolve("index.json");
         if (!Files.isRegularFile(indexFile)) {
             return Map.of();
         }
@@ -120,7 +90,7 @@ public class IconCatalog implements IconLookup {
 
     @Override
     public Optional<IconRef> resolveItem(String itemId) {
-        Optional<IconRef> found = resolveUnified(itemId).or(() -> resolveIn(legacyItems, "items", itemId));
+        Optional<IconRef> found = resolveUnified(itemId);
         if (found.isPresent()) {
             return found;
         }
@@ -129,7 +99,7 @@ public class IconCatalog implements IconLookup {
 
     @Override
     public Optional<IconRef> resolveBlockItem(String itemId) {
-        Optional<IconRef> found = resolveUnified(itemId).or(() -> resolveIn(legacyBlockItems, "block-items", itemId));
+        Optional<IconRef> found = resolveUnified(itemId);
         if (found.isPresent()) {
             return found;
         }
@@ -137,9 +107,7 @@ public class IconCatalog implements IconLookup {
     }
 
     public Optional<IconRef> resolveAnyItem(String registryId) {
-        Optional<IconRef> found = resolveUnified(registryId)
-                .or(() -> resolveIn(legacyItems, "items", registryId))
-                .or(() -> resolveIn(legacyBlockItems, "block-items", registryId));
+        Optional<IconRef> found = resolveUnified(registryId);
         if (found.isPresent()) {
             return found;
         }
@@ -148,7 +116,7 @@ public class IconCatalog implements IconLookup {
 
     @Override
     public Optional<IconRef> resolveFluid(String fluidId) {
-        Optional<IconRef> found = resolveUnified(fluidId).or(() -> resolveIn(legacyFluids, "fluids", fluidId));
+        Optional<IconRef> found = resolveUnified(fluidId);
         if (found.isPresent()) {
             return found;
         }

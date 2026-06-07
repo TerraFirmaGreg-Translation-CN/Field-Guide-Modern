@@ -92,7 +92,8 @@ img.entry-card-icon {
 
 /* Unified handbook atlas: slot scales sprite via icons.css --sprite-* / --atlas-* vars */
 .icon-slot-32 > .icon-atlas,
-.icon-slot-48 > .icon-atlas {
+.icon-slot-48 > .icon-atlas,
+.icon-slot-64 > .icon-atlas {
     --slot-scale: 1;
     width: calc(var(--cell) * var(--slot-scale) * 1px) !important;
     height: calc(var(--cell) * var(--slot-scale) * 1px) !important;
@@ -105,22 +106,6 @@ img.entry-card-icon {
 
 .icon-slot-32 > .icon-atlas {
     --slot-scale: 1;
-}
-
-/* Legacy 16×16 item/fluid atlases (generated/icons/items|fluids) */
-.icon-slot-32 > .item-icon-atlas,
-.icon-slot-32 > .fluid-icon-atlas {
-    width: 16px !important;
-    height: 16px !important;
-    transform: scale(2);
-    transform-origin: top left;
-}
-
-.icon-slot-32 > .block-item-icon-atlas {
-    width: 64px !important;
-    height: 64px !important;
-    transform: scale(0.5);
-    transform-origin: top left;
 }
 
 .icon-carousel.entry-card-icon {
@@ -148,21 +133,6 @@ img.entry-card-icon {
     --slot-scale: var(--handbook-icon-slot-scale);
 }
 
-.icon-slot-48 > .item-icon-atlas,
-.icon-slot-48 > .fluid-icon-atlas {
-    width: 16px !important;
-    height: 16px !important;
-    transform: scale(2.4);
-    transform-origin: center center;
-}
-
-.icon-slot-48 > .block-item-icon-atlas {
-    width: 64px !important;
-    height: 64px !important;
-    transform: scale(0.6);
-    transform-origin: center center;
-}
-
 /* Recipe slots: 64×64 */
 .icon-slot-64 {
     width: 64px;
@@ -173,23 +143,7 @@ img.entry-card-icon {
 }
 
 .icon-slot-64 > .icon-atlas {
-    width: 32px !important;
-    height: 32px !important;
-    transform: scale(2);
-    transform-origin: top left;
-}
-
-.icon-slot-64 > .item-icon-atlas,
-.icon-slot-64 > .fluid-icon-atlas {
-    width: 16px !important;
-    height: 16px !important;
-    transform: scale(4);
-    transform-origin: top left;
-}
-
-.icon-slot-64 > .block-item-icon-atlas {
-    width: 64px !important;
-    height: 64px !important;
+    --slot-scale: calc(64 / var(--handbook-icon-cell));
 }
 
 @media only screen and (min-width: 500px) {
