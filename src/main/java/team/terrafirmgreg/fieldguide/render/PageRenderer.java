@@ -29,6 +29,7 @@ public class PageRenderer {
     private final EmiRecipeIndex emiRecipes;
     /** Handbook recipe id → EMI recipe id for {@code data-recipe-id}. */
     private final Map<String, String> recipeMountIds;
+    private Map<String, String> bookMacros = Map.of();
 
     private int id = 0;
 
@@ -43,6 +44,10 @@ public class PageRenderer {
         this.textureRenderer = textureRenderer;
         this.emiRecipes = emiRecipes;
         this.recipeMountIds = recipeMountIds == null ? Map.of() : Map.copyOf(recipeMountIds);
+    }
+
+    public void setBookMacros(Map<String, String> bookMacros) {
+        this.bookMacros = bookMacros != null ? Map.copyOf(bookMacros) : Map.of();
     }
 
     public void renderPage(BookEntry entry, BookPage page) {
@@ -129,7 +134,7 @@ public class PageRenderer {
 
     public void formatText(BookEntry entry, List<String> buffer, String text) {
         if (text != null && !text.isEmpty()) {
-            TextFormatter.formatText(buffer, text, localizationManager);
+            TextFormatter.formatText(buffer, text, localizationManager, bookMacros);
 
             entry.addSearchContent(TextFormatter.searchStrip(text));
         }

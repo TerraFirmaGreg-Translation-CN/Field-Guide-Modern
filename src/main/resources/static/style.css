@@ -11,6 +11,22 @@
     margin-bottom: 0;
 }
 
+.card-body ul {
+    padding-left: 1.5rem;
+}
+
+.card-body li {
+    margin-bottom: 0.25rem;
+}
+
+.card-body li[class^="patchouli-li-"] {
+    list-style-type: circle;
+}
+
+.card-body li.patchouli-li-2 { margin-left: 1em; }
+.card-body li.patchouli-li-3 { margin-left: 2em; }
+.card-body li.patchouli-li-4 { margin-left: 3em; }
+
 .carousel-inner img {
     margin: auto;
 }

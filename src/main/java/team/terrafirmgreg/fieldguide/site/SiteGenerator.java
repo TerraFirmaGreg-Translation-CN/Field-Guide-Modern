@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static team.terrafirmgreg.fieldguide.Constants.FIELD_GUIDE;
@@ -109,6 +110,7 @@ public class SiteGenerator implements Callable<Integer> {
             Book book = lang == Language.EN_US
                     ? fallback
                     : bundle.getBooks().loadBook(FIELD_GUIDE, lang, fallback);
+            pageRenderer.setBookMacros(book.getMacros());
             prepare(book, l10n, textureRenderer, pageRenderer);
             siteRenderer.generate(book, textureRenderer);
         }
@@ -157,7 +159,7 @@ public class SiteGenerator implements Callable<Integer> {
         log.info("Rendering lang={} book={}", book.getLanguage(), book.getName());
 
         for (BookCategory category : book.getCategories()) {
-            prepareCategory(category, localizationManager);
+            prepareCategory(category, localizationManager, book.getMacros());
             for (BookEntry entry : category.getEntries()) {
                 if (entry.isRendered()) {
                     continue;
@@ -176,10 +178,13 @@ public class SiteGenerator implements Callable<Integer> {
         }
     }
 
-    private void prepareCategory(BookCategory category, LocalizationManager localizationManager) {
+    private void prepareCategory(
+            BookCategory category,
+            LocalizationManager localizationManager,
+            Map<String, String> bookMacros) {
         category.setName(TextFormatter.stripVanillaFormatting(category.getName()));
         List<String> descriptionBuffer = new ArrayList<>();
-        TextFormatter.formatText(descriptionBuffer, category.getDescription(), localizationManager);
+        TextFormatter.formatText(descriptionBuffer, category.getDescription(), localizationManager, bookMacros);
         category.setDescription(String.join("", descriptionBuffer));
     }
 
