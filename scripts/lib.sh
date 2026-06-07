@@ -4,6 +4,8 @@ set -euo pipefail
 
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FGM_ROOT="$(cd "$LIB_DIR/.." && pwd)"
+# shellcheck source=ci/lib/github-release.sh
+source "$LIB_DIR/ci/lib/github-release.sh"
 
 load_config() {
   local env_file="${CI_BUILD_ENV:-$FGM_ROOT/ci/build.env}"
@@ -25,7 +27,7 @@ load_config() {
   export RUNNER_HOME JAVA_VERSION
   export MC_VERSION MC_ASSET_INDEX FORGE_BUILD
   export HMC_VERSION MODPACK_DIR MODPACK_REPO
-  export FGE_VERSION MWE_VERSION
+  export FGE_REPO FGE_VERSION MWE_REPO MWE_VERSION
   export EXPORT_WARMUP_TICKS EXPORT_WORLD_DELAY_TICKS EXPORT_TIMEOUT_SECONDS
   export EXPORT_ROOT EXPORT_GUIDE EXPORT_ROOT_DIR GUIDE_SUBDIR SITE_OUTPUT_DIR RECIPE_BOOK_BASE_URL
   export EXPORT_ARTIFACT_NAME="${EXPORT_ARTIFACT_NAME:-field-guide}"
@@ -40,8 +42,10 @@ load_config() {
       printf 'HMC_VERSION=%s\n' "$HMC_VERSION"
       printf 'MODPACK_DIR=%s\n' "$MODPACK_DIR"
       printf 'MODPACK_REPO=%s\n' "$MODPACK_REPO"
-      printf 'FGE_VERSION=%s\n' "$FGE_VERSION"
-      printf 'MWE_VERSION=%s\n' "$MWE_VERSION"
+      printf 'FGE_REPO=%s\n' "${FGE_REPO:-jmecn/field-guide-export}"
+      printf 'FGE_VERSION=%s\n' "${FGE_VERSION:-}"
+      printf 'MWE_REPO=%s\n' "${MWE_REPO:-jmecn/minecraft-web-export}"
+      printf 'MWE_VERSION=%s\n' "${MWE_VERSION:-}"
       printf 'EXPORT_WARMUP_TICKS=%s\n' "$EXPORT_WARMUP_TICKS"
       printf 'EXPORT_WORLD_DELAY_TICKS=%s\n' "$EXPORT_WORLD_DELAY_TICKS"
       printf 'EXPORT_TIMEOUT_SECONDS=%s\n' "$EXPORT_TIMEOUT_SECONDS"
@@ -57,12 +61,63 @@ load_config() {
 }
 
 resolve_latest_modpack_tag() {
-  git ls-remote --tags "${MODPACK_REPO:-https://github.com/TerraFirmaGreg-Team/Modpack-Modern.git}" \
-    | awk -F/ '{print $NF}' \
-    | sed 's/\^{}//' \
-    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-    | sort -Vu \
-    | tail -n 1
+  resolve_modpack_tag
+}
+
+print_versions() {
+  load_config
+
+  if [[ -z "${MODPACK_TAG:-}" ]]; then
+    unset MODPACK_TAG
+  fi
+
+  local modpack fge mwe
+  modpack="${MODPACK_TAG:-$(resolve_modpack_tag)}"
+  if [[ -z "$modpack" ]]; then
+    echo "::error::Could not resolve Modpack-Modern release tag" >&2
+    exit 1
+  fi
+
+  fge="$(resolve_fge_tag)" || exit 1
+  mwe="$(resolve_mwe_tag)" || exit 1
+
+  export MODPACK_TAG="$modpack"
+  export FGE_TAG="$fge"
+  export MWE_TAG="$mwe"
+
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    {
+      printf 'MODPACK_TAG=%s\n' "$modpack"
+      printf 'FGE_TAG=%s\n' "$fge"
+      printf 'MWE_TAG=%s\n' "$mwe"
+      printf 'FGE_VERSION=%s\n' "$fge"
+      printf 'MWE_VERSION=%s\n' "$mwe"
+    } >> "$GITHUB_ENV"
+  fi
+
+  echo "::group::CI resolved versions"
+  printf '%s\n' \
+    "modpack_tag=${modpack}" \
+    "field-guide-export=${fge}" \
+    "minecraft-web-export=${mwe}" \
+    "minecraft=${MC_VERSION} (assets ${MC_ASSET_INDEX})" \
+    "forge_build=${FORGE_BUILD}" \
+    "headlessmc=${HMC_VERSION}"
+  echo "::endgroup::"
+
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    {
+      echo "## Resolved versions"
+      echo ""
+      echo "| Component | Version |"
+      echo "|-----------|---------|"
+      echo "| Modpack-Modern | \`${modpack}\` |"
+      echo "| field-guide-export | \`${fge}\` |"
+      echo "| minecraft-web-export | \`${mwe}\` |"
+      echo "| Minecraft / Forge | \`${MC_VERSION}\` / \`${FORGE_BUILD}\` |"
+      echo "| HeadlessMC | \`${HMC_VERSION}\` |"
+    } >> "$GITHUB_STEP_SUMMARY"
+  fi
 }
 
 checkout_modpack() {
@@ -74,9 +129,9 @@ checkout_modpack() {
     tag="$MODPACK_TAG"
     echo "Using MODPACK_TAG override: $tag"
   else
-    tag="$(resolve_latest_modpack_tag)"
+    tag="$(resolve_modpack_tag)"
     if [[ -z "$tag" ]]; then
-      echo "::error::No semver release tags found on $repo" >&2
+      echo "::error::No semver release tags found on ${MODPACK_REPO:-Modpack-Modern}" >&2
       exit 1
     fi
     echo "Latest release tag: $tag"
@@ -111,8 +166,8 @@ prepare_export() {
   load_config
   checkout_modpack
   prepare_bundle_id
+  print_versions
   echo "Modpack-Modern @ ${MODPACK_TAG} → bundle_id=fg-${MODPACK_TAG}"
-  echo "FGE ${FGE_VERSION} / MWE ${MWE_VERSION}"
 }
 
 prepare_bundle_id() {
@@ -182,12 +237,14 @@ install_gh_release_jar() {
 }
 
 install_export_mods() {
-  local fge_tag="${FGE_TAG:-${FGE_VERSION:?FGE_VERSION or FGE_TAG required}}"
-  local mwe_tag="${MWE_TAG:-${MWE_VERSION:?MWE_VERSION or MWE_TAG required}}"
+  local fge_tag mwe_tag
+  fge_tag="$(resolve_fge_tag)" || exit 1
+  mwe_tag="$(resolve_mwe_tag)" || exit 1
+  echo "Installing field-guide-export ${fge_tag}, minecraft-web-export ${mwe_tag}"
 
-  install_gh_release_jar jmecn/field-guide-export "$fge_tag" field-guide-export \
+  install_gh_release_jar "${FGE_REPO:-jmecn/field-guide-export}" "$fge_tag" field-guide-export \
     'field-guide-forge*.jar' 'fieldguide*.jar'
-  install_gh_release_jar jmecn/minecraft-web-export "$mwe_tag" minecraft-web-export
+  install_gh_release_jar "${MWE_REPO:-jmecn/minecraft-web-export}" "$mwe_tag" minecraft-web-export
 }
 
 install_display_deps() {

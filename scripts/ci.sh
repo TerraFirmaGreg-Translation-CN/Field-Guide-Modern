@@ -11,14 +11,14 @@ usage() {
 Usage: bash scripts/ci.sh <command>
 
 Workflow composites:
-  prepare-export      env + modpack checkout + bundle id
+  prepare-export      env + modpack checkout + bundle id + resolve FGE/MWE tags
   prepare-game        xvfb deps + FGE/MWE jars + HeadlessMC
   finalize-export     export-meta + tar (needs BUNDLE_ID, MODPACK_TAG)
   prepare-deploy      env + resolve bundle id
   install-bundle      extract or fetch (ACQUIRE=extract|fetch, BUNDLE_ID)
 
 Granular (local debugging):
-  env, checkout-modpack, prepare-bundle-id, export-languages,
+  env, print-versions, checkout-modpack, prepare-bundle-id, export-languages,
   install-mods, setup-hmc, launch-export, write-export-meta,
   resolve-bundle-id, extract-bundle, fetch-bundle, build-site
 EOF
@@ -33,6 +33,7 @@ shift
 
 case "$cmd" in
   env) load_config "$@" ;;
+  print-versions) print_versions "$@" ;;
   prepare-export) prepare_export "$@" ;;
   prepare-game) prepare_game "$@" ;;
   finalize-export) finalize_export "$@" ;;

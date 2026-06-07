@@ -13,11 +13,11 @@ on:
         required: false
         default: ""
       fge_version:
-        description: field-guide-export release tag (empty = ci/build.env)
+        description: field-guide-export release tag (empty = latest release)
         required: false
         default: ""
       mwe_version:
-        description: minecraft-web-export release tag (empty = ci/build.env)
+        description: minecraft-web-export release tag (empty = latest release)
         required: false
         default: ""
       export_warmup_ticks:
@@ -49,6 +49,8 @@ jobs:
         id: metadata
         env:
           MODPACK_TAG: ${{ github.event.inputs.modpack_tag }}
+          FGE_TAG: ${{ github.event.inputs.fge_version }}
+          MWE_TAG: ${{ github.event.inputs.mwe_version }}
         run: bash scripts/ci.sh prepare-export
 
       - name: Setup Java
@@ -85,9 +87,6 @@ jobs:
           restore-keys: emi-export-${{ env.MC_VERSION }}-
 
       - name: Prepare game
-        env:
-          FGE_TAG: ${{ github.event.inputs.fge_version || env.FGE_VERSION }}
-          MWE_TAG: ${{ github.event.inputs.mwe_version || env.MWE_VERSION }}
         run: bash scripts/ci.sh prepare-game
 
       - name: Run export
