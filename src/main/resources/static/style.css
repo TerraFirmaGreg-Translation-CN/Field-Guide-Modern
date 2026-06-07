@@ -49,7 +49,7 @@ img.entry-card-icon {
 :root {
     --handbook-icon-cell: 32;
     --handbook-icon-title: 48;
-    --handbook-icon-slot-scale: calc(var(--handbook-icon-title) / var(--handbook-icon-cell));
+    --handbook-icon-recipe: 64;
 }
 .icon-carousel {
     position: relative;
@@ -91,21 +91,38 @@ img.entry-card-icon {
 }
 
 /* Unified handbook atlas: slot scales sprite via icons.css --sprite-* / --atlas-* vars */
-.icon-slot-32 > .icon-atlas,
-.icon-slot-48 > .icon-atlas,
-.icon-slot-64 > .icon-atlas {
-    --slot-scale: 1;
-    width: calc(var(--cell) * var(--slot-scale) * 1px) !important;
-    height: calc(var(--cell) * var(--slot-scale) * 1px) !important;
-    background-size: calc(var(--atlas-w) * var(--slot-scale) * 1px) calc(var(--atlas-h) * var(--slot-scale) * 1px) !important;
-    background-position: calc(var(--sprite-x) * var(--slot-scale) * -1px) calc(var(--sprite-y) * var(--slot-scale) * -1px) !important;
+.icon-slot-32 > .icon-atlas[data-item] {
+    width: calc(var(--handbook-icon-cell) * 1px) !important;
+    height: calc(var(--handbook-icon-cell) * 1px) !important;
+    background-size: calc(var(--atlas-w) * 1px) calc(var(--atlas-h) * 1px) !important;
+    background-position: calc(var(--sprite-x) * -1px) calc(var(--sprite-y) * -1px) !important;
     transform: none;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
 }
 
-.icon-slot-32 > .icon-atlas {
-    --slot-scale: 1;
+.icon-slot-48 > .icon-atlas[data-item] {
+    width: calc(var(--handbook-icon-title) * 1px) !important;
+    height: calc(var(--handbook-icon-title) * 1px) !important;
+    background-size: calc(var(--atlas-w) * var(--handbook-icon-title) / var(--handbook-icon-cell) * 1px)
+        calc(var(--atlas-h) * var(--handbook-icon-title) / var(--handbook-icon-cell) * 1px) !important;
+    background-position: calc(var(--sprite-x) * var(--handbook-icon-title) / var(--handbook-icon-cell) * -1px)
+        calc(var(--sprite-y) * var(--handbook-icon-title) / var(--handbook-icon-cell) * -1px) !important;
+    transform: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.icon-slot-64 > .icon-atlas[data-item] {
+    width: calc(var(--handbook-icon-recipe) * 1px) !important;
+    height: calc(var(--handbook-icon-recipe) * 1px) !important;
+    background-size: calc(var(--atlas-w) * var(--handbook-icon-recipe) / var(--handbook-icon-cell) * 1px)
+        calc(var(--atlas-h) * var(--handbook-icon-recipe) / var(--handbook-icon-cell) * 1px) !important;
+    background-position: calc(var(--sprite-x) * var(--handbook-icon-recipe) / var(--handbook-icon-cell) * -1px)
+        calc(var(--sprite-y) * var(--handbook-icon-recipe) / var(--handbook-icon-cell) * -1px) !important;
+    transform: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 .icon-carousel.entry-card-icon {
@@ -129,21 +146,13 @@ img.entry-card-icon {
     vertical-align: middle;
 }
 
-.icon-slot-48 > .icon-atlas {
-    --slot-scale: var(--handbook-icon-slot-scale);
-}
-
 /* Recipe slots: 64×64 */
 .icon-slot-64 {
-    width: 64px;
-    height: 64px;
+    width: calc(var(--handbook-icon-recipe) * 1px);
+    height: calc(var(--handbook-icon-recipe) * 1px);
     overflow: hidden;
     display: inline-block;
     vertical-align: middle;
-}
-
-.icon-slot-64 > .icon-atlas {
-    --slot-scale: calc(64 / var(--handbook-icon-cell));
 }
 
 @media only screen and (min-width: 500px) {
