@@ -170,7 +170,7 @@ public class PageRenderer {
             entry.addSearchContent(title);
         }
 
-        String iconHtml = IconMarkup.img(icon, "icon-title");
+        String iconHtml = IconMarkup.img(icon, "item-header-icon");
         String html = String.format("""
             <div class="item-header">
                 <span href="#" data-bs-toggle="tooltip" title="%s">
@@ -338,9 +338,7 @@ public class PageRenderer {
             for (PageSpotlightItem item : items) {
                 if ("tag".equals(item.getType())) {
                     String tagId = item.getText();
-                    ItemImageResult itemResult = ItemImageResult.emiTag(
-                            tagId,
-                            localizationManager.translateWithArgs(I18n.TAG, "#" + tagId));
+                    ItemImageResult itemResult = textureRenderer.getItemImage("#" + tagId, false);
                     formatTitleWithIcon(entry, buffer, itemResult, page.getTitle());
                 } else {
                     ItemImageResult itemResult = textureRenderer.getItemImage(item.getText(), false);

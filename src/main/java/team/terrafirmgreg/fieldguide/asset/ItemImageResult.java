@@ -48,7 +48,15 @@ public class ItemImageResult {
     }
 
     public boolean isEmiTag() {
+        return emiTagId != null && !emiTagId.isBlank() && !isAtlas();
+    }
+
+    public boolean hasTagClickId() {
         return emiTagId != null && !emiTagId.isBlank();
+    }
+
+    public ItemImageResult withTagClickId(String tagId) {
+        return new ItemImageResult(path, name, key, atlasIcons, tagId);
     }
 
     public boolean isAtlas() {

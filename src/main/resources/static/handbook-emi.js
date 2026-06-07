@@ -170,12 +170,19 @@
       return;
     }
 
-    document.querySelectorAll('.emi-handbook-tag[data-tag-id]').forEach(function (el) {
+    document.querySelectorAll('.emi-handbook-tag[data-tag-id], .handbook-tag-click[data-tag-id]').forEach(function (el) {
       el.addEventListener('click', function (event) {
         event.preventDefault();
         event.stopPropagation();
         var tagId = el.getAttribute('data-tag-id');
-        if (tagId && typeof globalThis.showEmiTagPopover === 'function') {
+        if (!tagId) {
+          return;
+        }
+        if (navHandlers.onTagClick) {
+          navHandlers.onTagClick(tagId, { source: 'handbook-tag' });
+          return;
+        }
+        if (typeof globalThis.showEmiTagPopover === 'function') {
           globalThis.showEmiTagPopover(tagId, el, renderer);
         }
       });

@@ -41,6 +41,10 @@ img.entry-card-icon {
     image-rendering: pixelated;
 }
 
+.handbook-tag-click {
+    cursor: pointer;
+}
+
 /* Handbook icon atlas sprites (see assets/icons/icons.css) */
 .icon-carousel {
     position: relative;
@@ -113,7 +117,7 @@ img.entry-card-icon {
     flex-shrink: 0;
 }
 
-/* Entry header: 48×48 slot; 32px atlas cells use ~1.2× (1.5× clips sprite edges) */
+/* Entry page title: 48×48 (32px atlas cell × 1.5) */
 .icon-slot-48 {
     width: 48px;
     height: 48px;
@@ -128,7 +132,7 @@ img.entry-card-icon {
 .icon-slot-48 > .icon-atlas {
     width: 32px !important;
     height: 32px !important;
-    transform: scale(1.2);
+    transform: scale(1.5);
     transform-origin: center center;
 }
 
@@ -185,7 +189,9 @@ img.entry-card-icon {
 
 /* Item Tooltips - used for patchouli:item_spotlight pages */
 
-.item-header img {
+.item-header img,
+.item-header .icon-slot-32,
+.item-header .handbook-tag-click {
     float: left;
     width: 32px;
     height: 32px;

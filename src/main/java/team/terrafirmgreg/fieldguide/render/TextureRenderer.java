@@ -155,6 +155,9 @@ public class TextureRenderer {
                     refs.size() == 1
                             ? ItemImageResult.atlas(refs.get(0), name, key)
                             : ItemImageResult.atlasCarousel(refs, name, key);
+            if (cacheKey.startsWith("#")) {
+                result = result.withTagClickId(cacheKey.substring(1));
+            }
             itemImageCache.put(cacheKey, result);
             return result;
         } catch (Exception e) {

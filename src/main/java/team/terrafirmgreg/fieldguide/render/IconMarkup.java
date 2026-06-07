@@ -49,11 +49,23 @@ public final class IconMarkup {
             return inner;
         }
         if (icon.isAtlas()) {
-            return atlasHtml(icon, extraClass);
+            String html = atlasHtml(icon, extraClass);
+            if (icon.hasTagClickId()) {
+                return wrapTagClick(icon, html);
+            }
+            return html;
         }
         String classes = extraClass != null && !extraClass.isEmpty() ? extraClass : "";
         String classAttr = classes.isEmpty() ? "" : " class=\"" + classes + "\"";
         return String.format("<img%s src=\"%s%s\" alt=\"\" />", classAttr, assetRoot, icon.getPath());
+    }
+
+    private static String wrapTagClick(ItemImageResult icon, String inner) {
+        return String.format(
+                "<span class=\"handbook-tag-click\" data-tag-id=\"%s\" role=\"button\" tabindex=\"0\" title=\"%s\">%s</span>",
+                escapeAttr(icon.getEmiTagId()),
+                escapeAttr(icon.getName() != null ? icon.getName() : icon.getEmiTagId()),
+                inner);
     }
 
     private static String atlasHtml(ItemImageResult icon, String extraClass) {
@@ -113,7 +125,7 @@ public final class IconMarkup {
         if (extraClass.contains("icon-title")) {
             return "title";
         }
-        if (extraClass.contains("entry-card-icon")) {
+        if (extraClass.contains("item-header-icon") || extraClass.contains("entry-card-icon")) {
             return "card";
         }
         return "";
