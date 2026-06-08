@@ -1,0 +1,21 @@
+/* Loaded after EMI bundle CSS so field-guide atlas slots keep handbook sizing. */
+.field-guide-icon-atlas.icon-slot-32[data-item] {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+}
+
+.field-guide-icon-atlas.icon-slot-48[data-item] {
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+}
+
+.field-guide-icon-atlas.icon-slot-64[data-item] {
+    width: 64px !important;
+    min-width: 64px !important;
+    height: 64px !important;
+    min-height: 64px !important;
+}

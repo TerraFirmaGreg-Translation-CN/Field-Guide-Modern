@@ -5,6 +5,7 @@
 <meta name="recipe-book-base-url" content="${recipeBookBaseUrl?html}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emi-recipe-renderer@${emiRendererVersion}/dist/emi.min.css" crossorigin="anonymous">
 <link rel="stylesheet" href="${emiBundleRoot}/icons/icons.css" crossorigin="anonymous" data-emi-bundle-icons="true">
+<link rel="stylesheet" href="${root}/static/handbook-icons.css">
 <script>
 (function () {
   var version = document.querySelector('meta[name="emi-renderer-version"]').content;

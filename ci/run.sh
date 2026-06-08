@@ -305,9 +305,17 @@ publish_site_release() {
   echo "::endgroup::"
 }
 
+export_cache_fingerprint() {
+  resolve_build_version_refs || return 1
+  # Export gate: modpack + field-guide-export + minecraft-web-export
+  printf '%s:%s:%s' "$BUILD_REF_MODPACK" "$BUILD_REF_FGE" "$BUILD_REF_MWE" \
+    | sha256sum | awk '{print substr($1,1,8)}'
+}
+
 export_cache_key() {
   local bundle_id="${1:?bundle_id required}"
-  printf '%s-%s' "${EXPORT_CACHE_KEY_PREFIX:-fge-export}" "$bundle_id"
+  local fingerprint="${2:?fingerprint required}"
+  printf '%s-%s-%s' "${EXPORT_CACHE_KEY_PREFIX:-fge-export}" "$bundle_id" "$fingerprint"
 }
 
 bundle_id_for_tag() {
@@ -317,12 +325,13 @@ bundle_id_for_tag() {
 _write_bundle_outputs() {
   local tag="${1:?modpack tag required}"
   local label="${2:-bundle}"
-  local id cache_key
+  local id cache_key fingerprint
 
-  id="$(bundle_id_for_tag "$tag")"
-  cache_key="$(export_cache_key "$id")"
   export MODPACK_TAG="$tag"
+  id="$(bundle_id_for_tag "$tag")"
   export BUNDLE_ID="$id"
+  fingerprint="$(export_cache_fingerprint)" || exit 1
+  cache_key="$(export_cache_key "$id" "$fingerprint")"
 
   if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     {
@@ -759,16 +768,20 @@ resolve_bundle_id() {
 
   export BUNDLE_ID="$id"
 
+  local fingerprint cache_key
+  fingerprint="$(export_cache_fingerprint)" || exit 1
+  cache_key="$(export_cache_key "$id" "$fingerprint")"
+
   if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     {
       echo "bundle_id=${id}"
-      echo "export_cache_key=$(export_cache_key "$id")"
+      echo "export_cache_key=${cache_key}"
     } >> "$GITHUB_OUTPUT"
   fi
   if [[ -n "${GITHUB_ENV:-}" ]]; then
     printf 'BUNDLE_ID=%s\n' "$id" >> "$GITHUB_ENV"
   fi
-  echo "deploy bundle_id=${id} export_cache_key=$(export_cache_key "$id")"
+  echo "deploy bundle_id=${id} export_cache_key=${cache_key}"
 }
 
 extract_bundle() {

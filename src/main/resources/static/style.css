@@ -32,6 +32,7 @@
 }
 
 img.icon-title {
+    width: calc(var(--field-guide-icon-title) * 1px);
     height: calc(var(--field-guide-icon-title) * 1px);
     image-rendering: pixelated;
 }
@@ -63,9 +64,9 @@ img.entry-card-icon {
 }
 
 .icon-carousel:not(.emi-slot-carousel) > span.icon-carousel-active,
-.icon-carousel:not(.emi-slot-carousel) > .icon-slot-32 > span.icon-carousel-active,
-.icon-carousel:not(.emi-slot-carousel) > .icon-slot-48 > span.icon-carousel-active,
-.icon-carousel:not(.emi-slot-carousel) > .icon-slot-64 > span.icon-carousel-active {
+.icon-carousel:not(.emi-slot-carousel) > .field-guide-icon-atlas.icon-slot-32.icon-carousel-active,
+.icon-carousel:not(.emi-slot-carousel) > .field-guide-icon-atlas.icon-slot-48.icon-carousel-active,
+.icon-carousel:not(.emi-slot-carousel) > .field-guide-icon-atlas.icon-slot-64.icon-carousel-active {
     display: inline-block;
 }
 
@@ -78,7 +79,7 @@ img.entry-card-icon {
     margin-right: auto;
 }
 
-/* Category cards: uniform 32×32 */
+/* EMI tag wrappers and legacy slot containers */
 .icon-slot-32 {
     width: 32px;
     height: 32px;
@@ -90,10 +91,19 @@ img.entry-card-icon {
     vertical-align: middle;
 }
 
-/* Unified field-guide atlas: slot scales sprite via icons.css --sprite-* / --atlas-* vars */
-.icon-slot-32 > .field-guide-icon-atlas[data-item] {
-    width: calc(var(--field-guide-icon-cell) * 1px) !important;
-    height: calc(var(--field-guide-icon-cell) * 1px) !important;
+.field-guide-icon-atlas.icon-slot-32 {
+    overflow: hidden;
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+/* Unified field-guide atlas: slot class on the sprite element scales via icons.css vars */
+.field-guide-icon-atlas.icon-slot-32[data-item] {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
     background-size: calc(var(--atlas-w) * 1px) calc(var(--atlas-h) * 1px) !important;
     background-position: calc(var(--sprite-x) * -1px) calc(var(--sprite-y) * -1px) !important;
     transform: none;
@@ -101,9 +111,11 @@ img.entry-card-icon {
     image-rendering: crisp-edges;
 }
 
-.icon-slot-48 > .field-guide-icon-atlas[data-item] {
-    width: calc(var(--field-guide-icon-title) * 1px) !important;
-    height: calc(var(--field-guide-icon-title) * 1px) !important;
+.field-guide-icon-atlas.icon-slot-48[data-item] {
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
     background-size: calc(var(--atlas-w) * var(--field-guide-icon-title) / var(--field-guide-icon-cell) * 1px)
         calc(var(--atlas-h) * var(--field-guide-icon-title) / var(--field-guide-icon-cell) * 1px) !important;
     background-position: calc(var(--sprite-x) * var(--field-guide-icon-title) / var(--field-guide-icon-cell) * -1px)
@@ -113,9 +125,11 @@ img.entry-card-icon {
     image-rendering: crisp-edges;
 }
 
-.icon-slot-64 > .field-guide-icon-atlas[data-item] {
-    width: calc(var(--field-guide-icon-recipe) * 1px) !important;
-    height: calc(var(--field-guide-icon-recipe) * 1px) !important;
+.field-guide-icon-atlas.icon-slot-64[data-item] {
+    width: 64px !important;
+    min-width: 64px !important;
+    height: 64px !important;
+    min-height: 64px !important;
     background-size: calc(var(--atlas-w) * var(--field-guide-icon-recipe) / var(--field-guide-icon-cell) * 1px)
         calc(var(--atlas-h) * var(--field-guide-icon-recipe) / var(--field-guide-icon-cell) * 1px) !important;
     background-position: calc(var(--sprite-x) * var(--field-guide-icon-recipe) / var(--field-guide-icon-cell) * -1px)
@@ -134,22 +148,16 @@ img.entry-card-icon {
     flex-shrink: 0;
 }
 
-/* Entry page title: 48×48 — same technique as img.icon-title, no transform clip */
-.icon-slot-48 {
-    width: calc(var(--field-guide-icon-title) * 1px);
-    height: calc(var(--field-guide-icon-title) * 1px);
+/* Entry page title atlas: 48×48 slot on the sprite element itself */
+.field-guide-icon-atlas.icon-slot-48 {
     overflow: hidden;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-block;
     flex-shrink: 0;
     vertical-align: middle;
 }
 
 /* Recipe slots: 64×64 */
-.icon-slot-64 {
-    width: calc(var(--field-guide-icon-recipe) * 1px);
-    height: calc(var(--field-guide-icon-recipe) * 1px);
+.field-guide-icon-atlas.icon-slot-64 {
     overflow: hidden;
     display: inline-block;
     vertical-align: middle;
@@ -165,7 +173,7 @@ img.entry-card-icon {
 /* Item Tooltips - used for patchouli:item_spotlight pages */
 
 .item-header img,
-.item-header .icon-slot-32,
+.item-header .field-guide-icon-atlas.icon-slot-32,
 .item-header .handbook-tag-click {
     float: left;
     width: 32px;

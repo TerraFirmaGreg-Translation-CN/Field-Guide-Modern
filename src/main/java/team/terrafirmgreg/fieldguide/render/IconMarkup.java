@@ -92,22 +92,21 @@ public final class IconMarkup {
     private static String singleAtlasSpan(
             IconRef ref, String extraClass, String scaleContext, boolean carouselActive) {
         StringBuilder cls = new StringBuilder(ref.cssClass());
+        String slot = slotClass(scaleContext);
+        if (!slot.isEmpty()) {
+            cls.append(' ').append(slot);
+        }
         if (extraClass != null && !extraClass.isEmpty()) {
             cls.append(' ').append(extraClass);
         }
         if (carouselActive) {
             cls.append(" icon-carousel-active");
         }
-        String inner = String.format(
+        return String.format(
                 "<span class=\"%s\" %s=\"%s\"></span>",
                 cls,
                 ref.dataAttribute(),
                 escapeAttr(ref.registryId()));
-        String slot = slotClass(scaleContext);
-        if (!slot.isEmpty()) {
-            return "<span class=\"" + slot + "\">" + inner + "</span>";
-        }
-        return inner;
     }
 
     private static String slotClass(String scaleContext) {
